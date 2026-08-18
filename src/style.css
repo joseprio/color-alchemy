@@ -176,11 +176,14 @@ body.menu header, body.menu #hud, body.menu #grid, body.menu footer { display: n
 /* Spread to the title's width by flex, not by a letter-spacing that would
    have to be re-guessed for every font size. Arial has no true small caps, so
    the browser scales its capitals — which is the intended look here: a quieter
-   line under a heavy title, not a second display face. */
+   line under a heavy title, not a second display face.
+   The size sets the tracking: the width is pinned, so bigger letters leave
+   smaller gaps. At 40px against a 100px title the gaps are 0.87em, where 27px
+   left 1.64em. */
 #tsub {
   width: 100%; display: flex; justify-content: space-between;
   font-family: Arial, Helvetica, sans-serif; font-weight: 700; font-variant: small-caps;
-  color: #8fb4d8; font-size: min(4.6vw, 27px); line-height: 1.1; margin: 6px 0 30px;
+  color: #8fb4d8; font-size: min(6.9vw, 40px); line-height: 1.1; margin: 6px 0 30px;
 }
 #menu { display: flex; flex-direction: column; gap: 10px; width: 250px; }
 #menu[hidden] { display: none; }
