@@ -35,6 +35,13 @@ h1 {
   background: #101528; color: #7f9fc0; border: 1px solid #2a3555;
   font: inherit; font-size: 12px; padding: 2px 10px; cursor: pointer; border-radius: 6px;
 }
+/* Touch: the HUD buttons are 23px tall, which a mouse hits and a thumb does
+   not. Only coarse pointers pay for the extra height. */
+@media (pointer: coarse) {
+  /* min-height rather than padding arithmetic: the target is 44px, not
+     whatever the font metrics happen to add up to. */
+  #hnt, #mnu, #snd { min-height: 44px; padding: 10px 14px; }
+}
 /* the keys that do the same thing, dimmer than the label */
 #hnt i, #mnu i, #snd i { font-style: normal; color: #55708e; margin-left: 6px; }
 /* muted: the button reads "Muted" and goes as quiet as it sounds */
@@ -92,7 +99,11 @@ footer { margin: 4px 0 18px; color: #55708e; font-size: 11px; text-align: center
 #toast {
   position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%);
   background: #131a30f0; border: 1px solid #33436e; color: #cfe3ff;
-  padding: 8px 16px; border-radius: 8px; font-size: 13px; white-space: nowrap;
+  padding: 8px 16px; border-radius: 8px; font-size: 13px; text-align: center;
+  /* Shrink-to-fit, so it stays one line whenever one line fits — but bounded,
+     because the longest hint ("White Light + Electricity") is 391px and a 320px
+     phone was clipping 36px off each end against body's overflow-x: hidden. */
+  max-width: calc(100vw - 24px);
   opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 8;
 }
 #toast.show { opacity: 1; }

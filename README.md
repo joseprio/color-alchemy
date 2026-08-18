@@ -16,6 +16,7 @@ npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fouc-check        # is the sheet in place before the first paint?
 npm run css-diff          # does cssnano change any computed style?
 npm run music-check       # is the shipped page actually producing audio?
+npm run mobile-check      # phone and tablet layout: overflow, tap targets
 ```
 
 - **Play:** open `dist/bundle.html` — the whole game in one file.
@@ -108,6 +109,7 @@ tools/find-rr-config.mjs   re-fits rr-config.json against dist/pre-roadroller.js
 tools/fouc-probe.mjs       first-paint timing vs. the moment the sheet lands
 tools/css-diff.mjs         computed styles, minified stylesheet vs. raw
 tools/music-probe.mjs      captures the shipped page's own audio callback
+tools/responsive-probe.mjs the page at seven viewports, phone to laptop
 
 experiments/menu-typography.html   the seven title settings the current one
                                    was chosen from
@@ -164,6 +166,34 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
   the run, never the bests.
+
+## On a phone
+
+The layout is fluid rather than broken into breakpoints: the grid is
+`repeat(auto-fill, 92px)` inside `width: min(96vw, 640px)`, so it lands on 3
+columns at 320-414px and 6 from a tablet up, and the title scales on `vw` with a
+cap (`min(17vw, 100px)`), the two words staying locked to each other at every
+size. `npm run mobile-check` walks the packed page through seven viewports —
+320x568 up to 1280x800 — in each of the states that lay out differently: title
+screen, board, an open discovery card, a toast, the encyclopedia. It reports
+horizontal overflow, any element wider than the screen, the column count and
+every tap target under 44px, and drops `.shot-mob-*.png` for a visual pass.
+
+It found two things worth fixing, both now fixed:
+
+- **The toast was clipped on a phone.** It was `white-space: nowrap`, and the
+  longest hint the game can produce — *Hint: try White Light + Electricity —
+  costs a move* — is 391px wide. On a 320px screen it hung 36px off each edge,
+  where `overflow-x: hidden` on the body silently cut both ends off. It is now
+  bounded by `max-width: calc(100vw - 24px)` and wraps, staying one line
+  wherever one line fits.
+- **The HUD buttons were 23px tall**, which a mouse hits and a thumb does not.
+  Under `@media (pointer: coarse)` they take `min-height: 44px` — a pinned
+  target rather than padding arithmetic — and nothing changes for a mouse, which
+  the probe checks both ways (coarse 101x44, fine 93x23).
+
+Still worth knowing: there is no `env(safe-area-inset-*)` padding, so on a
+notched phone in landscape the footer can sit under the home indicator.
 
 ## Controls
 
