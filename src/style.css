@@ -1,0 +1,193 @@
+/* COLOR ALCHEMY — the page stylesheet, and the readable source of truth for it.
+   It does NOT ship as written: rollup.config.mjs runs it through cssnano
+   (postcss.config.js, preset advanced) at config load and hands the minified
+   text to src/css.ts, which fills the empty <style id=sty> in the template.
+   Editing this file during `npm start` needs a watcher restart — the config
+   reads it once. Class and id names are the contract with src/index.html,
+   the game code and check.mjs. */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+  display: flex; flex-direction: column; align-items: center;
+  touch-action: manipulation; overflow-x: hidden;
+  background-image:
+    radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+}
+
+header { margin: 14px 0 0; text-align: center; }
+h1 {
+  margin: 0; font-size: 26px; letter-spacing: .18em; font-weight: 700;
+  background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+#goal { margin: 4px 0 0; color: #8fb4d8; font-size: 13px; }
+
+#hud {
+  display: flex; gap: 18px; align-items: center; justify-content: center;
+  margin: 10px 0 4px; font-size: 13px; flex-wrap: wrap;
+}
+#hud b { color: #fff; font-weight: 700; }
+#bestq { color: #ffd75e; }
+#bestq:empty { display: none; }
+#hnt, #mnu, #snd {
+  background: #101528; color: #7f9fc0; border: 1px solid #2a3555;
+  font: inherit; font-size: 12px; padding: 2px 10px; cursor: pointer; border-radius: 6px;
+}
+/* the keys that do the same thing, dimmer than the label */
+#hnt i, #mnu i, #snd i { font-style: normal; color: #55708e; margin-left: 6px; }
+/* muted: the button reads "Muted" and goes as quiet as it sounds */
+#snd.off { color: #55708e; border-color: #1b2540; }
+
+#grid {
+  display: grid; grid-template-columns: repeat(auto-fill, 92px); gap: 10px;
+  justify-content: center; width: min(96vw, 640px); margin: 12px 0 8px; padding: 0 4px 8px;
+}
+.tile {
+  width: 92px; padding: 10px 4px 8px; text-align: center; cursor: pointer;
+  background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+  user-select: none; -webkit-user-select: none;
+  transition: transform .08s, border-color .12s, background .12s;
+  animation: pop .25s ease-out;
+}
+@keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.tile:hover { border-color: #3d5584; }
+.tile.sel { border-color: #ffd75e; background: #1a1a10cc; transform: scale(1.06); box-shadow: 0 0 14px #ffd75e33; }
+.tile.cur { outline: 2px solid #33e9e9; outline-offset: 2px; }
+.tile.dragsrc { opacity: .35; }
+.tile.drop { border-color: #7dff9a; background: #101f14cc; transform: scale(1.06); box-shadow: 0 0 14px #7dff9a44; }
+/* pop belongs to the tile's arrival only: once it has played the tile is
+   settled, so dropping .bad later cannot re-trigger it (.bad comes after,
+   and wins for as long as it is set) */
+.tile.settled { animation: none; }
+/* a combination that does nothing: both mismatched tiles shake it off, then
+   the border eases back through .tile's own transition */
+.tile.bad { border-color: #ff6b6b; animation: shake .4s cubic-bezier(.36, .07, .19, .97); }
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+/* a combination you already know: the element it makes pulses, so the toast
+   is not the only thing pointing at it */
+.tile.hit { border-color: #33e9e9; animation: pulse .5s ease-out; }
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 #33e9e955; }
+  45% { transform: scale(1.13); box-shadow: 0 0 18px 4px #33e9e955; }
+  to { transform: scale(1); box-shadow: 0 0 0 0 #33e9e900; }
+}
+.tile.ghost {
+  position: fixed; left: 0; top: 0; z-index: 5; margin: 0;
+  pointer-events: none; opacity: .92; animation: none; transition: none;
+  transform: translate(-50%, -55%) scale(1.08);
+}
+.ico { height: 42px; display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 1; }
+.sw { width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 0 10px 1px var(--g, transparent); }
+.nm { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
+
+footer { margin: 4px 0 18px; color: #55708e; font-size: 11px; text-align: center; padding: 0 12px; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%);
+  background: #131a30f0; border: 1px solid #33436e; color: #cfe3ff;
+  padding: 8px 16px; border-radius: 8px; font-size: 13px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 8;
+}
+#toast.show { opacity: 1; }
+
+.veil {
+  position: fixed; inset: 0; z-index: 9; display: none;
+  align-items: center; justify-content: center; background: #030409cc;
+}
+.veil.show { display: flex; }
+.card {
+  background: #0c1122; border: 1px solid #33e9e9; border-radius: 14px;
+  padding: 26px 34px; text-align: center; max-width: min(88vw, 420px);
+  box-shadow: 0 0 40px #33e9e922;
+}
+.card .big { font-size: 56px; line-height: 1; margin-bottom: 10px; display: flex; justify-content: center; }
+.card .big .sw { width: 56px; height: 56px; border-radius: 10px; }
+.card .tag { font-size: 11px; letter-spacing: .3em; color: #33e9e9; }
+.card h2 { margin: 6px 0 2px; color: #fff; font-size: 22px; }
+.card .quote { color: #8fb4d8; font-style: italic; margin: 8px 0 2px; }
+.card .recipe { color: #55708e; font-size: 12px; margin: 6px 0 0; }
+.card .hint { color: #3d5584; font-size: 11px; margin: 14px 0 0; }
+
+/* first-ever discovery: the two ingredients fly together, flash, and the
+   new element pops out; the card text fades in after (all via delays) */
+.mstage { position: relative; height: 64px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+.mstage .sw { width: 38px; height: 38px; }
+.mhalf { position: absolute; font-size: 36px; line-height: 1; display: flex; }
+.mA { animation: flyA .55s ease-in forwards; }
+.mB { animation: flyB .55s ease-in forwards; }
+@keyframes flyA { from { transform: translateX(-88px) scale(.95); } 70% { opacity: 1; } to { transform: translateX(0) scale(.5); opacity: 0; } }
+@keyframes flyB { from { transform: translateX(88px) scale(.95); } 70% { opacity: 1; } to { transform: translateX(0) scale(.5); opacity: 0; } }
+.mring {
+  position: absolute; width: 26px; height: 26px; border-radius: 50%;
+  border: 3px solid #fff; opacity: 0; animation: mring .55s .5s ease-out forwards;
+}
+@keyframes mring { from { transform: scale(.4); opacity: 1; } to { transform: scale(4.5); opacity: 0; } }
+.mres { position: absolute; font-size: 52px; line-height: 1; display: flex; transform: scale(0); animation: mpop .5s .6s cubic-bezier(.2, 1.9, .4, 1) forwards; }
+.mres .sw { width: 52px; height: 52px; border-radius: 10px; }
+@keyframes mpop { to { transform: scale(1); } }
+.mbody.anim { opacity: 0; animation: mfade .45s .85s ease-out forwards; }
+@keyframes mfade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+#overlay .card { border-color: #ffd75e; box-shadow: 0 0 50px #ffd75e22; }
+#overlay .tag { color: #ffd75e; }
+#overlay .line { margin: 6px 0 0; color: #cfe3ff; }
+#overlay .best { color: #ffd75e; }
+#overlay .newbest { color: #7dff9a; font-weight: 700; letter-spacing: .1em; }
+#obtns { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+#obtns button {
+  background: #101528; color: #cfe3ff; border: 1px solid #33436e; border-radius: 8px;
+  font: inherit; padding: 8px 16px; cursor: pointer;
+}
+#obtns button.obfocus { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
+
+/* title screen: floats over the bare background; body.menu hides the game UI */
+.tscreen {
+  position: fixed; inset: 0; z-index: 6; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.tscreen.show { display: flex; }
+body.menu header, body.menu #hud, body.menu #grid, body.menu footer { display: none; }
+#ttl {
+  font-size: min(17vw, 96px); font-weight: 800; letter-spacing: .14em; line-height: 1;
+  background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff, #ff3b30);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: rbflow 5s linear infinite;
+  filter: drop-shadow(0 0 18px #ffffff22);
+}
+@keyframes rbflow { to { background-position: 200% 0; } }
+#tsub {
+  font-family: Georgia, "Times New Roman", serif; font-style: italic; color: #fff;
+  font-size: min(7vw, 34px); letter-spacing: .45em; text-indent: .45em; margin: 2px 0 26px;
+}
+#menu { display: flex; flex-direction: column; gap: 10px; width: 250px; }
+#menu[hidden] { display: none; }
+#menu button, #mback {
+  background: #101528cc; color: #cfe3ff; border: 1px solid #33436e; border-radius: 10px;
+  font: inherit; font-size: 15px; padding: 10px 16px; cursor: pointer;
+}
+#menu button.obfocus, #mback.obfocus { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
+#menu button.armed { border-color: #a04040; color: #ff8080; }
+#mpanel { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(92vw, 460px); }
+#mpanel[hidden] { display: none; }
+#mhead { color: #ffd75e; letter-spacing: .3em; font-size: 13px; }
+#mlist {
+  width: 100%; max-height: 46vh; overflow-y: auto; text-align: left;
+  background: #0c1122cc; border: 1px solid #223052; border-radius: 12px; padding: 12px 14px;
+}
+.hsrow { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; }
+.hsrow b { color: #ffd75e; }
+.hsnote { color: #55708e; font-size: 11px; margin-top: 8px; text-align: center; }
+.erow { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid #16203a; align-items: flex-start; }
+.erow:last-of-type { border-bottom: 0; }
+.eico { display: flex; align-items: center; justify-content: center; font-size: 20px; line-height: 1.3; min-width: 24px; }
+.eico .sw { width: 18px; height: 18px; border-radius: 4px; }
+.erec { color: #8fb4d8; font-style: normal; font-size: 12px; margin-left: 6px; }
+.equote { color: #55708e; font-size: 11px; font-style: italic; }

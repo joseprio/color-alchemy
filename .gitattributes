@@ -1,0 +1,7 @@
+# The build is byte-deterministic, and that only holds if the sources are.
+# Windows checkouts would otherwise arrive CRLF, changing the chunk roadroller
+# packs and the hash rr-config.json is fitted to — a STALE warning and a
+# different bundle from the same commit.
+* text=auto eol=lf
+*.png binary
+dist/build.zip binary

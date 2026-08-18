@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — template. Markup only; the game lives in the src/*.ts
+     modules and the build injects the bundle before </body> (dev: a script
+     src reference in dist/index.html; production: inlined into the
+     single-file dist/bundle.html by postbuild.mjs).
+     The <style id=sty> is EMPTY on purpose and must stay in the document:
+     src/css.ts fills it with src/style.css, minified, so the stylesheet
+     travels inside the packed payload rather than in this file.
+     Element ids (goal/hud/moves/count/bestq/hnt/mnu/grid/toast/modal/mcard/
+     overlay/ocard/title/ttl/tsub/menu/mpanel/mhead/mlist/mback/snd) are the
+     contract between this template, the game code, and check.mjs — rename in
+     all three or not at all. -->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy</title>
+<style id="sty"></style>
+</head>
+<body>
+<header>
+  <h1>COLOR ALCHEMY</h1>
+  <div id="goal"></div>
+</header>
+<div id="hud">
+  <span>Moves: <b id="moves">0</b></span>
+  <span>Elements: <b id="count"></b></span>
+  <span id="bestq"></span>
+  <button id="hnt">Hint<i>H / &#9422;</i></button>
+  <button id="snd">Sound<i>M / &#9421;</i></button>
+  <button id="mnu">Menu<i>Esc / &#9399;</i></button>
+</div>
+<div id="grid"></div>
+<footer>combine: tap two elements &middot; keys: arrows + Enter, Esc cancels &middot; pad: d-pad/stick + &#9398;, &#9399; cancels / opens the menu &middot; hint: H / &#9422; &mdash; costs a move &middot; mute: M / &#9421;</footer>
+<div id="title" class="tscreen">
+  <div id="ttl">COLOR</div>
+  <div id="tsub">alchemy</div>
+  <div id="menu"></div>
+  <div id="mpanel" hidden>
+    <div id="mhead"></div>
+    <div id="mlist"></div>
+    <button id="mback">Back</button>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="modal" class="veil"><div class="card" id="mcard"></div></div>
+<div id="overlay" class="veil"><div class="card" id="ocard"></div></div>
+</body>
+</html>

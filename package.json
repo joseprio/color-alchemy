@@ -1,0 +1,40 @@
+{
+  "name": "color-alchemy",
+  "private": true,
+  "scripts": {
+    "build": "rollup -c",
+    "check": "tsc --noEmit",
+    "prebuild": "npm run check",
+    "postbuild": "node postbuild.mjs",
+    "roadroller-optimize": "node tools/find-rr-config.mjs",
+    "fouc-check": "node tools/fouc-probe.mjs",
+    "css-diff": "node tools/css-diff.mjs",
+    "music-check": "node tools/music-probe.mjs",
+    "start": "rollup -c -w",
+    "test": "node check.mjs"
+  },
+  "devDependencies": {
+    "@ampproject/rollup-plugin-closure-compiler": "^0.27.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "advzip-bin": "^2.0.0",
+    "cssnano": "^7.1.9",
+    "cssnano-preset-advanced": "^7.0.16",
+    "ect-bin": "^1.4.1",
+    "eslint": "^8.57.1",
+    "google-closure-compiler": "^20260218.0.0",
+    "html-minifier-next": "^5.1.3",
+    "postcss": "^8.5.26",
+    "postcss-cli": "^11.0.1",
+    "roadroller": "file:../roadroller",
+    "rollup": "^4.30.0",
+    "rollup-plugin-serve": "^3.0.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.7.0"
+  },
+  "overrides": {
+    "@ampproject/rollup-plugin-closure-compiler": {
+      "google-closure-compiler": "20210808.0.0"
+    }
+  }
+}

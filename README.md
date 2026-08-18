@@ -1,0 +1,360 @@
+# Color Alchemy
+
+A standalone combination game, originally built on the galaxy-raid base: the
+dark look, the build shape, and the CDP test harness all came from there.
+Combine two elements to create new ones, starting from the three additive
+primaries.
+
+## Build & run
+
+```
+npm install
+npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
+npm test                  # 86 headless checks against dist/bundle.html
+npm start                 # dev: watch + serve on http://localhost:8080
+npm run roadroller-optimize   # re-fit rr-config.json after a structural change
+npm run fouc-check        # is the sheet in place before the first paint?
+npm run css-diff          # does cssnano change any computed style?
+npm run music-check       # is the shipped page actually producing audio?
+```
+
+- **Play:** open `dist/bundle.html` — the whole game in one file.
+- The pipeline is galaxy-raid's, size-golf tail included. `prebuild` runs the
+  `tsc` type check, then rollup bundles `src/index.ts` and — in production only
+  — puts it through **closure ADVANCED → eslint `no-var` → terser → the
+  roadroller fork**;
+  `postbuild` inlines the packed script into the `src/index.html` template,
+  minifies the page with **html-minifier-next**, zips it with fixed DOS-epoch
+  timestamps, and recompresses that zip with **ECT then advzip**. Dev
+  (`npm start`) skips the whole tail, so a watch build stays readable and fast.
+- **The CSS is not in the HTML.** `src/style.css` is the readable source of
+  truth; the rollup config runs it through **cssnano** (`postcss.config.js`,
+  preset `advanced`) at config load and injects the minified text into
+  `src/css.ts`, which assigns it to the empty `<style id=sty>` in the template.
+  That puts the stylesheet inside the roadroller-packed payload instead of the
+  page's deflate stream, which is galaxy-raid's OPTIMIZATIONS.md #18 (the move)
+  and #71 (filling a `<style>` that is already in the document, rather than
+  writing or creating one). Measured here, from 10834 bytes:
+  **cssnano alone −564** (CSS still in the HTML), **moving it into the payload a
+  further −545**, **html-minifier −51**, **re-fitting the roadroller params −23**
+  → **9651 bytes, 72.50% of the budget.**
+  `src/style.css` is read ONCE, at config load: after editing it during
+  `npm start`, restart the watcher.
+- Two risks come with that, and both have a probe rather than an assumption
+  behind them. `npm run fouc-check` times the moment the sheet lands against the
+  browser's own first-paint entry (the sheet is applied by a script at the end of
+  `<body>`, after a decode that takes a few hundred ms — currently applied at
+  ~1203ms, first paint ~1236ms, so no unstyled frame). `npm run css-diff` swaps
+  the raw stylesheet back into the packed page and compares every computed
+  property of every element: the only differences cssnano `advanced` produces
+  are its rebased z-indexes (5/6/8/9 → 1/2/3/4, order intact) and its renamed
+  `@keyframes`. Both are safe **only** because nothing in `src/*.ts` reads an
+  animation name or a z-index back out of the CSS; if that ever changes, drop the
+  preset to `default`.
+- The `no-var` stage exists to unify declaration spelling: closure emits `var`,
+  everything else is `let`, and one spelling both suits roadroller's context
+  model and lets terser's `join_vars` merge the now same-kind adjacent
+  declarations. It converts 11 of 15; the 4 survivors are global-scope, where the
+  fixer correctly refuses (a top-level `var` makes a global-object property and
+  `let` does not). Worth 12 bytes here.
+- Still *not* carried over from galaxy-raid, being fitted to that game's chunk:
+  the oxc/swc re-minifies, `paver`, `fn-order.json`. Its `web-resource-inliner`
+  step is not needed either — there is one script to inline, and one string
+  replace does it.
+- **The build is byte-deterministic.** Two things buy that: the pinned DOS-epoch
+  zip timestamp, and `rr-config.json` — roadroller's parameter search is
+  stochastic, so the params are fitted once and pinned, and the build skips
+  `optimize()` entirely. It prints `fitted to this exact chunk` when they match
+  the code being packed and `STALE` when they don't; stale params cost bytes but
+  never break the build. Re-fit with `npm run roadroller-optimize` (~150s), which
+  keeps the incumbent unless the new search actually packs smaller.
+- **`closure-externs.js` is load-bearing.** ADVANCED renames every property it
+  has not been told about, so the file pins the three boundaries that leave the
+  bundle: the `window.CA` test hooks, the localStorage save shapes, and the
+  `ElementDef` fields. It also pins DOM names the pinned 2021-era compiler is too
+  old to know — `gridTemplateColumns` broke every cursor move until it was added,
+  and `block`/`passive` would have failed *silently*. Add to that list, never
+  trim it.
+- Tests need Node 22+ (built-in WebSocket) and a local Chrome/Edge, and drop
+  `.shot-*.png` screenshots next to `check.mjs`. They run against the fully
+  packed production bundle, which is what makes them a real check on the tail.
+
+## Source layout
+
+```
+src/index.html    template: markup only — no CSS, no JS (ids are the contract
+                  with the game code and check.mjs)
+src/style.css     the page stylesheet, minified into the payload at build time
+src/css.ts        fills <style id=sty> with it, imported first from index.ts
+src/music.ts      the background track: the floatbeat engine, and the node
+                  that plays it
+src/sfx.ts        WebAudio synth for the interface sounds, and the shared
+                  AudioContext the music borrows
+src/elements.ts   the element tree: names, quotes, icons, recipes
+src/game.ts       state, grid, combining, discovery cards, goal overlays,
+                  scoring and persistence
+src/input.ts      keyboard listener + gamepad polling
+src/index.ts      entry: boot, gamepad frame loop, window.CA test hooks
+
+experiments/astralblur.js   the original floatbeat, kept as the reference the
+                            port is checked against
+
+rollup.config.mjs      bundling + the production closure/terser/roadroller chain
+postcss.config.js      cssnano (preset advanced), shared by rollup and postbuild
+closure-externs.js     names ADVANCED must not rename (see above)
+rr-config.json         pinned roadroller params — deterministic builds
+postbuild.mjs          inline -> minify -> single file -> zip -> ECT -> advzip
+tools/find-rr-config.mjs   re-fits rr-config.json against dist/pre-roadroller.js
+tools/fouc-probe.mjs       first-paint timing vs. the moment the sheet lands
+tools/css-diff.mjs         computed styles, minified stylesheet vs. raw
+tools/music-probe.mjs      captures the shipped page's own audio callback
+```
+
+## Title screen
+
+The game boots to a title screen — *COLOR* in an animated rainbow over
+*alchemy* in white serif — with four options:
+
+- **Continue** — resume the current run (a completed run returns to its
+  completion screen).
+- **New game** — restart; asks for confirmation when a run is in progress.
+- **Highscore** — the quest best, and the complete-run best, which shows as
+  `???` until the game has actually been completed.
+- **Encyclopedia** — the player's journal: every discovered element with its
+  quote and the combinations *actually performed* (alternate recipes never
+  tried stay unspoiled; starters are listed as "primordial"). The journal
+  persists across runs - New game wipes the board, never the knowledge.
+
+Reopen it any time with the HUD **Menu** button — which names its shortcuts,
+**Esc** and Ⓑ — with either of those (when nothing is selected), or with
+**Start** on a gamepad; Escape/Ⓑ/Start close it again.
+
+## Rules
+
+- You start with **Red**, **Green** and **Blue**.
+- Pick any two elements to attempt a combination. Every attempt costs a move —
+  successes, failures and rediscoveries alike.
+- **Hint** — the HUD button, **H**, or Ⓨ on a gamepad — names two elements you
+  already hold that make something you do not, and costs a move for it, exactly
+  like an attempt. It reveals the *pair* and never the result, so the discovery
+  card keeps its surprise. The price is the point: a hinted run can never
+  quietly out-rank an unhinted one.
+- **One hint at a time.** Until you have actually made it, pressing hint again
+  just shows the same pair and highlights it once more, free — you paid for
+  that answer, so re-reading it is not a second purchase. Only moving on to a
+  *new* answer costs another move, which is also what stops you re-rolling
+  cheaply for an easier pair. A hint retires the moment its result exists, so
+  reaching it some other way (an alternate recipe, or stumbling onto it)
+  releases the next one. It is not saved with the run: a reload forgets the
+  standing hint, which can only ever cost you, never the reverse.
+- Each element has a name, an icon (a plain square for the colors, an emoji or
+  a gradient swatch for the rest, and inline SVG for the Prism) and a quote
+  shown once, with a merge animation the first time it is EVER discovered.
+- A pair that combines into nothing shakes both tiles red; a pair you have
+  already combined pulses the element it makes — so both outcomes are obvious
+  without reading the toast.
+- **The quest:** forge the 🌈 **Rainbow** (White Light + Prism, or Sun + Rain)
+  and the 🦄 **Unicorn**. When you hold both, your move count is compared with
+  the stored best and kept if lower. You can then keep playing.
+- **The endgame:** discover all 69 elements. The total move count of a full
+  clear is the *hidden highscore* — it is only ever compared and shown on the
+  completion screen, which only a full clear reaches.
+- Your run persists across reloads. Restart (double-press to confirm) wipes
+  the run, never the bests.
+
+## Controls
+
+| Input    | Combine | Hint | Cancel / dismiss | Mute |
+|----------|---------|------|------------------|------|
+| Mouse    | click one element, then another — or drag one onto another | the HUD **Hint** button | click the discovery card; drop on empty space | the HUD **Sound** button |
+| Touch    | tap one element, then another — or long-press (~¼s) to lift, then drag onto another | the HUD **Hint** button | tap the discovery card; drop on empty space | the HUD **Sound** button |
+| Keyboard | arrows / WASD move, Enter or Space selects | **H** | Escape (clears the selection, else opens the menu) | **M** |
+| Gamepad  | d-pad or left stick move, Ⓐ selects | Ⓨ | Ⓑ (clears the selection, else opens the menu); Start opens/closes the menu; overlays: ←/→ + Ⓐ | Ⓧ |
+
+Ⓨ is the hint because the top face button is the info slot by convention, and
+it sits diagonally opposite Ⓐ — so a thumb roll off confirm cannot spend a move
+on a hint. Ⓧ is what was left, and mute is the right thing to put on it: the one
+action that costs nothing and is wanted in any phase. Indices 0-3 are also the
+ones every Standard Gamepad agrees on, unlike the triggers, which some drivers
+report as axes instead.
+
+**M**, Ⓧ and the HUD **Sound** button all mute *everything* — music and
+interface sounds — and the key and pad button work from any phase, including the
+title screen and an open discovery card. The choice is remembered across runs and
+reloads. The button is the state as well as the switch: it reads **Sound**, and
+**Muted** dimmed to match, which is why all three routes go through one
+`muteToggle` in `game.ts` — a second path that skipped the repaint would leave
+the label lying. Muting disconnects the music node rather than turning its volume
+down, so it also stops the ~8% of a core the engine costs, and unmuting resumes
+the song where it stopped instead of restarting it.
+
+On touch the long-press is what keeps page scrolling working: a swipe scrolls,
+a hold lifts the tile for dragging.
+
+## Music
+
+The background track is **astral blur**, the 24 kHz floatbeat in
+`experiments/astralblur.js`, ported to run in the page. galaxy-raid plays its
+bytebeats through a `ScriptProcessorNode` that fills the output one sample at a
+time (`src/app/music.ts` there); this does the same, with two output channels
+because the source is stereo floats rather than a byte per sample.
+
+The original is a general synth framework — ADSR envelopes, 2- and 4-operator FM
+voices, wave-shapers, filters, delays, a Householder/Hadamard reverb, a mixer and
+a sequencer, about a thousand lines — and the tune reaches maybe a third of it.
+`src/music.ts` is what this song touches: three waveforms, one envelope shape,
+one random LFO, one voice (a plain oscillator is that same voice with the
+modulator switched off), gain, the low-pass, the multi-tap delay, the diffuser.
+Dropped: the tri/square/shaped waves, the 4-operator voice, the wave-shaping
+synths, the periodic LFO, the constant envelope, mono/softclip/DC-removal, the
+single-tap delay, and the high-pass and mono branches of the filter. Everything
+that was an object with named fields — envelopes, LFOs, notes, effects, mixer
+channels — is an array indexed by position instead. The song itself is six
+pattern strings and an arrangement, one character per tick and two per note.
+
+Two of the original's quirks are reproduced rather than fixed, because they are
+what it sounds like: `filter` allocates its history as
+`Array(2).fill(Array(3).fill(...))`, so all three history rows *and* both
+channels are one shared array — the biquad it looks like collapses to a one-pole
+per section fed by each channel in turn — and `diff` builds an array of random
+signs that it then multiplies by 1 (dead, so it is gone here). Its two real bugs
+are dropped: `m.target in ["freq", ...]` is always false, since `in` tests an
+array's keys, so every modulator is additive — which is what this tune wants
+anyway — and `notefreq()` ignores the second argument it is passed.
+
+**The port is checked, not eyeballed.** The original is run in a `vm` sandbox
+exactly as a floatbeat player evaluates it — the whole file re-evaluated per
+sample, with `t` the sample index and Math's members as bare globals — and its
+output is compared with the port's, sample for sample. `random()` is pinned to a
+constant in both so the reverb's random tap lengths and the LFOs line up;
+otherwise the two are only comparable statistically. The result is bit-identical
+across **250 seconds — 12 million samples**, every voice in the arrangement
+(max absolute difference **0**), which is the only reason the aggressive cuts
+above are safe to make. That render also settles the output level: the tune's own
+peak reaches **1.22** where the arrangement is densest, so the 0.4 the player
+applies is what keeps it clear of clipping, not just quiet.
+
+The engine runs at the 24 kHz the song was written for and the output is
+interpolated up to whatever the AudioContext runs at, which is galaxy-raid's
+arrangement — its bytebeats step a song clock of their own — and halves the cost:
+**8% of one core instead of 15%** at a 48 kHz context. Generating at the context
+rate is a one-word change in `startMusic` if that ever looks like the better
+trade.
+
+The track costs **1511 bytes** zipped — 9651 to 11246, of which the song data is
+six strings totalling 571 characters; the mute control and its HUD button added
+another **170**, for **11416 bytes, 85.76% of the 13KB budget**.
+
+It starts on the first pointer or key event, since an AudioContext may not run
+before a gesture, and it shares the context `src/sfx.ts` creates. **M** or Ⓧ
+mutes it along with the interface sounds — see [Controls](#controls); the flag
+lives in `src/sfx.ts` because both halves of the audio read it.
+
+`npm run music-check` is the end-to-end check the node comparison cannot make:
+it wraps `createScriptProcessor` before the bundle parses, dispatches a gesture,
+and captures what the game's own callback writes into the output buffer, then
+reports level and rejects silence or NaN. (Its injected script is wrapped in an
+arrow function for a reason — a bare `const` there is a global lexical binding,
+and colliding with one of the bundle's own short names is a SyntaxError that
+stops the whole game from loading.)
+
+## Recipe tree — SPOILERS
+
+A perfect quest is **34 moves**, through the Sun + Rain rainbow; the two Prism
+routes cost **37**. That gap used to be seven moves and is now three: the quest
+already has to reach Charcoal on its way to Black, and a Diamond is only a Lava
+away from there, so the Prism is a much shorter detour than it looks.
+A perfect full clear is **66** - one move per element, since nothing can be
+made twice. Best scores are scoped to the current recipe tree, so all of this
+started fresh records automatically.
+
+The Rainbow half of the quest is cheap. Everything else is not, because the two
+remaining halves both bottom out in the same place. The Unicorn needs a
+**Horse**, which pulls the entire life branch onto the critical path (mineral
+chain -> Acid + Metal battery -> Electricity -> Lightning -> Life -> Animal,
+plus a Field for it to stand in). Magic needs a **Star**, which needs Night -
+and since Night became Black + Sky, that pulls the whole wood chain on too
+(Axe + Tree -> Wood -> Charcoal -> Black). Both branches run off one
+Earth/Lava/Stone/Metal spine, which is what keeps 34 from being far worse, and
+the Cloud earns its keep twice: once for the Rain, once for the Lightning.
+
+Additive color mixing does the early work: primaries pair into secondaries,
+and any **complementary pair** (Blue+Yellow, Red+Cyan, Green+Magenta) makes
+White Light. **Black** is the deliberate exception - no two lights mix to
+darkness, so the one color the light half of the tree cannot reach has to
+arrive through the material half instead, as Charcoal + Stone.
+
+Several elements have more than one route, so an intuitive guess tends to land
+somewhere. Three of them are deliberately cyclic - Fire + Ice remakes Water,
+which Ice itself needs; Penguin + Air hands back the Bird the Penguin came from;
+and Wolf + Dog is just another Dog - flavor for a pair players try, never a
+cheaper path.
+
+| Element | Recipe |
+|---|---|
+| Yellow | Red + Green |
+| Magenta | Red + Blue |
+| Cyan | Green + Blue |
+| White Light | Blue + Yellow · Red + Cyan · Green + Magenta |
+| Orange | Red + Yellow |
+| Violet | Blue + Magenta |
+| Indigo | Blue + Violet |
+| Pink | Red + White Light |
+| Air | Blue + White Light |
+| Sky | Sun + Air |
+| Gold | Yellow + Orange |
+| Aurora | Green + Night · Magenta + Night |
+| Water | Blue + Cyan · Fire + Ice |
+| Fire | Red + Orange |
+| Earth | Green + Orange |
+| Lava | Earth + Fire |
+| Stone | Lava + Water |
+| Metal | Fire + Stone |
+| Axe | Fire + Metal |
+| Sand | Earth + Air · Earth + Sun · Stone + Air |
+| Glass | Sand + Fire |
+| Mirror | Glass + Metal |
+| Sun | Fire + Air |
+| Night | Black + Sky |
+| Star | Night + White Light |
+| Moon | Night + Sun |
+| Cloud | Sky + Water · Water + Air |
+| Rain | Cloud + Water |
+| Acid | Green + Water |
+| Electricity | Acid + Metal |
+| Lightning | Cloud + Electricity |
+| Storm | Lightning + Rain |
+| Tornado | Air + Storm |
+| Life | Lightning + Water |
+| Animal | Earth + Life |
+| Horse | Animal + Field |
+| Wolf | Animal + Moon |
+| Bone | Animal + Fire · Wolf + Fire · Horse + Fire · Unicorn + Fire · Bear + Fire · Polar Bear + Fire · Dog + Fire · Cow + Fire · Bear + Horse · Wolf + Horse · Bear + Dog |
+| Dog | Wolf + Bone · Dog + Wolf |
+| Cow | Animal + Grass |
+| Bird | Air + Animal · Air + Penguin |
+| Penguin | Bird + Ice |
+| Fish | Animal + Water |
+| Owl | Bird + Night |
+| Phoenix | Bird + Fire |
+| Bee | Animal + Flower |
+| Honey | Bee + Flower |
+| Bear | Animal + Honey |
+| Polar Bear | Bear + Ice |
+| Ice | Water + Night |
+| Snow | Cloud + Ice |
+| Prism | Diamond + Glass |
+| **Rainbow** | **White Light + Prism** · **Sun + Rain** · **Prism + Sun** |
+| Magic | Star + Aurora |
+| **Unicorn** | **Horse + Magic** |
+| Sunset | Sun + Pink |
+| Grass | Earth + Water · Life + Green |
+| Tree | Water + Grass |
+| Wood | Axe + Tree |
+| Charcoal | Wood + Fire |
+| Black | Charcoal + Stone |
+| Grey | Black + White Light |
+| Diamond | Charcoal + Lava |
+| Field | Earth + Grass |
+| Flower | Grass + Pink |
+| Sunflower | Sun + Flower · Flower + Yellow |
