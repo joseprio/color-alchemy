@@ -10,7 +10,7 @@ primaries.
 ```
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
-npm test                  # 86 headless checks against dist/bundle.html
+npm test                  # 87 headless checks against dist/bundle.html
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fouc-check        # is the sheet in place before the first paint?
@@ -108,12 +108,15 @@ tools/find-rr-config.mjs   re-fits rr-config.json against dist/pre-roadroller.js
 tools/fouc-probe.mjs       first-paint timing vs. the moment the sheet lands
 tools/css-diff.mjs         computed styles, minified stylesheet vs. raw
 tools/music-probe.mjs      captures the shipped page's own audio callback
+
+experiments/menu-typography.html   the seven title settings the current one
+                                   was chosen from
 ```
 
 ## Title screen
 
 The game boots to a title screen — *COLOR* in an animated rainbow over
-*alchemy* in white serif — with four options:
+*AlchemY* in small caps, the two locked to the same width — with four options:
 
 - **Continue** — resume the current run (a completed run returns to its
   completion screen).
@@ -243,7 +246,8 @@ trade.
 
 The track costs **1511 bytes** zipped — 9651 to 11246, of which the song data is
 six strings totalling 571 characters; the mute control and its HUD button added
-another **170**, for **11416 bytes, 85.76% of the 13KB budget**.
+another **170**. The title typography (Arial Black, and the AlchemY lockup)
+added **44**, for **11460 bytes, 86.09% of the 13KB budget**.
 
 It starts on the first pointer or key event, since an AudioContext may not run
 before a gesture, and it shares the context `src/sfx.ts` creates. **M** or Ⓧ

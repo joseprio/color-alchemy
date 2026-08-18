@@ -1,0 +1,394 @@
+<!doctype html>
+<!-- Title-screen typography options. Open it in a browser; nothing to build.
+     Click a card — or press its number — for the full-size view, arrows to move
+     between options, C to hide the notes, Esc back.
+
+     Three rules every option below obeys:
+
+       1. WEB-SAFE FAMILIES ONLY. Courier New, Georgia, Times New Roman,
+          Palatino / Book Antiqua, Arial, Arial Black, Trebuchet MS, Verdana,
+          Impact — the set that is on Windows and macOS without asking. No
+          webfont (a network request and several KB against a 13KB budget) and
+          no ui-monospace/system-ui, which resolve to a different face on every
+          machine.
+
+       2. COLOR AND AlchemY ARE THE SAME WIDTH. Not tuned by eye per font: the
+          pair sits in a shrink-to-fit box, so the title sets the measure and the
+          subtitle's letters are spread across exactly that with flex
+          space-between. It holds at any size, in any family, and on a machine
+          that falls back to something else. Each card measures both and prints
+          the difference, so the claim is checkable rather than asserted.
+
+       3. AlchemY, SET IN SMALL CAPS. Written with both an initial and a
+          terminal capital, so font-variant: small-caps leaves A and Y at full
+          height and drops LCHEM to small capitals.
+
+     The gradient, the flow animation and every colour are untouched — this is a
+     typography question. Option 1 is what ships today, kept as the control. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — title typography</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    background-attachment: fixed;
+    padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 82ch; margin: 0 0 4px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 26px; }
+  kbd {
+    background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+    padding: 1px 6px; color: #7f9fc0; font: inherit; font-size: 12px;
+  }
+
+  /* --- the grid of options ------------------------------------------------ */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); gap: 22px; }
+  .card {
+    border: 1px solid #223052; border-radius: 12px; background: #0c112288;
+    overflow: hidden; cursor: pointer; transition: border-color .12s, transform .12s;
+  }
+  .card:hover { border-color: #3d5584; transform: translateY(-2px); }
+  .card h2 {
+    margin: 0; padding: 10px 14px; font-size: 13px; letter-spacing: .16em;
+    color: #ffd75e; font-weight: 700; border-bottom: 1px solid #16203a;
+    display: flex; justify-content: space-between; gap: 10px;
+  }
+  .card h2 span { color: #55708e; letter-spacing: 0; font-weight: 400; }
+  .card .note { padding: 10px 14px 12px; color: #8fb4d8; font-size: 12.5px; border-top: 1px solid #16203a; }
+  .meas { margin-top: 8px; color: #55708e; }
+  .meas b { color: #7dff9a; font-weight: 400; }
+  .meas b.off { color: #ffb36b; }
+  .warn { margin-top: 8px; color: #ffb36b; }
+
+  /* The frame crops a full-size stage scaled down, so a card shows the real
+     thing at 46% rather than a small-type imitation of it. */
+  .frame { width: 100%; aspect-ratio: 860 / 560; overflow: hidden; position: relative; }
+  .frame .stage { position: absolute; top: 0; left: 0; width: 860px; height: 560px; transform-origin: top left; }
+
+  /* --- one title screen --------------------------------------------------- */
+  .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+
+  /* The lockup. width: fit-content makes the box exactly as wide as its widest
+     child — the title — and the subtitle then spreads its letters across that
+     measure. The negative margin cancels the trailing letter-space CSS adds
+     after the final R, which would otherwise make the box wider than the ink. */
+  .lock { width: fit-content; }
+  .ttl {
+    font-size: 96px; font-weight: 800; letter-spacing: .14em; margin-right: -.14em; line-height: 1;
+    background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff, #ff3b30);
+    background-size: 200% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: rbflow 5s linear infinite;
+    filter: drop-shadow(0 0 18px #ffffff22);
+  }
+  @keyframes rbflow { to { background-position: 200% 0; } }
+  .sub {
+    width: 100%; display: flex; justify-content: space-between;
+    font-variant: small-caps; font-family: Georgia, "Times New Roman", Times, serif;
+    color: #fff; font-size: 34px; line-height: 1.1; margin: 2px 0 26px;
+  }
+  .menu { display: flex; flex-direction: column; gap: 10px; width: 250px; }
+  .btn {
+    background: #101528cc; color: #cfe3ff; border: 1px solid #33436e; border-radius: 10px;
+    font: 14px/1.45 monospace; font-size: 15px; padding: 10px 16px; cursor: pointer;
+    text-align: center;
+  }
+  .btn.on { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
+
+  /* Option 1 is the control: today's screen, with its own italic subtitle and no
+     lockup, so the before and after sit side by side rather than being described.
+     It keeps the real text (not generated content) so the measurement below can
+     see its actual ink — which is the whole point of showing it. */
+  .v0 .sub {
+    display: block; width: auto; font-variant: normal; font-style: italic;
+    letter-spacing: .45em; text-indent: .45em; text-align: center;
+  }
+
+  /* ======================================================================== */
+  /*  the options: family, weight, size, tracking, and the space between the  */
+  /*  three blocks. Nothing else.                                             */
+  /* ======================================================================== */
+
+  /* v1 — one voice: the game is monospace everywhere else (HUD, footer, tiles,
+     encyclopedia) and the serif subtitle is its only outlier. Courier New is the
+     web-safe mono, and its narrow letters leave the lockup wide. */
+  .v1 .ttl { font-family: "Courier New", Courier, monospace; font-weight: 700; letter-spacing: .12em; margin-right: -.12em; }
+  .v1 .sub { font-family: "Courier New", Courier, monospace; font-size: 26px; color: #8fb4d8; margin: 12px 0 30px; }
+  .v1 .btn { letter-spacing: .16em; font-size: 13px; text-transform: uppercase; padding: 11px 16px; }
+
+  /* v2 — title page: Georgia throughout, tracking pulled back to what a book
+     would set. Georgia is one of the few web-safe faces with real small caps
+     rather than capitals scaled down by the browser. */
+  .v2 .ttl { font-family: Georgia, "Times New Roman", Times, serif; font-weight: 700; letter-spacing: .05em; margin-right: -.05em; }
+  .v2 .sub { font-size: 32px; color: #cfe3ff; margin: 0 0 30px; }
+  .v2 .btn { font-family: Georgia, "Times New Roman", Times, serif; font-size: 17px; }
+
+  /* v3 — plate: Palatino's old-style serif is quieter than Georgia and its
+     small caps are wider, which suits a spread line. */
+  .v3 .ttl { font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif; font-weight: 700; letter-spacing: .08em; margin-right: -.08em; font-size: 100px; }
+  .v3 .sub { font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif; font-size: 30px; color: #cfe3ff; margin: 2px 0 32px; }
+  .v3 .btn { font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif; font-size: 18px; }
+
+  /* v4 — arcade (SHIPPED): Arial Black closes the title into one solid object,
+     and the subtitle answers in plain Arial so the pair does not shout twice.
+
+     Arial Black is a family, not a weight of Arial. Measured at 120px in Chrome
+     on Windows (COLOR, advance / ink coverage):
+         "Arial Black" 400 / 700 / 900   464.6px   59%    ← one face, no synthesis
+         Arial 400                       426.7px   34.5%
+         Arial 700 (real Arial Bold)     433.3px   47.3%
+         Arial 900                       464.6px   59%    ← Windows resolves to Arial Black
+     So Arial Black is 7% wider and carries 25% more ink than Arial Bold, and it
+     renders identically whatever weight is asked of it. font-weight: 900 is
+     therefore free here, and it is the fallback's instruction: where Arial Black
+     is missing, Arial is asked for its heaviest face instead of its regular one.
+     (macOS keeps the two families apart, so Arial 900 there is Arial Bold —
+     which is why the family is named explicitly rather than implied.) */
+  .v4 .ttl { font-family: "Arial Black", Arial, Helvetica, sans-serif; font-weight: 900; letter-spacing: 0; margin-right: 0; font-size: 100px; }
+  .v4 .sub { font-family: Arial, Helvetica, sans-serif; font-weight: 700; font-size: 27px; color: #8fb4d8; margin: 6px 0 30px; }
+  .v4 .btn { font-family: Arial, Helvetica, sans-serif; font-size: 16px; letter-spacing: .04em; }
+
+  /* v5 — poster: Impact is the one condensed face that is everywhere, so the
+     title grows tall instead of wide — the useful direction on a phone, where
+     17vw is the real limit. Trebuchet's small caps underneath. */
+  .v5 .ttl { font-family: Impact, "Arial Black", Arial, sans-serif; font-weight: 400; letter-spacing: .03em; margin-right: -.03em; font-size: 124px; }
+  .v5 .sub { font-family: "Trebuchet MS", Tahoma, Arial, sans-serif; font-size: 28px; color: #8fb4d8; margin: 4px 0 30px; }
+  .v5 .btn { letter-spacing: .1em; font-size: 14px; }
+
+  /* v6 — wide: Verdana is the widest web-safe sans, so very little tracking
+     already fills the line, with Georgia small caps as the counterweight. */
+  .v6 .ttl { font-family: Verdana, Geneva, Tahoma, sans-serif; font-weight: 700; letter-spacing: .06em; margin-right: -.06em; font-size: 86px; }
+  .v6 .sub { font-size: 30px; color: #8fb4d8; margin: 4px 0 32px; }
+  .v6 .btn { font-family: Verdana, Geneva, Tahoma, sans-serif; font-size: 14px; letter-spacing: .02em; }
+
+  /* --- the full-size view ------------------------------------------------- */
+  #full {
+    position: fixed; inset: 0; z-index: 9; display: none; background: #05060f;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+  }
+  #full.show { display: block; }
+  #full .stage { position: absolute; inset: 0; }
+  #full .panel {
+    position: absolute; left: 0; right: 0; bottom: 0; max-height: 52vh;
+    display: flex; flex-direction: column; background: #060912ee;
+    border-top: 1px solid #223052;
+  }
+  #full.bare .panel { display: none; }
+  #full .bar { display: flex; align-items: center; gap: 16px; padding: 10px 16px; color: #8fb4d8; font-size: 12.5px; }
+  #full .bar b { color: #ffd75e; letter-spacing: .16em; }
+  #full .bar .spacer { flex: 1; }
+  pre {
+    margin: 0; padding: 12px 14px; background: #080c18; border-top: 1px solid #16203a;
+    color: #7f9fc0; font-size: 12px; line-height: 1.5; overflow: auto; white-space: pre;
+  }
+  .cur { color: #7dff9a; }
+</style>
+</head>
+<body>
+
+<h1>COLOR ALCHEMY — TITLE TYPOGRAPHY</h1>
+<p class="lede">
+  Six settings plus the current one. Every family is <b>web-safe</b> — Courier New,
+  Georgia, Palatino, Arial, Arial Black, Impact, Trebuchet MS, Verdana — so nothing
+  depends on a download or on what a particular machine happens to have.
+</p>
+<p class="lede">
+  <b>COLOR and AlchemY are the same width by construction</b>, not by eye: the pair sits
+  in a shrink-to-fit box, so the title sets the measure and the subtitle spreads its
+  letters across exactly that. Each card measures both and prints the difference.
+  <b>AlchemY</b> carries an initial and a terminal capital, so small caps leave A and Y
+  at full height and drop LCHEM.
+</p>
+<p class="keys">
+  <kbd>click</kbd> or <kbd>1</kbd>–<kbd>7</kbd> full size &middot;
+  <kbd>←</kbd> <kbd>→</kbd> next option &middot; <kbd>C</kbd> hide the notes &middot;
+  <kbd>Esc</kbd> back
+</p>
+
+<div class="grid" id="grid"></div>
+
+<div id="full">
+  <div class="stage" id="fullStage"></div>
+  <div class="panel">
+    <div class="bar">
+      <b id="fullName"></b>
+      <span id="fullNote"></span>
+      <span class="spacer"></span>
+      <span><kbd>←</kbd> <kbd>→</kbd> compare &middot; <kbd>C</kbd> hide this &middot; <kbd>Esc</kbd> back</span>
+    </div>
+    <pre id="fullCss"></pre>
+  </div>
+</div>
+
+<script>
+const OPTIONS = [
+  ["current", "What ships today, kept as the control: an 800-weight tracked title over a Georgia italic 'alchemy' at .45em tracking, set to its own width. The serif is the only one in the game."],
+  ["one voice", "Courier New — the web-safe monospace — for the whole screen, which is what the HUD, footer, tiles and encyclopedia already use. Buttons go small, uppercase and tracked."],
+  ["title page", "Georgia throughout at book tracking, and Georgia is one of the few web-safe faces with real small caps rather than capitals the browser scaled down."],
+  ["plate", "Palatino's old-style serif, quieter than Georgia, with wider small caps that suit a spread line."],
+  ["arcade — SHIPPED", "Arial Black closes the title into one solid object; the subtitle answers in plain Arial so the pair does not shout twice. Arial Black is a separate family, 7% wider and 25% more ink than Arial Bold; font-weight 900 costs nothing on it and gives the fallback its heaviest face."],
+  ["poster", "Impact is the one condensed face that is everywhere, so the title grows tall instead of wide — the useful direction on a phone, where 17vw is the real limit."],
+  ["wide", "Verdana is the widest web-safe sans, so very little tracking already fills the line; Georgia small caps underneath as the counterweight."],
+];
+
+// Which named face each option leans on, so a silent fallback cannot be mistaken
+// for the option itself. A stack counts as satisfied if ANY of its names is
+// present — Palatino answers to three across platforms.
+const NEEDS = [["Georgia"], ["Courier New"], ["Georgia"], ["Palatino Linotype", "Book Antiqua", "Palatino"],
+               ["Arial Black"], ["Impact"], ["Verdana"]];
+const probe = document.createElement("canvas").getContext("2d");
+function hasFont(name) {
+  const test = "MWQ_ilnm@#%wi";
+  probe.font = "72px monospace";
+  const base = probe.measureText(test).width;
+  probe.font = '72px "' + name + '", monospace';
+  return probe.measureText(test).width !== base;
+}
+function missing(i) { return NEEDS[i].some(hasFont) ? [] : NEEDS[i]; }
+
+// The CSS each option needs, read back out of this page's own stylesheet and
+// re-pointed at the game's selectors, so the demo and the recipe cannot drift.
+const SELECTOR = { ".ttl": "#ttl", ".sub": "#tsub", ".btn": "#menu button, #mback" };
+function cssFor(i) {
+  if (i === 0) return "/* no change — this is the current CSS */";
+  const out = [
+    "/* the lockup, shared by every option below */",
+    "#ttlwrap { width: fit-content; }      /* new element wrapping #ttl + #tsub */",
+    "#tsub {",
+    "  width: 100%; display: flex; justify-content: space-between;",
+    "  font-variant: small-caps;           /* markup: one <span> per letter of AlchemY */",
+    "}",
+    "",
+  ];
+  for (const sheet of document.styleSheets) {
+    for (const rule of sheet.cssRules) {
+      if (!rule.selectorText || !rule.selectorText.startsWith(".v" + i + " ")) continue;
+      const target = SELECTOR[rule.selectorText.slice(4)] || rule.selectorText;
+      const body = rule.style.cssText.split(";").map((d) => d.trim()).filter(Boolean)
+        .map((d) => "  " + d + ";").join("\n");
+      out.push(target + " {\n" + body + "\n}");
+    }
+  }
+  return out.join("\n");
+}
+
+function stage(i) {
+  const d = document.createElement("div");
+  d.className = "stage v" + i;
+  d.innerHTML =
+    '<div class="lock">' +
+      '<div class="ttl">COLOR</div>' +
+      // the control keeps today's word and today's spelling; every other option
+      // gets AlchemY, one span per letter, for the spread
+      '<div class="sub">' +
+        (i === 0 ? "alchemy" : [..."AlchemY"].map((c) => "<span>" + c + "</span>").join("")) +
+      "</div>" +
+    "</div>" +
+    '<div class="menu">' +
+      '<div class="btn on">Continue</div>' +
+      '<div class="btn">New game</div>' +
+      '<div class="btn">Highscore</div>' +
+      '<div class="btn">Encyclopedia</div>' +
+    "</div>";
+  return d;
+}
+
+// Ink width of each word, so "the same width" is measured rather than claimed.
+// The title's box carries a trailing letter-space that the negative margin
+// cancels in layout but not in the rect, so subtract it back out here.
+function widths(stageEl) {
+  const ttl = stageEl.querySelector(".ttl"), sub = stageEl.querySelector(".sub");
+  const spans = sub.querySelectorAll("span");
+  const scale = stageEl.getBoundingClientRect().width / 860 || 1;
+  const track = parseFloat(getComputedStyle(ttl).letterSpacing) || 0;
+  const a = ttl.getBoundingClientRect().width / scale - track;
+  let b;
+  if (spans.length) {
+    // spread: first letter's left edge to the last letter's right edge
+    b = (spans[spans.length - 1].getBoundingClientRect().right - spans[0].getBoundingClientRect().left) / scale;
+  } else {
+    // the control: the block is as wide as its parent, so measure the text
+    // itself with a Range, less its own trailing letter-space
+    const r = document.createRange();
+    r.selectNodeContents(sub);
+    b = r.getBoundingClientRect().width / scale - (parseFloat(getComputedStyle(sub).letterSpacing) || 0);
+  }
+  return [a, b];
+}
+
+const grid = document.getElementById("grid");
+OPTIONS.forEach(([name, note], i) => {
+  const card = document.createElement("div");
+  card.className = "card";
+  const gone = missing(i);
+  card.innerHTML =
+    "<h2>" + (i + 1) + ". " + name + (i === 0 ? ' <span class="cur">in the game now</span>' : "<span>press " + (i + 1) + "</span>") + "</h2>" +
+    '<div class="frame"></div>' +
+    '<div class="note">' + note +
+      '<div class="meas"></div>' +
+      (gone.length ? '<div class="warn">' + gone.join(" / ") + " not installed here — showing the fallback</div>" : "") +
+    "</div>";
+  card.querySelector(".frame").appendChild(stage(i));
+  card.addEventListener("click", () => open(i));
+  grid.appendChild(card);
+});
+
+// the stages are laid out 860px wide; scale each to its frame, then measure
+function fit() {
+  for (const frame of document.querySelectorAll(".frame")) {
+    frame.firstChild.style.transform = "scale(" + frame.clientWidth / 860 + ")";
+  }
+  document.querySelectorAll(".card").forEach((card) => {
+    const [a, b] = widths(card.querySelector(".stage"));
+    const off = (Math.abs(a - b) / a) * 100;
+    // name the word the card actually shows: the control still says "alchemy"
+    const word = card.querySelector(".sub").textContent;
+    card.querySelector(".meas").innerHTML =
+      "COLOR " + Math.round(a) + "px &middot; " + word + " " + Math.round(b) + "px &middot; " +
+      '<b class="' + (off > 2 ? "off" : "") + '">' + (off < 0.05 ? "identical" : off.toFixed(1) + "% apart") + "</b>";
+  });
+}
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+
+let cur = -1;
+const full = document.getElementById("full");
+function open(i) {
+  cur = (i + OPTIONS.length) % OPTIONS.length;
+  const holder = document.getElementById("fullStage");
+  holder.className = "stage v" + cur;
+  holder.innerHTML = stage(cur).innerHTML;
+  const gone = missing(cur);
+  const [a, b] = widths(holder);
+  document.getElementById("fullName").textContent = cur + 1 + ". " + OPTIONS[cur][0];
+  document.getElementById("fullNote").textContent =
+    OPTIONS[cur][1] +
+    "  [COLOR " + Math.round(a) + "px, AlchemY " + Math.round(b) + "px]" +
+    (gone.length ? "  ⚠ " + gone.join(" / ") + " missing here — showing the fallback" : "");
+  document.getElementById("fullCss").textContent = cssFor(cur);
+  full.classList.add("show");
+}
+function close() { full.classList.remove("show"); cur = -1; }
+
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape") return close();
+  if (e.key >= "1" && e.key <= String(OPTIONS.length)) return open(+e.key - 1);
+  if (e.key === "c" || e.key === "C") return full.classList.toggle("bare");
+  if (cur < 0) return;
+  if (e.key === "ArrowRight") open(cur + 1);
+  if (e.key === "ArrowLeft") open(cur - 1);
+});
+</script>
+</body>
+</html>

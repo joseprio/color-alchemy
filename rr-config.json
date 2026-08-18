@@ -1,8 +1,7 @@
 {
   "maxMemoryMB": 150,
   "allowFreeVars": true,
-  "modelRecipBaseCount": 17,
-  "modelMaxCount": 6,
+  "modelRecipBaseCount": 18,
   "matchModel": 1,
   "wordModel": 1,
   "sse": 1,
@@ -10,23 +9,23 @@
   "sparseSelectors": [
     0,
     1,
+    2,
     3,
     5,
-    6,
     7,
     11,
-    28,
-    51,
-    225,
+    30,
+    105,
     385,
+    403,
     448
   ],
-  "precision": 14,
+  "precision": 15,
   "mixerContextBits": 8,
-  "mixerRecipInitialWeight": 10,
-  "recipLearningRate": 378,
+  "mixerRecipInitialWeight": 9,
+  "recipLearningRate": 474,
   "_fittedTo": {
-    "hash": "5c66c1e3a5fe",
-    "bytes": 37250
+    "hash": "a7460ab470e8",
+    "bytes": 37439
   }
 }

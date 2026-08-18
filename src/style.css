@@ -154,8 +154,18 @@ footer { margin: 4px 0 18px; color: #55708e; font-size: 11px; text-align: center
 }
 .tscreen.show { display: flex; }
 body.menu header, body.menu #hud, body.menu #grid, body.menu footer { display: none; }
+/* The title lockup: shrink-to-fit, so its width is COLOR's width and #tsub
+   below spreads AlchemY across the same measure. Nothing here is tuned per
+   font — swap the family and the two stay matched. */
+#ttlwrap { width: fit-content; }
+/* "Arial Black" is a family, not a weight of Arial: measured at 120px it is 7%
+   wider and carries 25% more ink than Arial Bold, and it renders the same at
+   any weight (no synthetic bolding). font-weight 900 is the fallback's
+   instruction — where Arial Black is missing, ask Arial for its heaviest face
+   rather than getting regular. */
 #ttl {
-  font-size: min(17vw, 96px); font-weight: 800; letter-spacing: .14em; line-height: 1;
+  font-family: "Arial Black", Arial, Helvetica, sans-serif;
+  font-size: min(17vw, 100px); font-weight: 900; letter-spacing: 0; line-height: 1;
   background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff, #ff3b30);
   background-size: 200% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -163,15 +173,21 @@ body.menu header, body.menu #hud, body.menu #grid, body.menu footer { display: n
   filter: drop-shadow(0 0 18px #ffffff22);
 }
 @keyframes rbflow { to { background-position: 200% 0; } }
+/* Spread to the title's width by flex, not by a letter-spacing that would
+   have to be re-guessed for every font size. Arial has no true small caps, so
+   the browser scales its capitals — which is the intended look here: a quieter
+   line under a heavy title, not a second display face. */
 #tsub {
-  font-family: Georgia, "Times New Roman", serif; font-style: italic; color: #fff;
-  font-size: min(7vw, 34px); letter-spacing: .45em; text-indent: .45em; margin: 2px 0 26px;
+  width: 100%; display: flex; justify-content: space-between;
+  font-family: Arial, Helvetica, sans-serif; font-weight: 700; font-variant: small-caps;
+  color: #8fb4d8; font-size: min(4.6vw, 27px); line-height: 1.1; margin: 6px 0 30px;
 }
 #menu { display: flex; flex-direction: column; gap: 10px; width: 250px; }
 #menu[hidden] { display: none; }
 #menu button, #mback {
   background: #101528cc; color: #cfe3ff; border: 1px solid #33436e; border-radius: 10px;
-  font: inherit; font-size: 15px; padding: 10px 16px; cursor: pointer;
+  font: inherit; font-family: Arial, Helvetica, sans-serif; font-size: 16px;
+  letter-spacing: .04em; padding: 10px 16px; cursor: pointer;
 }
 #menu button.obfocus, #mback.obfocus { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
 #menu button.armed { border-color: #a04040; color: #ff8080; }

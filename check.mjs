@@ -37,10 +37,22 @@ check("boot: goal line names Rainbow and Unicorn",
   await evalJs(`document.getElementById('goal').textContent.includes('Rainbow')`));
 
 // --- title screen ---------------------------------------------------------
-check("boot: title screen shows COLOR / alchemy",
+check("boot: title screen shows COLOR / AlchemY, locked to one width",
   s.phase === "menu" &&
   await evalJs(`document.getElementById('ttl').textContent === 'COLOR'
-    && document.getElementById('tsub').textContent === 'alchemy'`));
+    && document.getElementById('tsub').textContent === 'AlchemY'
+    && document.getElementById('tsub').children.length === 7`));
+// The two words are one lockup: #ttlwrap is shrink-to-fit so COLOR sets the
+// measure, and #tsub's letters spread across it. Measured rather than assumed —
+// a font change or a stray width would part them silently.
+check("boot: COLOR and AlchemY come out the same width", await evalJs(`(() => {
+  const t = document.getElementById('ttl'), s = document.getElementById('tsub');
+  const track = parseFloat(getComputedStyle(t).letterSpacing) || 0;
+  const a = t.getBoundingClientRect().width - track;
+  const k = s.children;
+  const b = k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left;
+  return Math.abs(a - b) / a < 0.02;
+})()`));
 check("boot: menu offers the four options",
   (await evalJs(`[...document.querySelectorAll('#menu button')].map(b => b.textContent).join()`)) ===
   "Continue,New game,Highscore,Encyclopedia");

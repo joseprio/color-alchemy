@@ -7,7 +7,8 @@
      src/css.ts fills it with src/style.css, minified, so the stylesheet
      travels inside the packed payload rather than in this file.
      Element ids (goal/hud/moves/count/bestq/hnt/mnu/grid/toast/modal/mcard/
-     overlay/ocard/title/ttl/tsub/menu/mpanel/mhead/mlist/mback/snd) are the
+     overlay/ocard/title/ttlwrap/ttl/tsub/menu/mpanel/mhead/mlist/mback/snd)
+     are the
      contract between this template, the game code, and check.mjs — rename in
      all three or not at all. -->
 <html>
@@ -33,8 +34,14 @@
 <div id="grid"></div>
 <footer>combine: tap two elements &middot; keys: arrows + Enter, Esc cancels &middot; pad: d-pad/stick + &#9398;, &#9399; cancels / opens the menu &middot; hint: H / &#9422; &mdash; costs a move &middot; mute: M / &#9421;</footer>
 <div id="title" class="tscreen">
-  <div id="ttl">COLOR</div>
-  <div id="tsub">alchemy</div>
+  <!-- #ttlwrap is shrink-to-fit, so COLOR sets the measure and #tsub spreads
+       its letters across exactly that width. One span per letter is what makes
+       the spread possible; AlchemY keeps an initial and a terminal capital so
+       small-caps leaves A and Y full height. -->
+  <div id="ttlwrap">
+    <div id="ttl">COLOR</div>
+    <div id="tsub"><span>A</span><span>l</span><span>c</span><span>h</span><span>e</span><span>m</span><span>Y</span></div>
+  </div>
   <div id="menu"></div>
   <div id="mpanel" hidden>
     <div id="mhead"></div>
