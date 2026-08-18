@@ -250,9 +250,13 @@ export default {
     production && roadroller,
     !production &&
       serve({
-        open: true,
+        // HOST=0.0.0.0 to reach the dev server from a phone on the same
+        // network — `npm run phone` prints the address and a QR for it. It
+        // stays on localhost otherwise, and the browser only pops open for a
+        // plain `npm start`, not when a phone is the intended target.
+        open: !process.env.HOST,
         contentBase: "dist",
-        host: "localhost",
+        host: process.env.HOST || "localhost",
         port: 8080,
       }),
   ],

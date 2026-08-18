@@ -11,6 +11,7 @@
     "css-diff": "node tools/css-diff.mjs",
     "music-check": "node tools/music-probe.mjs",
     "mobile-check": "node tools/responsive-probe.mjs",
+    "phone": "node tools/phone.mjs",
     "start": "rollup -c -w",
     "test": "node check.mjs"
   },
@@ -27,6 +28,7 @@
     "html-minifier-next": "^5.1.3",
     "postcss": "^8.5.26",
     "postcss-cli": "^11.0.1",
+    "qrcode": "^1.5.4",
     "roadroller": "file:../roadroller",
     "rollup": "^4.30.0",
     "rollup-plugin-serve": "^3.0.0",
