@@ -9,6 +9,8 @@
 //
 // It also checks the mute path: muting stops the pump, so no new buffers get
 // scheduled at all, which is the observable form of "costs nothing while off".
+// The music only plays during the game, so the probe leaves the title screen
+// first — on the title itself nothing is scheduled at all, by design.
 // usage: node tools/music-probe.mjs   (npm run music-check)
 import { launch } from "../cdp.mjs";
 import { writeFileSync } from "fs";
@@ -58,7 +60,20 @@ await t.sleep(1500);
 // a real gesture is not needed headless (--autoplay-policy=no-user-gesture-required),
 // but the game only starts the music on one, so dispatch it
 await t.evalJs(`document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))`);
+await t.sleep(1800);
+
+// --- the music plays during the GAME, not over the title screen -------------
+const count = () => t.evalJs(`window.__scheduled`);
+const onTitle = await count();
+console.log(`title screen, ${1.8}s after a gesture: ${onTitle} buffer(s) scheduled` +
+  (onTitle === 0 ? "  — silent, as intended" : "  — SHOULD BE SILENT"));
+
+const enterGame = () =>
+  t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Continue').click()`);
+await enterGame();
 await t.sleep(9000);
+const inGame = await count();
+console.log(`after Continue: ${inGame} buffer(s) scheduled — playing`);
 
 const r = JSON.parse(await t.evalJs(`JSON.stringify({
   scheduled: window.__scheduled,
@@ -104,10 +119,23 @@ console.log(`queue ahead of the clock: ${before}s before a 1.5s main-thread bloc
 console.log(after > 0 ? "ok   the queue outlived the stall — no dropout"
                       : "FAIL the queue drained during the stall");
 
+// --- the pause menu stops it, and coming back resumes -----------------------
+await t.evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
+await t.sleep(700);
+const atMenu = await count();
+await t.sleep(1500);
+const stillMenu = await count();
+await enterGame();
+await t.sleep(1500);
+const backIn = await count();
+console.log(`menu: ${atMenu} -> ${stillMenu} a second and a half later -> ${backIn} back in the game`);
+const gate = onTitle === 0 && inGame > 0 && stillMenu === atMenu && backIn > stillMenu;
+console.log(gate ? "ok   music runs with the game and stops with the menu"
+                 : "FAIL the music is not following the game's phase");
+
 // --- and that M actually stops it -------------------------------------------
 // Muting silences the bus AND stops the pump, so nothing new is scheduled: the
 // counter freezing is the observable form of "no sound, and no CPU either".
-const count = () => t.evalJs(`window.__scheduled`);
 const gain = () => t.evalJs(`window.__gain ? window.__gain.gain.value : -1`);
 const press = () => t.evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm' }))`);
 await press();
@@ -128,4 +156,4 @@ const survived = after > 0;
 console.log(mute ? "ok   M stops the pump and silences the bus, and unmuting resumes it"
                  : "FAIL mute did not stop (or unmute did not restart) the rendering");
 
-if (!level || !mute || !survived) process.exitCode = 1;
+if (!level || !mute || !survived || !gate) process.exitCode = 1;

@@ -2,9 +2,9 @@
 // polling), and exposes the window.CA test hooks check.mjs drives.
 import "./css";                     // the stylesheet, before anything renders
 import { ELEMENTS, RECIPE } from "./elements";
-import { boot, attempt, selectAt, dismissModal, reset, caState } from "./game";
+import { boot, attempt, selectAt, dismissModal, reset, caState, phase } from "./game";
 import { initKeyboard, pollPad } from "./input";
-import { wakeAudio } from "./music";
+import { wakeAudio, musicPlaying } from "./music";
 
 boot();
 initKeyboard();
@@ -15,9 +15,13 @@ initKeyboard();
 document.addEventListener("pointerdown", wakeAudio);
 document.addEventListener("keydown", wakeAudio);
 
-// the only thing left needing a frame: the gamepad, which has no event API
+// the frame loop does two things: poll the gamepad, which has no event API, and
+// tell the music whether the game is being played — it plays over the board and
+// its cards and overlays, never over the title screen. musicPlaying ignores
+// anything but a change, so this is a comparison per frame.
 const frame = (t: number): void => {
   pollPad(t);
+  musicPlaying(phase() !== "menu");
   requestAnimationFrame(frame);
 };
 requestAnimationFrame(frame);

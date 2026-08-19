@@ -392,9 +392,10 @@ const CHUNK = 0.25;           // seconds of audio per buffer
 const LEAD = 2.5;             // seconds kept scheduled ahead of the clock
 
 let next: (() => Float64Array) | null = null;
-let bus: GainNode | null = null;   // carries VOL, and the mute
+let bus: GainNode | null = null;   // carries VOL, and the silence
 let at = 0;                        // context time the next chunk starts at
 let pumping = 0;                   // the interval, 0 when stopped
+let inGame = false;                // the board is up, rather than the title screen
 
 // Renders and schedules until LEAD seconds are queued. Silent about failure for
 // the same reason as sfx.ts: no audio is better than an exception.
@@ -422,48 +423,60 @@ function pump(): void {
   } catch {}
 }
 
-// Idempotent, and called from a gesture handler so the context is allowed to
-// start.
-export function startMusic(): void {
-  if (next || muted) return;
-  try {
-    const c = ac();
-    bus = c.createGain();
-    bus.gain.value = VOL;
-    bus.connect(c.destination);
-    next = sampler(SONG_SR);
-    at = c.currentTime + 0.15;
-    pump();
-    pumping = setInterval(pump, 200);
-  } catch {}
+// Builds the graph on first use. Whether anything actually flows through it is
+// flow()'s decision, not this one.
+function build(): void {
+  if (next) return;
+  const c = ac();
+  bus = c.createGain();
+  bus.gain.value = 0;
+  bus.connect(c.destination);
+  next = sampler(SONG_SR);
 }
 
-// Every pointer and key event lands here, not just the first: starting is
-// idempotent, and ac() resumes a context that is suspended — which iOS can leave
-// it even after a gesture, and which nothing else would retry.
-export function wakeAudio(): void {
-  try { ac(); } catch {}
-  startMusic();
-}
-
-// Mutes the interface sounds too — one control for all the audio. Muting stops
-// the pump as well as silencing the bus, so the engine costs nothing at all
-// while it is off; what is already scheduled plays out silently, and unmuting
-// picks the song up where the rendering had reached rather than restarting it.
-export function toggleMute(): boolean {
-  setMuted(!muted);
+// The one place that decides whether music is playing: it plays while the game
+// is being played and the player has not muted it. Stopping means silencing the
+// bus AND stopping the pump, so the engine costs nothing while the music is off;
+// whatever is already queued plays out silently. Starting again picks the song
+// up where the rendering had reached rather than restarting it.
+function flow(): void {
   try {
-    if (muted) {
+    if (inGame && !muted) {
+      build();
+      (bus as GainNode).gain.value = VOL;
+      if (!pumping) {
+        at = 0;                    // pump() resyncs from the clock
+        pump();
+        pumping = setInterval(pump, 200);
+      }
+    } else {
       if (pumping) { clearInterval(pumping); pumping = 0; }
       if (bus) bus.gain.value = 0;
-    } else if (next && bus) {
-      bus.gain.value = VOL;
-      at = 0;                    // pump() resyncs from the clock
-      pump();
-      pumping = setInterval(pump, 200);
-    } else {
-      startMusic();              // muted before the music ever started
     }
   } catch {}
+}
+
+// Called from the frame loop with whether the board is up. Routing it through
+// the loop rather than through every transition means the title screen, the
+// pause menu, Escape, the gamepad's Start and the overlays all get it right
+// without each having to remember to.
+export function musicPlaying(on: boolean): void {
+  if (on === inGame) return;
+  inGame = on;
+  flow();
+}
+
+// Every pointer and key event lands here, not just the first: ac() resumes a
+// context that is suspended — which iOS can leave it even after a gesture, and
+// which nothing else would retry. The context has to be woken inside a gesture;
+// the music itself starts later, when the game does.
+export function wakeAudio(): void {
+  try { ac(); } catch {}
+}
+
+// Mutes the interface sounds too — one control for all the audio.
+export function toggleMute(): boolean {
+  setMuted(!muted);
+  flow();
   return muted;
 }

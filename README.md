@@ -331,12 +331,17 @@ the probe checks that too, by watching the scheduled-buffer count freeze.
 
 The track costs **1511 bytes** zipped — 9651 to 11246, of which the song data is
 six strings totalling 571 characters; the mute control and its HUD button added
-another **170**, the title typography **44**, and the audio work since (a faster
-engine, and rendering ahead) **287**, for **11747 bytes, 88.24% of the 13KB
-budget**.
+another **170**, the title typography **44**, and the audio work since (a faster engine,
+rendering ahead, and playing only during the game) **289**, for **11749 bytes,
+88.26% of the 13KB budget**.
 
-It starts on the first pointer or key event, since an AudioContext may not run
-before a gesture, and it shares the context `src/sfx.ts` creates. **M** or Ⓧ
+It plays **during the game only** — over the board and its cards and overlays,
+never over the title screen or the pause menu. The frame loop passes the phase
+to `musicPlaying` rather than every transition remembering to, so Escape, the
+gamepad Start button, the menu buttons and the overlays all behave the same, and
+leaving the game stops the pump as well as silencing the bus. The AudioContext
+still has to be woken inside a gesture, which is what the pointer and key
+listeners are for; it shares the context `src/sfx.ts` creates. **M** or Ⓧ
 mutes it along with the interface sounds — see [Controls](#controls); the flag
 lives in `src/sfx.ts` because both halves of the audio read it.
 
