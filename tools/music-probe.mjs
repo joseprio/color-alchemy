@@ -1,11 +1,14 @@
 // Does the packed bundle actually make the sound the engine tests prove?
 //
-// The equivalence test in the scratchpad compares src/music.ts against the
-// original floatbeat sample for sample, but that runs the TypeScript in node.
-// This runs the SHIPPED page: it wraps createScriptProcessor before the bundle
-// loads, captures what the game's own audio callback writes, and reports level.
-// Silence, NaN or clipping here means the wiring or the closure pass broke
-// something the node test cannot see.
+// The scratchpad comparison runs the TypeScript in node against the original
+// floatbeat. This runs the SHIPPED page: the music renders ahead into
+// AudioBuffers and schedules them, so this wraps AudioBufferSourceNode.start —
+// the buffer is filled by then — and reads what the game queued, plus the gain
+// the bus is set to. Silence, NaN or clipping here means the wiring or the
+// closure pass broke something the node test cannot see.
+//
+// It also checks the mute path: muting stops the pump, so no new buffers get
+// scheduled at all, which is the observable form of "costs nothing while off".
 // usage: node tools/music-probe.mjs   (npm run music-check)
 import { launch } from "../cdp.mjs";
 import { writeFileSync } from "fs";
@@ -17,38 +20,34 @@ writeFileSync(blank, "<!doctype html><title>blank</title>");
 
 const t = await launch({ url: blank });
 await t.send("Page.enable");
-// installed before the bundle parses, so the wrap is in place when it calls
 await t.send("Page.addScriptToEvaluateOnNewDocument", {
   // Everything is scoped inside the arrow: a `const` at the top level of a
   // document-start script is a global lexical binding, and the bundle declares
-  // short names of its own — one collision is a SyntaxError that stops the
-  // whole game from loading (which is exactly what happened first time).
-  //
-  // The handler has to be installed through the REAL onaudioprocess setter:
-  // Chrome only pulls audio through the node when that property is assigned, so
-  // an addEventListener('audioprocess') wrapper captures nothing.
+  // short names of its own — one collision is a SyntaxError that stops the whole
+  // game from loading (which is exactly what happened the first time).
   source: `(() => {
+    window.__scheduled = 0;
     window.__cap = [];
-    window.__blocks = 0;
-    const P = (window.AudioContext || window.webkitAudioContext).prototype;
-    const make = P.createScriptProcessor;
-    const desc = Object.getOwnPropertyDescriptor(ScriptProcessorNode.prototype, 'onaudioprocess');
-    P.createScriptProcessor = function (...args) {
-      const node = make.apply(this, args);
-      Object.defineProperty(node, 'onaudioprocess', {
-        set(fn) {
-          desc.set.call(node, (e) => {
-            fn(e);
-            window.__blocks++;
-            if (window.__cap.length < 8 && e.playbackTime > 8) {
-              const l = e.outputBuffer.getChannelData(0), r = e.outputBuffer.getChannelData(1);
-              window.__cap.push([[...l].slice(0, 2048), [...r].slice(0, 2048)]);
-            }
-          });
-        },
-        get() { return desc.get.call(node); },
-      });
-      return node;
+    window.__gain = null;
+    const AC = (window.AudioContext || window.webkitAudioContext).prototype;
+    const mkGain = AC.createGain;
+    AC.createGain = function (...a) {
+      const g = mkGain.apply(this, a);
+      window.__gain = g;
+      return g;
+    };
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (when, ...rest) {
+      window.__scheduled++;
+      window.__lastWhen = when;      // how far ahead of the clock the queue runs
+      // capture a few buffers from a few seconds in, past the opening fade
+      if (window.__cap.length < 6 && when > 8 && this.buffer) {
+        window.__cap.push([
+          [...this.buffer.getChannelData(0)],
+          [...this.buffer.getChannelData(1)],
+        ]);
+      }
+      return start.call(this, when, ...rest);
     };
   })()`,
 });
@@ -59,12 +58,13 @@ await t.sleep(1500);
 // a real gesture is not needed headless (--autoplay-policy=no-user-gesture-required),
 // but the game only starts the music on one, so dispatch it
 await t.evalJs(`document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))`);
-await t.sleep(11000);   // capture a window ~8s in, past the opening fade-in
+await t.sleep(9000);
 
 const r = JSON.parse(await t.evalJs(`JSON.stringify({
+  scheduled: window.__scheduled,
   blocks: window.__cap.length,
-  rate: (window.AudioContext ? 1 : 0),
-  ctx: window.__cap.length ? 1 : 0,
+  gain: window.__gain ? window.__gain.gain.value : null,
+  rate: window.__cap.length ? 1 : 0,
   samples: window.__cap.flatMap(b => b[0].concat(b[1])),
 })`));
 
@@ -76,32 +76,56 @@ for (const v of s) {
   sum += v * v;
 }
 const rms = Math.sqrt(sum / (s.length || 1));
-console.log(`captured ${r.blocks} callback block(s), ${s.length} samples`);
-console.log(`peak ${peak.toFixed(4)}  rms ${rms.toFixed(4)}  non-finite ${nan}`);
+console.log(`${r.scheduled} buffer(s) scheduled, ${r.blocks} captured, ${s.length} samples`);
+console.log(`bus gain ${r.gain}  |  raw peak ${peak.toFixed(4)}  rms ${rms.toFixed(4)}  non-finite ${nan}`);
+console.log(`after the bus: peak ${(peak * r.gain).toFixed(4)}  rms ${(rms * r.gain).toFixed(4)}`);
 
-// The tune's own level is peak ~0.73 / rms ~0.11, scaled by the 0.4 the player
-// applies, so a window past the opening fade-in should land near rms 0.04.
-const level = s.length > 0 && !nan && rms > 0.005 && peak <= 1;
+// The buffers hold the engine's own level — the bus applies VOL — so raw peak
+// runs up to about 1.22 where the arrangement is densest, and must stay under
+// 1/VOL to leave the output unclipped.
+const level = s.length > 0 && !nan && rms > 0.01 && peak * r.gain <= 1;
 console.log(level ? "ok   the page is generating audio at a sane level" : "FAIL no usable audio from the page");
 
-// --- and that M actually stops it ------------------------------------------
-// Mute disconnects the node, so the callback stops being pulled entirely: the
-// block counter freezing is the observable form of "no sound", and it also
-// shows muting costs no CPU. Unmuting has to start it moving again.
-const blocks = () => t.evalJs(`window.__blocks`);
+// --- does a stalled main thread still glitch? -------------------------------
+// The whole point of rendering ahead: the audio thread plays what is queued, so
+// the main thread can be blocked (a slow frame, a GC, a phone with the screen
+// off throttling timers) and the sound continues as long as the queue holds. A
+// 1.5s block against a 2.5s lead should leave the queue still ahead of the
+// clock — under the old ScriptProcessor that same block was 1.5s of silence.
+const lead = () =>
+  t.evalJs(`(() => {
+    const c = window.__gain ? window.__gain.context : null;
+    return c ? +(window.__lastWhen - c.currentTime).toFixed(2) : -1;
+  })()`);
+const before = await lead();
+await t.evalJs(`(() => { const end = Date.now() + 1500; while (Date.now() < end); return 1; })()`);
+const after = await lead();
+console.log(`queue ahead of the clock: ${before}s before a 1.5s main-thread block, ${after}s after`);
+console.log(after > 0 ? "ok   the queue outlived the stall — no dropout"
+                      : "FAIL the queue drained during the stall");
+
+// --- and that M actually stops it -------------------------------------------
+// Muting silences the bus AND stops the pump, so nothing new is scheduled: the
+// counter freezing is the observable form of "no sound, and no CPU either".
+const count = () => t.evalJs(`window.__scheduled`);
+const gain = () => t.evalJs(`window.__gain ? window.__gain.gain.value : -1`);
 const press = () => t.evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm' }))`);
 await press();
-await t.sleep(400);
-const atMute = await blocks();
-await t.sleep(1200);
-const stillMuted = await blocks();
+await t.sleep(600);
+const atMute = await count();
+const mutedGain = await gain();
+await t.sleep(1500);
+const stillMuted = await count();
 await press();
-await t.sleep(1200);
-const afterUnmute = await blocks();
+await t.sleep(1500);
+const afterUnmute = await count();
 t.close();
 
-console.log(`blocks: ${atMute} at mute -> ${stillMuted} a second later -> ${afterUnmute} after unmute`);
-const mute = stillMuted === atMute && afterUnmute > stillMuted;
-console.log(mute ? "ok   M silences the node and unmutes it again" : "FAIL mute did not stop (or unmute did not restart) the audio");
+console.log(`scheduled: ${atMute} at mute -> ${stillMuted} a second later -> ${afterUnmute} after unmute`);
+console.log(`bus gain while muted: ${mutedGain}`);
+const mute = stillMuted === atMute && afterUnmute > stillMuted && mutedGain === 0;
+const survived = after > 0;
+console.log(mute ? "ok   M stops the pump and silences the bus, and unmuting resumes it"
+                 : "FAIL mute did not stop (or unmute did not restart) the rendering");
 
-if (!level || !mute) process.exitCode = 1;
+if (!level || !mute || !survived) process.exitCode = 1;

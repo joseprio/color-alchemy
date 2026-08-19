@@ -74,13 +74,22 @@ const lerp = (a: number, b: number, x: number): number => x * b + (1 - x) * a;
 export function sampler(SR: number): () => Float64Array {
   const TL = (SR * 60) / 90 / 2;        // samples per tick: 90 BPM, 2 ticks a beat
 
-  // --- waves. mod is phase modulation in radians, folded into the same call ---
-  const fmod = (a: number, b: number): number => ((a % b) + b) % b;
-  const W = [
-    (x: number, m: number): number => sin(2 * PI * x + m),                 // sine
-    (x: number, _m: number): number => fmod(2 * x + 1, 2) - 1,             // saw
-    (x: number, m: number): number => W[0](x, 0.5 * (W[0](2 * x, m) + m)), // rounded square
-  ];
+  // --- waves. mod is phase modulation in radians, folded into the same call.
+  // One function with a switch rather than an array of three closures: the call
+  // site in voice() is then monomorphic and inlinable, where indexing into an
+  // array of functions is not. The saw's wrap is a compare instead of the two
+  // remainders fmod took — its argument is a phase plus a modulator, so it lands
+  // in [0.94, 3.06] and one subtraction can never miss.
+  const wave = (kind: number, x: number, m: number): number => {
+    if (kind == 1) {
+      let v = 2 * x + 1;
+      if (v >= 2) v -= 2;
+      else if (v < 0) v += 2;
+      return v - 1;
+    }
+    if (kind == 2) return sin(2 * PI * x + 0.5 * (sin(4 * PI * x + m) + m));
+    return sin(2 * PI * x + m);
+  };
 
   // --- envelope: [value, stage, held, active, attack, decay, sustain, release]
   // Stage 0 attack, 1 decay, 2 sustain, 3 release. Zero-length stages need no
@@ -115,10 +124,13 @@ export function sampler(SR: number): () => Float64Array {
   const notes: any[][] = [];
   const voice = (n: any[]): number => {
     const step = (BASEFREQ * n[0]) / SR;
-    const m = n[7] ? n[7] * W[n[6]](n[2] + lfo(n[8]), 0) * env(n[4]) : 0;
-    const out = W[n[5]](n[1], m) * env(n[3]);
-    n[1] = (n[1] + step) % 1;
-    n[2] = (n[2] + step) % 1;
+    const m = n[7] ? n[7] * wave(n[6], n[2] + lfo(n[8]), 0) * env(n[4]) : 0;
+    const out = wave(n[5], n[1], m) * env(n[3]);
+    // a phase advances by well under 1 a sample — the highest note steps 0.048 —
+    // so wrapping is a compare, not a remainder
+    let a = n[1] + step, b = n[2] + step;
+    n[1] = a >= 1 ? a - 1 : a;
+    n[2] = b >= 1 ? b - 1 : b;
     return out;
   };
 
@@ -141,23 +153,29 @@ export function sampler(SR: number): () => Float64Array {
     return [1, co, new Float64Array(order)];
   };
 
-  // [3, buffers, write index]: 8 taps of random length up to maxdur ms, mixed
-  // by a Hadamard matrix. Feeds the reverb its density.
+  // Both multi-tap effects keep a write pointer PER buffer (f[9]) rather than one
+  // sample counter they take modulo each buffer's length. `idx % len` was running
+  // some 48 times a sample across the reverb, and an integer division is dear
+  // next to an increment and a compare. The pointers track the counter exactly,
+  // so this changes nothing about the sound.
+  const HAD = (1 / CH) ** 0.5;     // was recomputed 32 times a sample
+
+  // [3, buffers, write index, -, -, -, -, -, -, per-buffer pointers]: 8 taps of
+  // random length up to maxdur ms, mixed by a Hadamard matrix. Feeds the reverb
+  // its density.
   const diff = (maxdur: number): any[] => {
     const n = (maxdur / 1e3) * SR, bufs: Float64Array[] = [];
     for (let c = 0; c < CH; c++) bufs.push(buf(floor((n * c) / CH + (n / CH) * random()) + 1));
-    return [3, bufs, 0];
+    return [3, bufs, 0, 0, 0, 0, 0, 0, 0, new Int32Array(CH)];
   };
 
-  // [2, buffers, write index, feedback, mix, mod depth, mod frequency]: 8 taps
-  // spread over an octave of delay times, read at a slowly wobbling position and
-  // mixed by a Householder matrix.
   // [2, buffers, write index, feedback, mix, mod depth, per-channel angle step,
-  //  cos/sin state]. The read position wobbles as cos(k·idx) per channel, which
-  //  cost 16 Math.cos calls a sample — 23% of the whole engine, measured. It is
-  //  the same value stepped forward instead: rotating (cos, sin) by a fixed
-  //  angle is four multiplies, and re-anchoring on Math.cos every 1024 samples
-  //  keeps the drift at the noise floor rather than letting it accumulate.
+  //  cos/sin state, one-sample rotation, per-buffer pointers]. The read position
+  //  wobbles as cos(k·idx) per channel, which cost 16 Math.cos calls a sample —
+  //  23% of the whole engine, measured. It is the same value stepped forward
+  //  instead: rotating (cos, sin) by a fixed angle is four multiplies, and
+  //  re-anchoring on Math.cos every 1024 samples keeps the drift at the noise
+  //  floor rather than letting it accumulate.
   const delay = (time: number, fdbk: number, mix: number, mod: number, modf: number): any[] => {
     const bufs: Float64Array[] = [], k = new Float64Array(CH);
     const cs = new Float64Array(2 * CH), ks = new Float64Array(2 * CH);
@@ -168,7 +186,7 @@ export function sampler(SR: number): () => Float64Array {
       ks[2 * c] = cos(k[c]);                      // the one-sample rotation
       ks[2 * c + 1] = sin(k[c]);
     }
-    return [2, bufs, 0, fdbk, mix, (SR / 960) * mod, k, cs, ks];
+    return [2, bufs, 0, fdbk, mix, (SR / 960) * mod, k, cs, ks, new Int32Array(CH)];
   };
 
   // Scratch shared by every effect: S is the signal bus (stereo in [0] and [1],
@@ -199,11 +217,14 @@ export function sampler(SR: number): () => Float64Array {
     const dry0 = S[0], dry1 = S[1];
     if (n == 2) { const m = (S[0] + S[1]) / 2; for (let i = 0; i <= CH; i++) S[i] = m; }
 
+    const ptr: Int32Array = f[9];
+
     if (f[0] == 3) {
       for (let i = 0; i < CH; i++) {
-        const p = idx % bufs[i].length;
-        T[i] = bufs[i][p];
-        bufs[i][p] = S[i];
+        const b = bufs[i], p = ptr[i];
+        T[i] = b[p];
+        b[p] = S[i];
+        ptr[i] = p + 1 < b.length ? p + 1 : 0;
       }
       f[2]++;
       // Hadamard, then the 1/sqrt(8) that keeps it unitary
@@ -217,7 +238,7 @@ export function sampler(SR: number): () => Float64Array {
         }
       }
       const dry = S[CH];
-      for (let i = 0; i < CH; i++) S[i] = T[i] * (1 / CH) ** 0.5;
+      for (let i = 0; i < CH; i++) S[i] = T[i] * HAD;
       S[CH] = dry;
       return CH + 1;
     }
@@ -227,9 +248,22 @@ export function sampler(SR: number): () => Float64Array {
     for (let i = 0; i < CH; i++) {
       if (anchor) { cs[2 * i] = cos(k[i] * idx); cs[2 * i + 1] = sin(k[i] * idx); }
       const b = bufs[i], L = b.length;
-      const pos = idx + f[5] * (1 - cs[2 * i]);
-      const p = floor(pos);
-      T[i] = lerp(b[p % L], b[(p + 1) % L], pos % 1);
+      // The read runs AHEAD of the write by the wobble, never by more than the
+      // shortest buffer (43 samples against 96 at the shipped settings), so one
+      // conditional subtract wraps it — no modulo, and the integer part and the
+      // fraction come off the offset rather than off idx + offset, which is also
+      // steadier once idx is in the tens of millions.
+      // max(0, …) is not cosmetic: the rotation can leave cs a few 1e-16 ABOVE
+      // 1, where Math.cos never could, and then the offset goes negative, the
+      // read index lands on -1, and a Float64Array returns undefined — silent
+      // NaN through the whole mix. It bit at 0.5s in.
+      const d = max(0, f[5] * (1 - cs[2 * i])), di = floor(d);
+      let p = ptr[i] + di;
+      if (p >= L) p -= L;
+      let q = p + 1;
+      if (q >= L) q -= L;
+      const g = d - di;
+      T[i] = b[p] + (b[q] - b[p]) * g;
       // rotate this channel's angle on by one sample, ready for the next call
       const c = cs[2 * i], s = cs[2 * i + 1];
       cs[2 * i] = c * ks[2 * i] - s * ks[2 * i + 1];
@@ -241,7 +275,11 @@ export function sampler(SR: number): () => Float64Array {
     sum *= -2 / CH;
     for (let i = 0; i < CH; i++) T[i] += sum;
 
-    for (let i = 0; i < CH; i++) bufs[i][idx % bufs[i].length] = S[i] + T[i] * f[3];
+    for (let i = 0; i < CH; i++) {
+      const b = bufs[i], p = ptr[i];
+      b[p] = S[i] + T[i] * f[3];
+      ptr[i] = p + 1 < b.length ? p + 1 : 0;
+    }
     f[2]++;
     if (n == 2) {
       S[0] = lerp(dry0, T[0], f[4]);
@@ -333,64 +371,99 @@ export function sampler(SR: number): () => Float64Array {
 }
 
 /* ------------------------------------------------------------------ playback */
-// Volume: the tune peaks around 0.73, so this keeps it under a third of full
-// scale — background, not foreground.
+// Rendered AHEAD, not on demand.
+//
+// The first version ran the engine inside a ScriptProcessorNode, which calls
+// back on the MAIN thread and must fill every buffer before its deadline. Two
+// consequences, both of which showed up on a phone: the work competes with the
+// game for the same thread, and when the screen goes off the browser throttles
+// that thread, so the callbacks arrive late and the output glitches — no matter
+// how cheap the engine is.
+//
+// Now a timer renders quarter-second chunks into AudioBuffers and schedules them
+// end to end, keeping a couple of seconds queued. Nothing has a deadline any
+// more: a tick can be late, or throttled, or skipped, and the audio keeps
+// playing as long as the queue has not drained. It also drops the manual
+// resampler — the buffers are created at the song's own 24 kHz and the browser
+// resamples them properly on the way out.
 const VOL = 0.4;
-// The engine runs at the rate the song was written for and the output is
-// interpolated up to whatever the context runs at, which is galaxy-raid's
-// arrangement (its bytebeats step a song clock of their own) and halves the
-// cost: 15% of a core at 48 kHz becomes 8% at 24 kHz. Generating at the context
-// rate instead is a one-word change — sampler(c.sampleRate), step 1 — and sounds
-// marginally cleaner if the budget ever stops mattering.
-const SONG_SR = 24000;
-let node: ScriptProcessorNode | null = null;
+const SONG_SR = 24000;        // the rate the song was written for
+const CHUNK = 0.25;           // seconds of audio per buffer
+const LEAD = 2.5;             // seconds kept scheduled ahead of the clock
 
-// Idempotent, and called from a gesture handler so the context is allowed to
-// start. Wrapped like sfx.ts: a blocked or missing AudioContext means silence,
-// never an exception.
-export function startMusic(): void {
-  if (node || muted) return;
+let next: (() => Float64Array) | null = null;
+let bus: GainNode | null = null;   // carries VOL, and the mute
+let at = 0;                        // context time the next chunk starts at
+let pumping = 0;                   // the interval, 0 when stopped
+
+// Renders and schedules until LEAD seconds are queued. Silent about failure for
+// the same reason as sfx.ts: no audio is better than an exception.
+function pump(): void {
+  if (!next || !bus) return;
   try {
-    const c = ac(), next = sampler(SONG_SR), step = SONG_SR / c.sampleRate;
-    // scalars, not the two arrays: the sampler hands back the same Float64Array
-    // every call, so holding on to it as "the previous sample" would alias
-    let pos = 0, s = next(), a0 = s[0], a1 = s[1];
-    s = next();
-    let b0 = s[0], b1 = s[1];
-    node = c.createScriptProcessor(4096, 1, 2);
-    node.onaudioprocess = (e: AudioProcessingEvent): void => {
-      const l = e.outputBuffer.getChannelData(0), r = e.outputBuffer.getChannelData(1);
-      for (let i = 0; i < l.length; i++) {
-        pos += step;
-        while (pos >= 1) {
-          pos--;
-          a0 = b0; a1 = b1;
-          const v = next();
-          b0 = v[0]; b1 = v[1];
-        }
-        l[i] = (a0 + (b0 - a0) * pos) * VOL;
-        r[i] = (a1 + (b1 - a1) * pos) * VOL;
+    const c = ac(), N = round(CHUNK * SONG_SR);
+    // behind the clock means the queue ran dry — a long stall, or the tab was
+    // frozen. Start again from now rather than scheduling into the past.
+    if (at < c.currentTime) at = c.currentTime + 0.1;
+    while (at < c.currentTime + LEAD) {
+      const b = c.createBuffer(2, N, SONG_SR);
+      const l = b.getChannelData(0), r = b.getChannelData(1);
+      for (let i = 0; i < N; i++) {
+        const s = next();
+        l[i] = s[0];
+        r[i] = s[1];
       }
-    };
-    node.connect(c.destination);
+      const src = c.createBufferSource();
+      src.buffer = b;
+      src.connect(bus);
+      src.start(at);
+      at += N / SONG_SR;
+    }
   } catch {}
 }
 
-// Every pointer and key event lands here, not just the first: creating the
-// node is idempotent, and ac() resumes a context that is suspended — which iOS
-// can leave it even after a gesture, and which nothing else would retry.
+// Idempotent, and called from a gesture handler so the context is allowed to
+// start.
+export function startMusic(): void {
+  if (next || muted) return;
+  try {
+    const c = ac();
+    bus = c.createGain();
+    bus.gain.value = VOL;
+    bus.connect(c.destination);
+    next = sampler(SONG_SR);
+    at = c.currentTime + 0.15;
+    pump();
+    pumping = setInterval(pump, 200);
+  } catch {}
+}
+
+// Every pointer and key event lands here, not just the first: starting is
+// idempotent, and ac() resumes a context that is suspended — which iOS can leave
+// it even after a gesture, and which nothing else would retry.
 export function wakeAudio(): void {
   try { ac(); } catch {}
   startMusic();
 }
 
-// Mutes the interface sounds too — one control for all the audio. A disconnected
-// ScriptProcessorNode stops being pulled, so muting costs no CPU and the song
-// resumes where it left off rather than restarting. Returns the new state.
+// Mutes the interface sounds too — one control for all the audio. Muting stops
+// the pump as well as silencing the bus, so the engine costs nothing at all
+// while it is off; what is already scheduled plays out silently, and unmuting
+// picks the song up where the rendering had reached rather than restarting it.
 export function toggleMute(): boolean {
   setMuted(!muted);
-  if (muted) { try { (node as ScriptProcessorNode).disconnect(); } catch {} }
-  else if (node) { try { node.connect(ac().destination); } catch {} }
-  else startMusic();     // muted before the music ever started
+  try {
+    if (muted) {
+      if (pumping) { clearInterval(pumping); pumping = 0; }
+      if (bus) bus.gain.value = 0;
+    } else if (next && bus) {
+      bus.gain.value = VOL;
+      at = 0;                    // pump() resyncs from the clock
+      pump();
+      pumping = setInterval(pump, 200);
+    } else {
+      startMusic();              // muted before the music ever started
+    }
+  } catch {}
   return muted;
 }

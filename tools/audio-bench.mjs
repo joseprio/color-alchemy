@@ -24,32 +24,49 @@ execFileSync(process.execPath, ["node_modules/typescript/bin/tsc", "src/music.ts
 const { sampler } = createRequire(import.meta.url)(path.join(dir, "music.js"));
 
 const SR = 24000;                      // the rate the engine runs at
-const next = sampler(SR);
-for (let i = 0; i < 60000; i++) next();   // warm up the JIT
-const n = 600000;
-const t0 = process.hrtime.bigint();
-for (let i = 0; i < n; i++) next();
-const ns = Number(process.hrtime.bigint() - t0) / n;
+
+// The opening is the cheapest part of the song — one pad voice and the reverb —
+// and it is the part a naive benchmark measures, because it starts at sample 0.
+// What has to fit the callback deadline is the densest part: pattern 4, about
+// 160s in, where the pad, the bass and two pulse voices all play and the second
+// delay is live. Both are reported; the second one is the budget that matters.
+const measure = (skipSeconds) => {
+  const next = sampler(SR);
+  for (let i = 0; i < skipSeconds * SR; i++) next();      // fast-forward, and warm the JIT
+  for (let i = 0; i < 60000; i++) next();
+  const n = 400000;
+  const t0 = process.hrtime.bigint();
+  for (let i = 0; i < n; i++) next();
+  return Number(process.hrtime.bigint() - t0) / n;
+};
+
+const sparse = measure(0);
+const ns = measure(160);               // the dense stretch, and the number to size against
 rmSync(dir, { recursive: true, force: true });
 
-console.log(`\n${ns.toFixed(0)} ns per sample — ${((ns / (1e9 / SR)) * 100).toFixed(1)}% of one core on this machine\n`);
-console.log("      buffer   engine work   callback budget   share");
-for (const size of [4096, 16384]) {
-  for (const slower of [1, 4, 6, 8]) {
-    const work = ((size / 2) * ns * slower) / 1e6;     // engine runs at half the output rate
-    const budget = (size / 48000) * 1000;
-    const share = (work / budget) * 100;
-    console.log(
-      `${(slower === 1 ? "this machine" : slower + "x slower").padStart(14)}` +
-      `${String(size).padStart(8)}` +
-      `${(work.toFixed(1) + "ms").padStart(14)}` +
-      `${(budget.toFixed(1) + "ms").padStart(18)}` +
-      `${(share.toFixed(0) + "%").padStart(8)}` +
-      (share > 100 ? "  UNDERRUN — this would glitch" : share > 50 ? "  tight" : "")
-    );
-  }
+console.log(`\nopening (pad + reverb):  ${sparse.toFixed(0)} ns per sample`);
+console.log(`densest part of the song: ${ns.toFixed(0)} ns per sample` +
+  `  — ${((ns / (1e9 / SR)) * 100).toFixed(1)}% of one core on this machine\n`);
+// The music renders ahead: a 200ms timer fills quarter-second buffers and keeps
+// ~2.5s scheduled. So the question is not "does a callback meet its deadline"
+// (there is no deadline any more) but "does a chunk render in well under the
+// tick, and how much of the main thread does that take".
+const CHUNK = 0.25, TICK = 200, LEAD = 2.5;
+const frames = CHUNK * SR;
+console.log(`         machine   chunk render   share of the 200ms tick   CPU`);
+for (const slower of [1, 4, 6, 8, 16]) {
+  const work = (frames * ns * slower) / 1e6;
+  const share = (work / TICK) * 100;
+  console.log(
+    `${(slower === 1 ? "this machine" : slower + "x slower").padStart(16)}` +
+    `${(work.toFixed(1) + "ms").padStart(15)}` +
+    `${(share.toFixed(0) + "%").padStart(26)}` +
+    `${((ns * slower * SR) / 1e7).toFixed(1).padStart(6)}%` +
+    (work > TICK ? "  cannot keep up" : work > LEAD * 1000 ? "  would drain the lead" : "")
+  );
 }
 console.log(`
-A share of 100% means the callback takes as long as the audio it produces, so
-anything else on the main thread pushes it over. Under about 20% there is room
-for the game, a GC pause and a slow phone at the same time.`);
+A chunk is ${CHUNK}s of audio rendered inside a ${TICK}ms tick, with ${LEAD}s kept queued —
+so a late or throttled tick costs nothing until the queue drains. The old
+ScriptProcessorNode had to finish inside every callback, on the main thread,
+which is what glitched when a phone's screen went off.`);

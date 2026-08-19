@@ -230,9 +230,8 @@ a hold lifts the tile for dragging.
 
 The background track is **astral blur**, the 24 kHz floatbeat in
 `experiments/astralblur.js`, ported to run in the page. galaxy-raid plays its
-bytebeats through a `ScriptProcessorNode` that fills the output one sample at a
-time (`src/app/music.ts` there); this does the same, with two output channels
-because the source is stereo floats rather than a byte per sample.
+bytebeats from a `ScriptProcessorNode`, and so did this at first — see
+**Rendering ahead** below for why it does not any more.
 
 The original is a general synth framework — ADSR envelopes, 2- and 4-operator FM
 voices, wave-shapers, filters, delays, a Householder/Hadamard reverb, a mixer and
@@ -269,13 +268,10 @@ above are safe to make. That render also settles the output level: the tune's ow
 peak reaches **1.22** where the arrangement is densest, so the 0.4 the player
 applies is what keeps it clear of clipping, not just quiet.
 
-The engine runs at the 24 kHz the song was written for and the output is
-interpolated up to whatever the AudioContext runs at, which is galaxy-raid's
-arrangement — its bytebeats step a song clock of their own — and halves the cost.
-Generating at the context rate is a one-word change in `startMusic` if that ever
-looks like the better trade.
+The engine runs at the 24 kHz the song was written for, and the buffers are
+created at that rate so the browser resamples them on the way out.
 
-**It is 2.9x cheaper than the first version**, which is a phone story rather than
+**It is 3.7x cheaper than the first version**, which is a phone story rather than
 a desktop one: a ScriptProcessorNode calls back on the *main thread*, so its cost
 is time the page is not drawing, and a callback that misses its deadline is an
 audible glitch. `npm run audio-bench` measures it — **3191 ns a sample became
@@ -292,22 +288,52 @@ picked both:
   ~700k a second for the garbage collector to deal with; a GC pause inside an
   audio callback is a click. The effects now run in place over two scratch
   buffers, and the mixer keeps its channel signals in one flat `Float64Array`.
+- **48 remainders a sample** across the reverb, one per buffer access. Each buffer
+  carries its own write pointer now, incremented and compared instead of divided.
+- Assorted: the Hadamard's `1/sqrt(8)` was recomputed 32 times a sample, phase
+  wrapping used `% 1` where the increment is always under 1, and the three
+  waveforms were an array of closures — so the call site could not inline — now
+  one function with a switch.
 
-Neither changes the sound: against the same 250-second reference the output is
-identical to **6e-8** — the recurrence's drift, about 1000x below what float32
-storage can even represent, where the original was bit-identical.
+None of it changes the sound: against the same 250-second reference the output is
+identical to **6e-8**, the modulation recurrence's drift, about 1000x below what
+float32 storage can even represent, where the original was bit-identical.
 
-Still worth knowing, because the optimisation does not fix it: a
-ScriptProcessorNode runs on the main thread, so when a phone's screen goes off
-and the browser throttles that thread, the audio glitches regardless of how cheap
-it is. The fixes for that are an **AudioWorklet** (the audio thread, immune to it,
-but the engine has to reach the worklet as its own module) or **rendering ahead**
-into scheduled AudioBuffers (a lead of a few seconds absorbs the throttling).
+Two further ideas were **measured and rejected**, which is the useful part:
+halving the reverb to 4 channels buys only **1.16x** and the tail becomes a
+different tail (the difference is 0.5 dB relative to the signal — audibly not the
+same reverb), and a 2048-entry sine table buys **1.02x**, because V8's `Math.sin`
+is already fast. The engine is at its practical floor for this structure.
+
+### Rendering ahead
+
+A `ScriptProcessorNode` calls back on the **main thread** and must fill every
+buffer before its deadline, which made the music glitch on a phone — worst when
+the screen went off, because that is exactly when the browser throttles that
+thread. Speed alone cannot fix it.
+
+So the engine no longer runs on demand. A 200ms timer renders quarter-second
+chunks into `AudioBuffer`s and schedules them end to end, keeping **2.5 seconds
+queued**. Nothing has a deadline: a tick can be late, throttled or skipped and
+the audio continues until the queue drains, and if it ever does drain the pump
+resynchronises from the clock instead of scheduling into the past. It also
+retires the manual resampler, and with it the `ScriptProcessorNode` — including
+the Safari input-channel trap that made the music silent on iOS.
+
+`npm run music-check` demonstrates the property rather than describing it: it
+blocks the page's main thread for 1.5 seconds and checks the queue is still ahead
+of the clock afterwards (2.24s ahead before, 2.45s after). Under the old node
+that same block was 1.5 seconds of silence.
+
+Muting stops the pump as well as silencing the bus, so the engine costs nothing
+at all while the sound is off, and what is already queued plays out silently —
+the probe checks that too, by watching the scheduled-buffer count freeze.
 
 The track costs **1511 bytes** zipped — 9651 to 11246, of which the song data is
 six strings totalling 571 characters; the mute control and its HUD button added
-another **170**. The title typography (Arial Black, and the AlchemY lockup)
-added **44**, for **11460 bytes, 86.09% of the 13KB budget**.
+another **170**, the title typography **44**, and the audio work since (a faster
+engine, and rendering ahead) **287**, for **11747 bytes, 88.24% of the 13KB
+budget**.
 
 It starts on the first pointer or key event, since an AudioContext may not run
 before a gesture, and it shares the context `src/sfx.ts` creates. **M** or Ⓧ
