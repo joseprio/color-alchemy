@@ -1,0 +1,775 @@
+<!doctype html>
+<!-- Music visualizer options, running on the GAME's own music.
+     Open it in a browser and press play; nothing to build.
+
+     The engine below the markers is spliced in from src/music.ts by
+     tools/build-visualizer.mjs — re-run that after changing the music, or this
+     page will drift from what the game actually sounds like. Playback is the
+     same render-ahead scheme the game uses (quarter-second buffers, a couple of
+     seconds queued), so what you see is what the game would show.
+
+     Every option obeys the same three rules:
+       - it lives on the BORDER, leaving the middle to the game. Press G for a
+         mock of the board on top, to judge it in place.
+       - it is STEREO: the left half of the screen is the left channel, the right
+         half the right. The engine's reverb decorrelates the channels, so this
+         is real movement, not a mirror.
+       - it is a RAINBOW across frequency, low to high, in the same order as the
+         title's gradient — red at the bass end, violet at the top.
+
+     1-6 switch, G the mock board, H hides this panel (it sits over the right
+     channel, which is half the point of the thing), space plays and pauses, and
+     the sliders retune the analysis. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — music visualizer</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 13px/1.5 monospace;
+    overflow: hidden;
+  }
+  #viz { position: fixed; inset: 0; display: block; }
+
+  /* the mock board, so an option can be judged with the game over it */
+  #mock {
+    position: fixed; inset: 0; display: none; flex-direction: column;
+    align-items: center; pointer-events: none;
+  }
+  #mock.on { display: flex; }
+  #mock h1 {
+    margin: 14px 0 0; font-size: 26px; letter-spacing: .18em; font-weight: 700;
+    font-family: "Arial Black", Arial, sans-serif;
+    background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  #mock .hud { display: flex; gap: 18px; margin: 10px 0 4px; font-size: 13px; }
+  #mock .hud b { color: #fff; }
+  #mock .grid { display: grid; grid-template-columns: repeat(4, 92px); gap: 10px; margin-top: 12px; }
+  #mock .tile {
+    width: 92px; padding: 10px 4px 8px; text-align: center;
+    background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+  }
+  #mock .sw { width: 32px; height: 32px; border-radius: 6px; margin: 5px auto; }
+  #mock .nm { font-size: 12px; color: #b9d2ee; }
+  #mock .foot { margin-top: auto; margin-bottom: 16px; color: #55708e; font-size: 11px; }
+
+  /* controls */
+  #ui {
+    position: fixed; top: 12px; right: 12px; width: 300px; z-index: 5;
+    background: #080c18e8; border: 1px solid #223052; border-radius: 12px; padding: 12px 14px;
+  }
+  #ui h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .16em; color: #ffd75e; }
+  #ui .opt {
+    display: flex; gap: 8px; align-items: baseline; padding: 5px 6px; border-radius: 8px;
+    cursor: pointer; color: #8fb4d8;
+  }
+  #ui .opt:hover { background: #101a2e; }
+  #ui .opt.on { background: #16233c; color: #fff; }
+  #ui .opt kbd {
+    background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+    padding: 0 5px; color: #7f9fc0; font: inherit; font-size: 11px;
+  }
+  #ui .note { color: #55708e; font-size: 11px; margin: 2px 0 8px 26px; }
+  #ui label { display: flex; align-items: center; gap: 8px; margin: 7px 0; color: #8fb4d8; }
+  #ui label span { width: 92px; }
+  #ui input[type=range] { flex: 1; accent-color: #33e9e9; }
+  #ui .val { width: 34px; text-align: right; color: #7f9fc0; }
+  #ui button {
+    width: 100%; margin-top: 10px; padding: 9px; background: #101528; color: #ffd75e;
+    border: 1px solid #ffd75e; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  #fps { position: fixed; left: 12px; top: 12px; color: #55708e; z-index: 5; }
+  /* the panel covers the right channel, so it gets out of the way on H */
+  #ui.hidden { display: none; }
+</style>
+</head>
+<body>
+<canvas id="viz"></canvas>
+
+<div id="mock">
+  <h1>COLOR ALCHEMY</h1>
+  <div class="hud"><span>Moves: <b>12</b></span><span>Elements: <b>15 / 69</b></span></div>
+  <div class="grid">
+    <div class="tile"><div class="sw" style="background:#ff3b30"></div><div class="nm">Red</div></div>
+    <div class="tile"><div class="sw" style="background:#34d158"></div><div class="nm">Green</div></div>
+    <div class="tile"><div class="sw" style="background:#2f6bff"></div><div class="nm">Blue</div></div>
+    <div class="tile"><div class="sw" style="background:#ffdc32"></div><div class="nm">Yellow</div></div>
+  </div>
+  <div class="foot">combine: tap two elements &middot; hint: H &middot; mute: M</div>
+</div>
+
+<div id="fps"></div>
+<div id="ui">
+  <h2>VISUALIZER</h2>
+  <div id="opts"></div>
+  <label><span>bands</span><input id="bands" type="range" min="8" max="96" value="40"><i class="val" id="bandsV">40</i></label>
+  <label><span>sensitivity</span><input id="sens" type="range" min="50" max="400" value="160"><i class="val" id="sensV">1.6</i></label>
+  <label><span>smoothing</span><input id="smooth" type="range" min="0" max="95" value="70"><i class="val" id="smoothV">.70</i></label>
+  <label><span>depth</span><input id="depth" type="range" min="20" max="300" value="120"><i class="val" id="depthV">120</i></label>
+  <button id="play">PLAY  (space)</button>
+  <div class="note" style="margin: 8px 0 0 0">G board &middot; H hide this &middot; space play</div>
+</div>
+
+<script>
+/* === engine: generated from src/music.ts by tools/build-visualizer.mjs === */
+/* ------------------------------------------------------------------ the song */
+// Rows encoded one character each: a tick count as 'A'+n (< 'N'), then two
+// characters per event — patch letter 'a'..'g', then the pitch as chr(110+p).
+// Patch letters: a chord, b bass, c pulse, d pulse2, e bass-in, f bass-out,
+// g note-off (the bass is the only voice that is ever released early).
+const PATS = [
+    "Ba[BabBaiBagEafMBaXBa_BadBagBafDabMBaTBa[BadBagEabMBaVBa]BabBagEafM",
+    "Ba[BabBaiBagEafMBaXBa_BadBagBafDabMBaTBa[BadBagEabMBaVBa]BabBagEafCKebAgn",
+    "Ba[bgBabBaiBagEafMAgnBaXbdBa_BadBagBafDabMAgnBaTb`Ba[BadBagEabMAgnBaVbbBa]BabBagEafMAgn",
+    "Ba[bgBabBaiBagBafFcrFcuFcrAgnBaXbdBa_BadBagBafFabcrFcuFcrAgnBaTb`Ba[BadBagBabFcsFcsFcsAgnBaVbbBa]BabBagBafFcrFcpFcrAgn",
+    "Ba[bgBabBaiBagBafFcrdwFcudzFcrd|AgnBaXbdBa_BadBagBafFabcrd~Fcud~FcrdzAgnBaTb`Ba[BadBagBabFcsd|Fcsd|FcsdzAgnBaVbbBa]BabBagBafFcrdwFcpduFcrduAgn",
+    "Ba[bgBabBaiBagEafMAgnBaXbdBa_BadBagBafDabMAgnBaTb`Ba[BadBagEabMAgnBaVfbBa]BabBagEafM",
+];
+// which pattern plays when: the four-bar pattern, a variant, then it builds
+const ARR = "012233442500";
+// One patch per letter:
+// [pitch offset, amp A D S R, mod A D S R, carrier, modulator, mod level,
+//  LFO frequency multiple, LFO depth, mixer channel, is-the-bass]
+// A mod level of 0 means no modulator at all: no second envelope, no LFO — the
+// plain-oscillator voice.
+const P = [
+    [0, 2, 3, 0, 0, 2, 3, 0, 0, 0, 1, 1, 16, 0.03, 1, 0],
+    [-24, 0.01, 0, 1, 0.01, 3.333, 3.333, 0, 0, 2, 0, 2, 4, 0.01, 2, 1],
+    [0, 0.001, 0.75, 0, 0, 0.001, 0.75, 0, 0, 0, 1, 0.5, 1, 0.03, 4, 0],
+    [0, 0.001, 0.75, 0, 0, 0.001, 0.75, 0, 0, 0, 1, 0.5, 1, 0.03, 3, 0],
+    [-24, 3.333, 0, 1, 0.01, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 1],
+    [-24, 0.01, 6.666, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 1],
+];
+const BASEFREQ = 453; // the pitch every note ratio multiplies
+const { sin, cos, tan, min, max, floor, round, random, PI } = Math;
+const lerp = (a, b, x) => x * b + (1 - x) * a;
+/* ------------------------------------------------------------- the generator */
+// Builds one sample function for a given sample rate. Everything the engine
+// derives — tick length, envelope slopes, delay lengths, filter coefficients —
+// is in seconds or Hz, so the song plays at its intended pitch and tempo at
+// whatever rate the AudioContext runs at; the file was written for 24 kHz.
+function sampler(SR) {
+    const TL = (SR * 60) / 90 / 2; // samples per tick: 90 BPM, 2 ticks a beat
+    // --- waves. mod is phase modulation in radians, folded into the same call.
+    // One function with a switch rather than an array of three closures: the call
+    // site in voice() is then monomorphic and inlinable, where indexing into an
+    // array of functions is not. The saw's wrap is a compare instead of the two
+    // remainders fmod took — its argument is a phase plus a modulator, so it lands
+    // in [0.94, 3.06] and one subtraction can never miss.
+    const wave = (kind, x, m) => {
+        if (kind == 1) {
+            let v = 2 * x + 1;
+            if (v >= 2)
+                v -= 2;
+            else if (v < 0)
+                v += 2;
+            return v - 1;
+        }
+        if (kind == 2)
+            return sin(2 * PI * x + 0.5 * (sin(4 * PI * x + m) + m));
+        return sin(2 * PI * x + m);
+    };
+    // --- envelope: [value, stage, held, active, attack, decay, sustain, release]
+    // Stage 0 attack, 1 decay, 2 sustain, 3 release. Zero-length stages need no
+    // special case: 1/SR/0 is Infinity, so the ramp reaches its target in one step.
+    const env = (e) => {
+        if (!e[3])
+            return 0;
+        const out = e[0], top = e[5] ? 1 : e[6];
+        if (!e[2] && e[1] != 3)
+            e[1] = 3;
+        if (!e[1]) {
+            e[0] = min(e[0] + 1 / SR / e[4], top);
+            if (e[0] == top)
+                e[1] = e[5] ? 1 : 2;
+        }
+        else if (e[1] == 1) {
+            e[0] = max(e[0] - 1 / SR / e[5], e[6]);
+            if (e[0] == e[6])
+                e[1] = e[6] ? 2 : 3;
+        }
+        else if (e[1] == 3) {
+            e[0] = max(e[0] - 1 / SR / e[7], 0);
+            if (!e[0])
+                e[3] = 0;
+        }
+        return out;
+    };
+    // --- LFO: smoothstep-interpolated random, bipolar. [freq, depth, phase, from, to]
+    const lfo = (l) => {
+        if (l[2] >= 1) {
+            l[2] -= 1;
+            l[3] = l[4];
+            l[4] = 2 * random() - 1;
+        }
+        const p = l[2], c = 3 * p * p - 2 * p * p * p;
+        l[2] += l[0] / SR;
+        return (l[3] * (1 - c) + l[4] * c) * l[1];
+    };
+    // --- a voice: [ratio, carrier phase, mod phase, amp env, mod env, carrier,
+    //               modulator, mod level, LFO, mixer channel, is-the-bass]
+    const notes = [];
+    const voice = (n) => {
+        const step = (BASEFREQ * n[0]) / SR;
+        const m = n[7] ? n[7] * wave(n[6], n[2] + lfo(n[8]), 0) * env(n[4]) : 0;
+        const out = wave(n[5], n[1], m) * env(n[3]);
+        // a phase advances by well under 1 a sample — the highest note steps 0.048 —
+        // so wrapping is a compare, not a remainder
+        let a = n[1] + step, b = n[2] + step;
+        n[1] = a >= 1 ? a - 1 : a;
+        n[2] = b >= 1 ? b - 1 : b;
+        return out;
+    };
+    /* ------------------------------------------------------------- effects ---- */
+    // Each effect is [kind, ...state]: 0 gain, 1 low-pass, 2 multi-tap delay,
+    // 3 diffuser. Kinds 2 and 3 run 8 internal channels.
+    const CH = 8;
+    const buf = (len) => new Float64Array(max(1, round(len)));
+    const gain = (db) => [0, 2 ** (db / 6)];
+    // The collapsed filter (see the header): per section, one state that both
+    // channels run through, K the pole and G the gain.
+    const lpf = (cut, order) => {
+        const a = tan((PI * min(cut, 10300)) / SR), a2 = a * a, co = [];
+        for (let i = 0; i < order; i++) {
+            const r = sin((PI * (2 * i + 1)) / (4 * order)), s = a2 + 2 * a * r + 1;
+            co.push((2 * (1 - a2)) / s + (4 * a * r) / s - 1, (4 * a2) / s);
+        }
+        return [1, co, new Float64Array(order)];
+    };
+    // Both multi-tap effects keep a write pointer PER buffer (f[9]) rather than one
+    // sample counter they take modulo each buffer's length. `idx % len` was running
+    // some 48 times a sample across the reverb, and an integer division is dear
+    // next to an increment and a compare. The pointers track the counter exactly,
+    // so this changes nothing about the sound.
+    const HAD = (1 / CH) ** 0.5; // was recomputed 32 times a sample
+    // [3, buffers, write index, -, -, -, -, -, -, per-buffer pointers]: 8 taps of
+    // random length up to maxdur ms, mixed by a Hadamard matrix. Feeds the reverb
+    // its density.
+    const diff = (maxdur) => {
+        const n = (maxdur / 1e3) * SR, bufs = [];
+        for (let c = 0; c < CH; c++)
+            bufs.push(buf(floor((n * c) / CH + (n / CH) * random()) + 1));
+        return [3, bufs, 0, 0, 0, 0, 0, 0, 0, new Int32Array(CH)];
+    };
+    // [2, buffers, write index, feedback, mix, mod depth, per-channel angle step,
+    //  cos/sin state, one-sample rotation, per-buffer pointers]. The read position
+    //  wobbles as cos(k·idx) per channel, which cost 16 Math.cos calls a sample —
+    //  23% of the whole engine, measured. It is the same value stepped forward
+    //  instead: rotating (cos, sin) by a fixed angle is four multiplies, and
+    //  re-anchoring on Math.cos every 1024 samples keeps the drift at the noise
+    //  floor rather than letting it accumulate.
+    const delay = (time, fdbk, mix, mod, modf) => {
+        const bufs = [], k = new Float64Array(CH);
+        const cs = new Float64Array(2 * CH), ks = new Float64Array(2 * CH);
+        for (let c = 0; c < CH; c++) {
+            bufs.push(buf(min((time / 1e3) * SR * 2 ** (c / CH), 1e6)));
+            k[c] = (modf * 2 * PI) / SR / 2 ** (c / CH);
+            cs[2 * c] = 1; // cos(0), sin(0) at idx 0
+            ks[2 * c] = cos(k[c]); // the one-sample rotation
+            ks[2 * c + 1] = sin(k[c]);
+        }
+        return [2, bufs, 0, fdbk, mix, (SR / 960) * mod, k, cs, ks, new Int32Array(CH)];
+    };
+    // Scratch shared by every effect: S is the signal bus (stereo in [0] and [1],
+    // widened in place to 8 taps plus the dry channel when a multi-channel effect
+    // needs it), T holds the taps. Both are reused for the life of the sampler —
+    // the previous version returned fresh arrays from every stage, which is ~30
+    // allocations a sample, and a GC pause inside an audio callback is a click.
+    const S = new Float64Array(CH + 1), T = new Float64Array(CH + 1);
+    // Runs one effect over S in place and returns the channel count that leaves it.
+    const fx = (f, n) => {
+        if (!f[0]) {
+            S[0] *= f[1];
+            S[1] *= f[1];
+            return n;
+        }
+        if (f[0] == 1) {
+            const co = f[1], st = f[2];
+            for (let i = 0; i < st.length; i++) {
+                for (let c = 0; c < 2; c++) {
+                    st[i] = co[2 * i] * st[i] + S[c];
+                    S[c] = co[2 * i + 1] * st[i];
+                }
+            }
+            return n;
+        }
+        // both multi-channel effects take either a stereo pair (spread to mono
+        // across all 8 taps, dry kept as the 9th) or another effect's 9 values
+        const bufs = f[1], idx = f[2];
+        const dry0 = S[0], dry1 = S[1];
+        if (n == 2) {
+            const m = (S[0] + S[1]) / 2;
+            for (let i = 0; i <= CH; i++)
+                S[i] = m;
+        }
+        const ptr = f[9];
+        if (f[0] == 3) {
+            for (let i = 0; i < CH; i++) {
+                const b = bufs[i], p = ptr[i];
+                T[i] = b[p];
+                b[p] = S[i];
+                ptr[i] = p + 1 < b.length ? p + 1 : 0;
+            }
+            f[2]++;
+            // Hadamard, then the 1/sqrt(8) that keeps it unitary
+            for (let len = 1; len < CH; len *= 2) {
+                for (let i = 0; i < CH; i += len * 2) {
+                    for (let j = i; j < i + len; j++) {
+                        const x = T[j], y = T[j + len];
+                        T[j] = x + y;
+                        T[j + len] = x - y;
+                    }
+                }
+            }
+            const dry = S[CH];
+            for (let i = 0; i < CH; i++)
+                S[i] = T[i] * HAD;
+            S[CH] = dry;
+            return CH + 1;
+        }
+        const k = f[6], cs = f[7], ks = f[8];
+        const anchor = (idx & 1023) == 0;
+        for (let i = 0; i < CH; i++) {
+            if (anchor) {
+                cs[2 * i] = cos(k[i] * idx);
+                cs[2 * i + 1] = sin(k[i] * idx);
+            }
+            const b = bufs[i], L = b.length;
+            // The read runs AHEAD of the write by the wobble, never by more than the
+            // shortest buffer (43 samples against 96 at the shipped settings), so one
+            // conditional subtract wraps it — no modulo, and the integer part and the
+            // fraction come off the offset rather than off idx + offset, which is also
+            // steadier once idx is in the tens of millions.
+            // max(0, …) is not cosmetic: the rotation can leave cs a few 1e-16 ABOVE
+            // 1, where Math.cos never could, and then the offset goes negative, the
+            // read index lands on -1, and a Float64Array returns undefined — silent
+            // NaN through the whole mix. It bit at 0.5s in.
+            const d = max(0, f[5] * (1 - cs[2 * i])), di = floor(d);
+            let p = ptr[i] + di;
+            if (p >= L)
+                p -= L;
+            let q = p + 1;
+            if (q >= L)
+                q -= L;
+            const g = d - di;
+            T[i] = b[p] + (b[q] - b[p]) * g;
+            // rotate this channel's angle on by one sample, ready for the next call
+            const c = cs[2 * i], s = cs[2 * i + 1];
+            cs[2 * i] = c * ks[2 * i] - s * ks[2 * i + 1];
+            cs[2 * i + 1] = s * ks[2 * i] + c * ks[2 * i + 1];
+        }
+        // Householder: every tap gets -2/n of the sum
+        let sum = 0;
+        for (let i = 0; i < CH; i++)
+            sum += T[i];
+        sum *= -2 / CH;
+        for (let i = 0; i < CH; i++)
+            T[i] += sum;
+        for (let i = 0; i < CH; i++) {
+            const b = bufs[i], p = ptr[i];
+            b[p] = S[i] + T[i] * f[3];
+            ptr[i] = p + 1 < b.length ? p + 1 : 0;
+        }
+        f[2]++;
+        if (n == 2) {
+            S[0] = lerp(dry0, T[0], f[4]);
+            S[1] = lerp(dry1, T[1], f[4]);
+        }
+        else {
+            const dry = S[CH];
+            S[0] = lerp(dry, lerp(T[0], S[0], 0.5), f[4]);
+            S[1] = lerp(dry, lerp(T[1], S[1], 0.5), f[4]);
+        }
+        return 2;
+    };
+    /* --------------------------------------------------------------- mixer ---- */
+    // [destination channel (-1 is the output), effects...]. Channels are processed
+    // top down and only ever send downward, so one pass resolves the whole graph.
+    const MIX = [
+        [-1, gain(-12), diff(20), diff(40), diff(80), diff(160), delay(200, 0.85, 0.75, 0.85, 1.5)],
+        [0, lpf(1500, 2)],
+        [-1, gain(-15)],
+        [0, gain(3), lpf(2000, 2), delay(4, 0, 0.5, 1, 2)],
+        [3, gain(3)],
+    ];
+    // one flat pair per channel, rather than an array of arrays that has to be
+    // replaced every sample
+    const SIG = new Float64Array(2 * MIX.length);
+    const OUT = new Float64Array(2); // what the sampler hands back, reused
+    /* ----------------------------------------------------------- sequencer ---- */
+    // The encoded patterns, flattened into [ticks, patch, pitch, patch, pitch, ...]
+    const ROWS = [];
+    for (const a of ARR) {
+        const s = PATS[+a];
+        for (let i = 0; i < s.length;) {
+            const c = s.charCodeAt(i++);
+            if (c < 78)
+                ROWS.push([c - 65]);
+            else
+                ROWS[ROWS.length - 1].push(c - 97, s.charCodeAt(i++) - 110);
+        }
+    }
+    let now = 0, next = 0, ptr = 0;
+    return () => {
+        if (now >= next) {
+            const row = ROWS[ptr];
+            for (let i = 1; i < row.length; i += 2) {
+                const p = P[row[i]], pitch = row[i + 1];
+                if (!p) {
+                    // note-off: release every envelope of the bass voice
+                    for (const n of notes)
+                        if (n[10]) {
+                            n[3][2] = 0;
+                            if (n[4])
+                                n[4][2] = 0;
+                        }
+                }
+                else {
+                    notes.push([
+                        2 ** ((pitch + p[0]) / 12), 0, 0,
+                        [0, 0, 1, 1, p[1], p[2], p[3], p[4]],
+                        p[11] && [0, 0, 1, 1, p[5], p[6], p[7], p[8]],
+                        p[9], p[10], p[11],
+                        p[11] && [p[12] * BASEFREQ * 2 ** (pitch / 12), p[13], 1, 0, 0],
+                        p[14], p[15],
+                    ]);
+                }
+            }
+            next += row[0] * TL;
+            ptr = (ptr + 1) % ROWS.length; // the song loops
+        }
+        now++;
+        let sum0 = 0, sum1 = 0;
+        for (let i = 0; i < notes.length;) {
+            if (!notes[i][3][3]) {
+                notes.splice(i, 1);
+                continue;
+            }
+            const out = voice(notes[i]), s = 2 * notes[i][9];
+            SIG[s] += out;
+            SIG[s + 1] += out;
+            i++;
+        }
+        for (let j = MIX.length; j--;) {
+            S[0] = SIG[2 * j];
+            S[1] = SIG[2 * j + 1];
+            let n = 2;
+            for (let k = 1; k < MIX[j].length; k++)
+                n = fx(MIX[j][k], n);
+            const d = MIX[j][0];
+            if (d < 0) {
+                sum0 += S[0];
+                sum1 += S[1];
+            }
+            else {
+                SIG[2 * d] += S[0];
+                SIG[2 * d + 1] += S[1];
+            }
+            SIG[2 * j] = SIG[2 * j + 1] = 0;
+        }
+        OUT[0] = sum0;
+        OUT[1] = sum1;
+        return OUT;
+    };
+}
+/* === end engine === */
+
+/* ------------------------------------------------------------------ audio */
+// The game's own playback, in miniature: render quarter-second chunks ahead and
+// schedule them, with a splitter feeding one analyser per channel.
+const SONG_SR = 24000, CHUNK = 0.25, LEAD = 1.5;
+let ctx = null, bus = null, anL = null, anR = null, next = null, at = 0, pumping = 0;
+
+function startAudio() {
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  bus = ctx.createGain();
+  bus.gain.value = 0.4;
+  const split = ctx.createChannelSplitter(2);
+  anL = ctx.createAnalyser();
+  anR = ctx.createAnalyser();
+  anL.fftSize = anR.fftSize = 2048;
+  bus.connect(split);
+  split.connect(anL, 0);
+  split.connect(anR, 1);
+  bus.connect(ctx.destination);
+  next = sampler(SONG_SR);
+  at = ctx.currentTime + 0.15;
+  pump();
+  pumping = setInterval(pump, 200);
+}
+
+function pump() {
+  if (!next) return;
+  const N = Math.round(CHUNK * SONG_SR);
+  if (at < ctx.currentTime) at = ctx.currentTime + 0.1;
+  while (at < ctx.currentTime + LEAD) {
+    const b = ctx.createBuffer(2, N, SONG_SR);
+    const l = b.getChannelData(0), r = b.getChannelData(1);
+    for (let i = 0; i < N; i++) { const s = next(); l[i] = s[0]; r[i] = s[1]; }
+    const src = ctx.createBufferSource();
+    src.buffer = b;
+    src.connect(bus);
+    src.start(at);
+    at += N / SONG_SR;
+  }
+}
+
+const playBtn = document.getElementById("play");
+let playing = false;
+function toggleAudio() {
+  if (!ctx) { startAudio(); playing = true; }
+  else if (playing) { ctx.suspend(); playing = false; }
+  else { ctx.resume(); playing = true; }
+  playBtn.textContent = (playing ? "PAUSE" : "PLAY") + "  (space)";
+}
+playBtn.addEventListener("click", toggleAudio);
+
+/* ----------------------------------------------------------------- analysis */
+const opt = { bands: 40, sens: 1.6, smooth: 0.7, depth: 120 };
+let freqL, freqR, timeL, timeR;
+
+// Log-spaced bands: an FFT's linear bins put almost everything in the top
+// octaves, which looks like a wall on the right and nothing on the left.
+// Each band takes the loudest bin it covers, so quiet detail is not averaged away.
+function bands(data, n, out) {
+  const bins = data.length;
+  for (let i = 0; i < n; i++) {
+    const lo = Math.floor(bins ** (i / n)), hi = Math.max(lo + 1, Math.floor(bins ** ((i + 1) / n)));
+    let m = 0;
+    for (let j = lo; j < hi && j < bins; j++) if (data[j] > m) m = data[j];
+    const v = Math.min(1, (m / 255) * opt.sens);
+    out[i] = out[i] * opt.smooth + v * (1 - opt.smooth);      // per-band smoothing on top of the analyser's
+  }
+  return out;
+}
+const hue = (i, n) => 280 * (i / n);      // red at the bass end, violet at the top
+
+/* ------------------------------------------------------------------ modes */
+// Each mode draws one frame over the whole canvas. bandsL/bandsR are 0..1,
+// low frequency first; w/h are CSS pixels.
+const MODES = [
+  {
+    name: "edge bars",
+    note: "One bar per band, growing inward from each side. The plainest reading of the spectrum.",
+    draw(g, w, h, L, R) {
+      const n = L.length, bh = h / n;
+      for (let i = 0; i < n; i++) {
+        const y = h - (i + 1) * bh;
+        g.fillStyle = `hsl(${hue(i, n)} 90% 60% / .85)`;
+        g.fillRect(0, y + 1, L[i] * opt.depth, bh - 2);
+        g.fillRect(w - R[i] * opt.depth, y + 1, R[i] * opt.depth, bh - 2);
+      }
+    },
+  },
+  {
+    name: "perimeter ribbon",
+    note: "The spectrum runs around the border: bass at the bottom corners, treble meeting at the top. Thickness is level.",
+    draw(g, w, h, L, R) {
+      const n = L.length;
+      g.lineCap = "round";
+      for (const [side, v] of [[-1, L], [1, R]]) {
+        for (let i = 0; i < n; i++) {
+          const t = i / n;                     // 0 at the bottom corner, 1 at the top middle
+          const p = edgePoint(side, t, w, h), q = edgePoint(side, (i + 1) / n, w, h);
+          g.strokeStyle = `hsl(${hue(i, n)} 95% 60% / .9)`;
+          g.lineWidth = 2 + v[i] * opt.depth * 0.5;
+          g.beginPath();
+          g.moveTo(p[0], p[1]);
+          g.lineTo(q[0], q[1]);
+          g.stroke();
+        }
+      }
+    },
+  },
+  {
+    name: "aurora",
+    note: "No bars at all: soft rainbow light along the edges, breathing with the band energy. The quietest option under a game.",
+    draw(g, w, h, L, R) {
+      const n = L.length;
+      g.filter = "blur(18px)";
+      for (const [side, v] of [[0, L], [1, R]]) {
+        const x = side ? w : 0;
+        const grad = g.createLinearGradient(x, h, x, 0);
+        for (let i = 0; i < n; i++) {
+          grad.addColorStop(i / (n - 1), `hsl(${hue(i, n)} 95% 55% / ${0.05 + v[i] * 0.85})`);
+        }
+        g.fillStyle = grad;
+        g.fillRect(side ? w - opt.depth : 0, 0, opt.depth, h);
+      }
+      g.filter = "none";
+    },
+  },
+  {
+    name: "mirror wave",
+    note: "The waveform itself rather than its spectrum, mirrored down each edge — it moves with the beat instead of the pitch.",
+    draw(g, w, h, L, R, tL, tR) {
+      for (const [side, t] of [[0, tL], [1, tR]]) {
+        const x = side ? w : 0, dir = side ? -1 : 1, n = t.length;
+        const grad = g.createLinearGradient(0, h, 0, 0);
+        for (let i = 0; i <= 6; i++) grad.addColorStop(i / 6, `hsl(${280 * (i / 6)} 95% 60%)`);
+        g.strokeStyle = grad;
+        g.lineWidth = 2;
+        g.beginPath();
+        for (let i = 0; i < n; i++) {
+          const y = h - (i / (n - 1)) * h;
+          const a = ((t[i] - 128) / 128) * opt.sens;
+          const px = x + dir * Math.abs(a) * opt.depth * 1.5;
+          i ? g.lineTo(px, y) : g.moveTo(px, y);
+        }
+        g.stroke();
+      }
+    },
+  },
+  {
+    name: "pulse frame",
+    note: "A rainbow frame all the way round, each segment breathing with its band. Reads as one object rather than two sides.",
+    draw(g, w, h, L, R) {
+      const n = L.length;
+      g.lineCap = "butt";
+      for (const [side, v] of [[-1, L], [1, R]]) {
+        for (let i = 0; i < n; i++) {
+          const p = edgePoint(side, i / n, w, h), q = edgePoint(side, (i + 0.98) / n, w, h);
+          const lit = v[i];
+          g.strokeStyle = `hsl(${hue(i, n)} 95% ${25 + lit * 45}% / ${0.25 + lit * 0.75})`;
+          g.lineWidth = 6 + lit * opt.depth * 0.35;
+          g.beginPath();
+          g.moveTo(p[0], p[1]);
+          g.lineTo(q[0], q[1]);
+          g.stroke();
+        }
+      }
+    },
+  },
+  {
+    name: "comet dots",
+    note: "A dot per band with a fading trail, so a loud band leaves a streak. The most alive, and the busiest.",
+    trails: true,
+    draw(g, w, h, L, R) {
+      const n = L.length;
+      for (const [side, v] of [[0, L], [1, R]]) {
+        for (let i = 0; i < n; i++) {
+          if (v[i] < 0.02) continue;
+          const y = h - ((i + 0.5) / n) * h;
+          const x = (side ? w : 0) + (side ? -1 : 1) * (8 + v[i] * opt.depth);
+          g.fillStyle = `hsl(${hue(i, n)} 95% 62% / .9)`;
+          g.beginPath();
+          g.arc(x, y, 1.5 + v[i] * 7, 0, 7);
+          g.fill();
+        }
+      }
+    },
+  },
+];
+
+// A point on the border for a channel: t runs 0 (bottom corner) -> 1 (top
+// centre), up the side and then inward along the top.
+function edgePoint(side, t, w, h) {
+  const x0 = side < 0 ? 0 : w;
+  const up = h, across = w / 2, total = up + across;
+  const d = t * total;
+  if (d < up) return [x0, h - d];
+  return [x0 + (side < 0 ? 1 : -1) * (d - up), 0];
+}
+
+/* ------------------------------------------------------------------- draw */
+const cv = document.getElementById("viz"), g = cv.getContext("2d");
+let mode = 0, bl = new Float32Array(96), br = new Float32Array(96), last = 0, frames = 0, fpsAt = 0;
+
+function resize() {
+  const r = Math.min(devicePixelRatio || 1, 2);
+  cv.width = innerWidth * r;
+  cv.height = innerHeight * r;
+  g.setTransform(r, 0, 0, r, 0, 0);
+}
+addEventListener("resize", resize);
+resize();
+
+function frame(now) {
+  const w = innerWidth, h = innerHeight, m = MODES[mode];
+  if (m.trails) {                       // fade instead of clear, so dots streak
+    g.fillStyle = "#05060f28";
+    g.fillRect(0, 0, w, h);
+  } else {
+    g.clearRect(0, 0, w, h);
+  }
+
+  if (anL) {
+    anL.smoothingTimeConstant = anR.smoothingTimeConstant = 0.5;
+    anL.getByteFrequencyData(freqL);
+    anR.getByteFrequencyData(freqR);
+    anL.getByteTimeDomainData(timeL);
+    anR.getByteTimeDomainData(timeR);
+    const n = opt.bands;
+    const L = bands(freqL, n, bl).subarray(0, n), R = bands(freqR, n, br).subarray(0, n);
+    g.save();
+    m.draw(g, w, h, L, R, timeL, timeR);
+    g.restore();
+  }
+
+  frames++;
+  if (now - fpsAt > 500) {
+    document.getElementById("fps").textContent =
+      Math.round((frames * 1000) / (now - fpsAt)) + " fps  ·  " + m.name;
+    frames = 0;
+    fpsAt = now;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------------------------------------------------------------- controls */
+const optsEl = document.getElementById("opts");
+MODES.forEach((m, i) => {
+  const d = document.createElement("div");
+  d.innerHTML = `<div class="opt" data-i="${i}"><kbd>${i + 1}</kbd> ${m.name}</div>` +
+    `<div class="note">${m.note}</div>`;
+  optsEl.appendChild(d);
+});
+function pick(i) {
+  mode = (i + MODES.length) % MODES.length;
+  [...document.querySelectorAll(".opt")].forEach((el, j) => el.classList.toggle("on", j === mode));
+  g.clearRect(0, 0, innerWidth, innerHeight);
+}
+optsEl.addEventListener("click", (e) => {
+  const el = e.target.closest(".opt");
+  if (el) pick(+el.dataset.i);
+});
+pick(0);
+
+const slider = (id, key, fmt, scale) => {
+  const el = document.getElementById(id), out = document.getElementById(id + "V");
+  const apply = () => {
+    opt[key] = +el.value * scale;
+    out.textContent = fmt(opt[key]);
+    if (key === "bands") { bl.fill(0); br.fill(0); }
+  };
+  el.addEventListener("input", apply);
+  apply();
+};
+slider("bands", "bands", (v) => v, 1);
+slider("sens", "sens", (v) => v.toFixed(1), 0.01);
+slider("smooth", "smooth", (v) => v.toFixed(2).slice(1), 0.01);
+slider("depth", "depth", (v) => v, 1);
+
+addEventListener("keydown", (e) => {
+  if (e.key >= "1" && e.key <= String(MODES.length)) pick(+e.key - 1);
+  else if (e.key === "g" || e.key === "G") document.getElementById("mock").classList.toggle("on");
+  else if (e.key === "h" || e.key === "H") document.getElementById("ui").classList.toggle("hidden");
+  else if (e.key === " ") { toggleAudio(); e.preventDefault(); }
+});
+
+// the analyser buffers, once the fftSize is known
+function buffers() {
+  freqL = new Uint8Array(1024);
+  freqR = new Uint8Array(1024);
+  timeL = new Uint8Array(2048);
+  timeR = new Uint8Array(2048);
+}
+buffers();
+</script>
+</body>
+</html>

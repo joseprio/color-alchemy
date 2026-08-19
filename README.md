@@ -111,10 +111,13 @@ tools/fouc-probe.mjs       first-paint timing vs. the moment the sheet lands
 tools/css-diff.mjs         computed styles, minified stylesheet vs. raw
 tools/music-probe.mjs      captures the shipped page's own audio callback
 tools/responsive-probe.mjs the page at seven viewports, phone to laptop
-tools/audio-bench.mjs      ns per sample vs. the audio callback's deadline
+tools/audio-bench.mjs      ns per sample vs. the render-ahead budget
+tools/build-visualizer.mjs splices src/music.ts into the visualizer experiment
 
 experiments/menu-typography.html   the seven title settings the current one
                                    was chosen from
+experiments/visualizer.html        six spectrum-analyser options, on the game's
+                                   own music — not wired into the game yet
 ```
 
 ## Title screen

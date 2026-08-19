@@ -7,6 +7,7 @@
     "prebuild": "npm run check",
     "postbuild": "node postbuild.mjs",
     "roadroller-optimize": "node tools/find-rr-config.mjs",
+    "build-visualizer": "node tools/build-visualizer.mjs",
     "fouc-check": "node tools/fouc-probe.mjs",
     "css-diff": "node tools/css-diff.mjs",
     "music-check": "node tools/music-probe.mjs",
