@@ -667,7 +667,11 @@ const MODES = [
           if (len < 1) continue;
           g.fillStyle = barGrad(g, right ? w : 0, right ? -len : len);
           for (const [y, bh] of slots(i, n, h)) {
-            g.fillRect(right ? w - len : 0, y + 0.5, len, Math.max(1, bh - 1));
+            // snapped to device pixels and drawn edge to edge: a half-pixel
+            // inset left a hairline between bars, and fractional band heights
+            // anti-aliased another one even without it
+            const y0 = snap(y), y1 = snap(y + bh);
+            g.fillRect(right ? w - len : 0, y0, len, Math.max(1 / dpr, y1 - y0));
           }
         }
       }
@@ -787,10 +791,14 @@ const MODES = [
 
 /* ------------------------------------------------------------------- draw */
 const cv = document.getElementById("viz"), g = cv.getContext("2d");
+// the current device-pixel ratio, and rounding to its grid: drawing at
+// fractional device pixels is what puts a seam between two touching rectangles
+let dpr = 1;
+const snap = (v) => Math.round(v * dpr) / dpr;
 let mode = 0, bl = new Float32Array(96), br = new Float32Array(96), frames = 0, fpsAt = 0, stereo = 0;
 
 function resize() {
-  const r = Math.min(devicePixelRatio || 1, 2);
+  const r = dpr = Math.min(devicePixelRatio || 1, 2);
   cv.width = innerWidth * r;             // bitmap: device pixels
   cv.height = innerHeight * r;
   cv.style.width = innerWidth + "px";    // and the CSS box: viewport pixels
