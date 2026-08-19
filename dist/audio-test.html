@@ -1,0 +1,124 @@
+<!doctype html>
+<!-- Throwaway diagnostic served by the dev server: open it on the phone that
+     has no music and read the numbers off the screen. It tests the exact things
+     the game does, one at a time, so a failure points at which one.
+     Same origin as the game, so it can read the game's own mute flag. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — audio test</title>
+<style>
+  body {
+    margin: 0; padding: 18px; background: #05060f; color: #cfe3ff;
+    font: 15px/1.5 monospace; -webkit-text-size-adjust: 100%;
+  }
+  h1 { font-size: 17px; letter-spacing: .12em; margin: 0 0 12px; color: #fff; }
+  button {
+    display: block; width: 100%; padding: 22px; margin: 0 0 18px;
+    background: #101528; color: #ffd75e; border: 1px solid #ffd75e; border-radius: 12px;
+    font: inherit; font-size: 19px; letter-spacing: .1em;
+  }
+  .row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid #16203a; }
+  .row b { color: #fff; font-weight: 400; }
+  .k { color: #8fb4d8; flex: 1; }
+  .v { text-align: right; }
+  .ok { color: #7dff9a; }
+  .bad { color: #ff8080; }
+  .warn { color: #ffb36b; }
+  p { color: #8fb4d8; }
+</style>
+</head>
+<body>
+<h1>AUDIO TEST</h1>
+<p>Tap the button. Everything below is measured on this device, in this browser.</p>
+<button id="go">TAP TO TEST</button>
+<div id="out"></div>
+
+<script>
+const out = document.getElementById("out");
+const row = (k, v, cls) => {
+  const d = document.createElement("div");
+  d.className = "row";
+  d.innerHTML = '<span class="k">' + k + '</span><span class="v ' + (cls || "") + '">' + v + "</span>";
+  out.appendChild(d);
+};
+
+document.getElementById("go").addEventListener("click", async () => {
+  out.innerHTML = "";
+
+  // 1. the game's own mute flag, same origin, same key
+  let mute = null;
+  try { mute = localStorage.getItem("colorAlchemy.mute"); } catch (e) { mute = "unreadable"; }
+  row("game mute flag", mute === "1" ? "MUTED — that alone would explain it" : String(mute),
+    mute === "1" ? "bad" : "ok");
+
+  // 2. can we have an AudioContext at all, and does it run after a tap?
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  row("AudioContext", Ctor ? (window.AudioContext ? "yes" : "webkit-prefixed") : "MISSING",
+    Ctor ? "ok" : "bad");
+  if (!Ctor) return;
+  const ctx = new Ctor();
+  row("state on creation", ctx.state);
+  try { await ctx.resume(); } catch (e) { row("resume threw", e.name + ": " + e.message, "bad"); }
+  row("state after resume", ctx.state, ctx.state === "running" ? "ok" : "bad");
+  row("sample rate", ctx.sampleRate + " Hz");
+
+  // 3. an oscillator: does this device make ANY web audio sound?
+  //    (on iPhone the ring/silent switch mutes web audio — this is the test
+  //     that catches it, because everything else can look perfect)
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = 440;
+    g.gain.value = 0.0001;
+    g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+    o.connect(g).connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.65);
+    row("oscillator beep", "playing now — did you hear it?", "warn");
+  } catch (e) {
+    row("oscillator beep", e.name + ": " + e.message, "bad");
+  }
+
+  // 4. ScriptProcessorNode, which is what the music runs on — with 0 input
+  //    channels (what the game shipped) and with 1 (what Safari requires)
+  const trySP = (inputs) =>
+    new Promise((resolve) => {
+      let made = false, calls = 0;
+      try {
+        const n = ctx.createScriptProcessor(4096, inputs, 2);
+        made = true;
+        n.onaudioprocess = (e) => {
+          calls++;
+          const l = e.outputBuffer.getChannelData(0), r = e.outputBuffer.getChannelData(1);
+          for (let i = 0; i < l.length; i++) {
+            const t = (calls * 4096 + i) / ctx.sampleRate;
+            l[i] = r[i] = Math.sin(2 * Math.PI * 330 * t) * 0.12 * Math.exp(-t * 2);
+          }
+        };
+        n.connect(ctx.destination);
+        setTimeout(() => {
+          try { n.disconnect(); } catch (e) {}
+          resolve({ made, calls, err: null });
+        }, 1200);
+      } catch (e) {
+        resolve({ made, calls, err: e.name + ": " + e.message });
+      }
+    });
+
+  for (const inputs of [0, 1]) {
+    const r = await trySP(inputs);
+    const label = "ScriptProcessor(4096, " + inputs + ", 2)";
+    if (r.err) row(label, "THREW " + r.err, "bad");
+    else row(label, r.calls + " callback(s) in 1.2s" + (r.calls ? " — should have beeped" : " — silent"),
+      r.calls ? "ok" : "bad");
+  }
+
+  row("user agent", navigator.userAgent.slice(0, 60));
+  row("", "");
+  row("read these back to Claude", "↑", "warn");
+});
+</script>
+</body>
+</html>

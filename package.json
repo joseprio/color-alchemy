@@ -10,6 +10,7 @@
     "fouc-check": "node tools/fouc-probe.mjs",
     "css-diff": "node tools/css-diff.mjs",
     "music-check": "node tools/music-probe.mjs",
+    "audio-bench": "node tools/audio-bench.mjs",
     "mobile-check": "node tools/responsive-probe.mjs",
     "phone": "node tools/phone.mjs",
     "start": "rollup -c -w",

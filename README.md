@@ -17,6 +17,7 @@ npm run fouc-check        # is the sheet in place before the first paint?
 npm run css-diff          # does cssnano change any computed style?
 npm run music-check       # is the shipped page actually producing audio?
 npm run mobile-check      # phone and tablet layout: overflow, tap targets
+npm run audio-bench       # what a sample costs, against the callback budget
 ```
 
 - **Play:** open `dist/bundle.html` — the whole game in one file.
@@ -110,6 +111,7 @@ tools/fouc-probe.mjs       first-paint timing vs. the moment the sheet lands
 tools/css-diff.mjs         computed styles, minified stylesheet vs. raw
 tools/music-probe.mjs      captures the shipped page's own audio callback
 tools/responsive-probe.mjs the page at seven viewports, phone to laptop
+tools/audio-bench.mjs      ns per sample vs. the audio callback's deadline
 
 experiments/menu-typography.html   the seven title settings the current one
                                    was chosen from
@@ -269,10 +271,38 @@ applies is what keeps it clear of clipping, not just quiet.
 
 The engine runs at the 24 kHz the song was written for and the output is
 interpolated up to whatever the AudioContext runs at, which is galaxy-raid's
-arrangement — its bytebeats step a song clock of their own — and halves the cost:
-**8% of one core instead of 15%** at a 48 kHz context. Generating at the context
-rate is a one-word change in `startMusic` if that ever looks like the better
-trade.
+arrangement — its bytebeats step a song clock of their own — and halves the cost.
+Generating at the context rate is a one-word change in `startMusic` if that ever
+looks like the better trade.
+
+**It is 2.9x cheaper than the first version**, which is a phone story rather than
+a desktop one: a ScriptProcessorNode calls back on the *main thread*, so its cost
+is time the page is not drawing, and a callback that misses its deadline is an
+audible glitch. `npm run audio-bench` measures it — **3191 ns a sample became
+1107**, 7.7% of a core to 2.7%, which on a phone 6x slower than this machine is
+46% of the callback budget down to 16%. Two changes did it, and the profiler
+picked both:
+
+- **The delay modulation was 23% of the whole engine.** Its read position wobbles
+  as `cos(k·idx)` per tap, which is 16 `Math.cos` calls a sample. It is the same
+  value stepped forward instead — rotating a (cos, sin) pair by a fixed angle is
+  four multiplies — re-anchored on a real `Math.cos` every 1024 samples so drift
+  cannot accumulate.
+- **Every stage returned fresh arrays**, about 30 allocations a sample, which is
+  ~700k a second for the garbage collector to deal with; a GC pause inside an
+  audio callback is a click. The effects now run in place over two scratch
+  buffers, and the mixer keeps its channel signals in one flat `Float64Array`.
+
+Neither changes the sound: against the same 250-second reference the output is
+identical to **6e-8** — the recurrence's drift, about 1000x below what float32
+storage can even represent, where the original was bit-identical.
+
+Still worth knowing, because the optimisation does not fix it: a
+ScriptProcessorNode runs on the main thread, so when a phone's screen goes off
+and the browser throttles that thread, the audio glitches regardless of how cheap
+it is. The fixes for that are an **AudioWorklet** (the audio thread, immune to it,
+but the engine has to reach the worklet as its own module) or **rendering ahead**
+into scheduled AudioBuffers (a lead of a few seconds absorbs the throttling).
 
 The track costs **1511 bytes** zipped — 9651 to 11246, of which the song data is
 six strings totalling 571 characters; the mute control and its HUD button added

@@ -71,7 +71,7 @@ const lerp = (a: number, b: number, x: number): number => x * b + (1 - x) * a;
 // derives — tick length, envelope slopes, delay lengths, filter coefficients —
 // is in seconds or Hz, so the song plays at its intended pitch and tempo at
 // whatever rate the AudioContext runs at; the file was written for 24 kHz.
-export function sampler(SR: number): () => number[] {
+export function sampler(SR: number): () => Float64Array {
   const TL = (SR * 60) / 90 / 2;        // samples per tick: 90 BPM, 2 ticks a beat
 
   // --- waves. mod is phase modulation in radians, folded into the same call ---
@@ -152,68 +152,106 @@ export function sampler(SR: number): () => number[] {
   // [2, buffers, write index, feedback, mix, mod depth, mod frequency]: 8 taps
   // spread over an octave of delay times, read at a slowly wobbling position and
   // mixed by a Householder matrix.
+  // [2, buffers, write index, feedback, mix, mod depth, per-channel angle step,
+  //  cos/sin state]. The read position wobbles as cos(k·idx) per channel, which
+  //  cost 16 Math.cos calls a sample — 23% of the whole engine, measured. It is
+  //  the same value stepped forward instead: rotating (cos, sin) by a fixed
+  //  angle is four multiplies, and re-anchoring on Math.cos every 1024 samples
+  //  keeps the drift at the noise floor rather than letting it accumulate.
   const delay = (time: number, fdbk: number, mix: number, mod: number, modf: number): any[] => {
-    const bufs: Float64Array[] = [];
-    for (let c = 0; c < CH; c++) bufs.push(buf(min((time / 1e3) * SR * 2 ** (c / CH), 1e6)));
-    return [2, bufs, 0, fdbk, mix, (SR / 960) * mod, modf];
+    const bufs: Float64Array[] = [], k = new Float64Array(CH);
+    const cs = new Float64Array(2 * CH), ks = new Float64Array(2 * CH);
+    for (let c = 0; c < CH; c++) {
+      bufs.push(buf(min((time / 1e3) * SR * 2 ** (c / CH), 1e6)));
+      k[c] = (modf * 2 * PI) / SR / 2 ** (c / CH);
+      cs[2 * c] = 1;                              // cos(0), sin(0) at idx 0
+      ks[2 * c] = cos(k[c]);                      // the one-sample rotation
+      ks[2 * c + 1] = sin(k[c]);
+    }
+    return [2, bufs, 0, fdbk, mix, (SR / 960) * mod, k, cs, ks];
   };
 
-  const fx = (f: any[], sig: number[]): number[] => {
-    if (!f[0]) return [sig[0] * f[1], sig[1] * f[1]];
+  // Scratch shared by every effect: S is the signal bus (stereo in [0] and [1],
+  // widened in place to 8 taps plus the dry channel when a multi-channel effect
+  // needs it), T holds the taps. Both are reused for the life of the sampler —
+  // the previous version returned fresh arrays from every stage, which is ~30
+  // allocations a sample, and a GC pause inside an audio callback is a click.
+  const S = new Float64Array(CH + 1), T = new Float64Array(CH + 1);
+
+  // Runs one effect over S in place and returns the channel count that leaves it.
+  const fx = (f: any[], n: number): number => {
+    if (!f[0]) { S[0] *= f[1]; S[1] *= f[1]; return n; }
 
     if (f[0] == 1) {
-      const co: number[] = f[1], st: Float64Array = f[2], out = [sig[0], sig[1]];
+      const co: number[] = f[1], st: Float64Array = f[2];
       for (let i = 0; i < st.length; i++) {
         for (let c = 0; c < 2; c++) {
-          st[i] = co[2 * i] * st[i] + out[c];
-          out[c] = co[2 * i + 1] * st[i];
+          st[i] = co[2 * i] * st[i] + S[c];
+          S[c] = co[2 * i + 1] * st[i];
         }
       }
-      return out;
+      return n;
     }
 
     // both multi-channel effects take either a stereo pair (spread to mono
     // across all 8 taps, dry kept as the 9th) or another effect's 9 values
-    const wide = sig.length > 2 ? sig : Array(CH + 1).fill((sig[0] + sig[1]) / 2);
-    const bufs: Float64Array[] = f[1], tap: number[] = [];
+    const bufs: Float64Array[] = f[1], idx: number = f[2];
+    const dry0 = S[0], dry1 = S[1];
+    if (n == 2) { const m = (S[0] + S[1]) / 2; for (let i = 0; i <= CH; i++) S[i] = m; }
 
     if (f[0] == 3) {
       for (let i = 0; i < CH; i++) {
-        const p = f[2] % bufs[i].length;
-        tap[i] = bufs[i][p];
-        bufs[i][p] = wide[i];
+        const p = idx % bufs[i].length;
+        T[i] = bufs[i][p];
+        bufs[i][p] = S[i];
       }
       f[2]++;
       // Hadamard, then the 1/sqrt(8) that keeps it unitary
       for (let len = 1; len < CH; len *= 2) {
         for (let i = 0; i < CH; i += len * 2) {
           for (let j = i; j < i + len; j++) {
-            const x = tap[j], y = tap[j + len];
-            tap[j] = x + y;
-            tap[j + len] = x - y;
+            const x = T[j], y = T[j + len];
+            T[j] = x + y;
+            T[j + len] = x - y;
           }
         }
       }
-      for (let i = 0; i < CH; i++) tap[i] *= (1 / CH) ** 0.5;
-      return tap.concat(wide[CH]);
+      const dry = S[CH];
+      for (let i = 0; i < CH; i++) S[i] = T[i] * (1 / CH) ** 0.5;
+      S[CH] = dry;
+      return CH + 1;
     }
 
+    const k: Float64Array = f[6], cs: Float64Array = f[7], ks: Float64Array = f[8];
+    const anchor = (idx & 1023) == 0;
     for (let i = 0; i < CH; i++) {
+      if (anchor) { cs[2 * i] = cos(k[i] * idx); cs[2 * i + 1] = sin(k[i] * idx); }
       const b = bufs[i], L = b.length;
-      const pos = f[2] + f[5] * (1 - cos((f[6] * 2 * PI * f[2]) / SR / 2 ** (i / CH)));
-      tap[i] = lerp(b[floor(pos) % L], b[(floor(pos) + 1) % L], pos % 1);
+      const pos = idx + f[5] * (1 - cs[2 * i]);
+      const p = floor(pos);
+      T[i] = lerp(b[p % L], b[(p + 1) % L], pos % 1);
+      // rotate this channel's angle on by one sample, ready for the next call
+      const c = cs[2 * i], s = cs[2 * i + 1];
+      cs[2 * i] = c * ks[2 * i] - s * ks[2 * i + 1];
+      cs[2 * i + 1] = s * ks[2 * i] + c * ks[2 * i + 1];
     }
     // Householder: every tap gets -2/n of the sum
     let sum = 0;
-    for (let i = 0; i < CH; i++) sum += tap[i];
+    for (let i = 0; i < CH; i++) sum += T[i];
     sum *= -2 / CH;
-    for (let i = 0; i < CH; i++) tap[i] += sum;
+    for (let i = 0; i < CH; i++) T[i] += sum;
 
-    for (let i = 0; i < CH; i++) bufs[i][f[2] % bufs[i].length] = wide[i] + tap[i] * f[3];
+    for (let i = 0; i < CH; i++) bufs[i][idx % bufs[i].length] = S[i] + T[i] * f[3];
     f[2]++;
-    return sig.length > 2
-      ? [0, 1].map((c) => lerp(wide[CH], lerp(tap[c], wide[c], 0.5), f[4]))
-      : [0, 1].map((c) => lerp(sig[c], tap[c], f[4]));
+    if (n == 2) {
+      S[0] = lerp(dry0, T[0], f[4]);
+      S[1] = lerp(dry1, T[1], f[4]);
+    } else {
+      const dry = S[CH];
+      S[0] = lerp(dry, lerp(T[0], S[0], 0.5), f[4]);
+      S[1] = lerp(dry, lerp(T[1], S[1], 0.5), f[4]);
+    }
+    return 2;
   };
 
   /* --------------------------------------------------------------- mixer ---- */
@@ -226,7 +264,10 @@ export function sampler(SR: number): () => number[] {
     [0, gain(3), lpf(2000, 2), delay(4, 0, 0.5, 1, 2)],
     [3, gain(3)],
   ];
-  const SIG: number[][] = MIX.map(() => [0, 0]);
+  // one flat pair per channel, rather than an array of arrays that has to be
+  // replaced every sample
+  const SIG = new Float64Array(2 * MIX.length);
+  const OUT = new Float64Array(2);        // what the sampler hands back, reused
 
   /* ----------------------------------------------------------- sequencer ---- */
   // The encoded patterns, flattened into [ticks, patch, pitch, patch, pitch, ...]
@@ -242,7 +283,7 @@ export function sampler(SR: number): () => number[] {
 
   let now = 0, next = 0, ptr = 0;
 
-  return (): number[] => {
+  return (): Float64Array => {
     if (now >= next) {
       const row = ROWS[ptr];
       for (let i = 1; i < row.length; i += 2) {
@@ -266,24 +307,28 @@ export function sampler(SR: number): () => number[] {
     }
     now++;
 
-    const sum = [0, 0];
+    let sum0 = 0, sum1 = 0;
     for (let i = 0; i < notes.length; ) {
       if (!notes[i][3][3]) { notes.splice(i, 1); continue; }
-      const out = voice(notes[i]), s = SIG[notes[i][9]];
-      s[0] += out;
-      s[1] += out;
+      const out = voice(notes[i]), s = 2 * notes[i][9];
+      SIG[s] += out;
+      SIG[s + 1] += out;
       i++;
     }
 
     for (let j = MIX.length; j--; ) {
-      let sig = SIG[j];
-      for (let k = 1; k < MIX[j].length; k++) sig = fx(MIX[j][k], sig);
-      const dst = MIX[j][0] < 0 ? sum : SIG[MIX[j][0]];
-      dst[0] += sig[0];
-      dst[1] += sig[1];
-      SIG[j] = [0, 0];
+      S[0] = SIG[2 * j];
+      S[1] = SIG[2 * j + 1];
+      let n = 2;
+      for (let k = 1; k < MIX[j].length; k++) n = fx(MIX[j][k], n);
+      const d: number = MIX[j][0];
+      if (d < 0) { sum0 += S[0]; sum1 += S[1]; }
+      else { SIG[2 * d] += S[0]; SIG[2 * d + 1] += S[1]; }
+      SIG[2 * j] = SIG[2 * j + 1] = 0;
     }
-    return sum;
+    OUT[0] = sum0;
+    OUT[1] = sum1;
+    return OUT;
   };
 }
 
@@ -307,15 +352,24 @@ export function startMusic(): void {
   if (node || muted) return;
   try {
     const c = ac(), next = sampler(SONG_SR), step = SONG_SR / c.sampleRate;
-    let pos = 0, a = next(), b = next();
+    // scalars, not the two arrays: the sampler hands back the same Float64Array
+    // every call, so holding on to it as "the previous sample" would alias
+    let pos = 0, s = next(), a0 = s[0], a1 = s[1];
+    s = next();
+    let b0 = s[0], b1 = s[1];
     node = c.createScriptProcessor(4096, 1, 2);
     node.onaudioprocess = (e: AudioProcessingEvent): void => {
       const l = e.outputBuffer.getChannelData(0), r = e.outputBuffer.getChannelData(1);
       for (let i = 0; i < l.length; i++) {
         pos += step;
-        while (pos >= 1) { pos--; a = b; b = next(); }
-        l[i] = (a[0] + (b[0] - a[0]) * pos) * VOL;
-        r[i] = (a[1] + (b[1] - a[1]) * pos) * VOL;
+        while (pos >= 1) {
+          pos--;
+          a0 = b0; a1 = b1;
+          const v = next();
+          b0 = v[0]; b1 = v[1];
+        }
+        l[i] = (a0 + (b0 - a0) * pos) * VOL;
+        r[i] = (a1 + (b1 - a1) * pos) * VOL;
       }
     };
     node.connect(c.destination);
