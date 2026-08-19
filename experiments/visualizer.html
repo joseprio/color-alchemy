@@ -32,7 +32,7 @@
     margin: 0; background: #05060f; color: #cfe3ff; font: 13px/1.5 monospace;
     overflow: hidden;
   }
-  #viz { position: fixed; inset: 0; display: block; }
+  #viz { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; display: block; }
 
   /* the mock board, so an option can be judged with the game over it */
   #mock {
@@ -563,6 +563,12 @@ function bands(data, n, out) {
   return out;
 }
 const hue = (i, n) => 280 * (i / n);      // red at the bass end, violet at the top
+// mean band level, as a 0-100 reading per channel
+const lvl = (a, n) => {
+  let s = 0;
+  for (let i = 0; i < n; i++) s += a[i];
+  return Math.round((s / n) * 100);
+};
 
 /* ------------------------------------------------------------------ modes */
 // Each mode draws one frame over the whole canvas. bandsL/bandsR are 0..1,
@@ -697,9 +703,11 @@ let mode = 0, bl = new Float32Array(96), br = new Float32Array(96), frames = 0, 
 
 function resize() {
   const r = Math.min(devicePixelRatio || 1, 2);
-  cv.width = innerWidth * r;
+  cv.width = innerWidth * r;             // bitmap: device pixels
   cv.height = innerHeight * r;
-  g.setTransform(r, 0, 0, r, 0, 0);
+  cv.style.width = innerWidth + "px";    // and the CSS box: viewport pixels
+  cv.style.height = innerHeight + "px";  // (never left to the intrinsic size)
+  g.setTransform(r, 0, 0, r, 0, 0);      // so drawing code works in CSS pixels
 }
 addEventListener("resize", resize);
 resize();
@@ -738,7 +746,10 @@ function frame(now) {
   if (now - fpsAt > 500) {
     document.getElementById("meter").innerHTML =
       Math.round((frames * 1000) / (now - fpsAt)) + " fps &middot; " + m.name +
-      " &middot; L/R differ by <b>" + stereo.toFixed(1) + " dB</b> across bands";
+      " &middot; L/R differ by <b>" + stereo.toFixed(1) + " dB</b> across bands" +
+      "<br>level L <b>" + lvl(bl, opt.bands) + "</b> R <b>" + lvl(br, opt.bands) + "</b>" +
+      " &middot; canvas " + cv.width + "x" + cv.height + " bitmap, " +
+      cv.clientWidth + "x" + cv.clientHeight + " on screen";
     frames = 0;
     fpsAt = now;
   }
