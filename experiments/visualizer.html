@@ -591,6 +591,9 @@ function bands(data, n, out, peak) {
   return out;
 }
 const hue = (i, n) => 280 * (i / n);      // red at the bass end, violet at the top
+// the title's own gradient stops, for the bars that run the rainbow along their
+// length rather than across the bands
+const RAINBOW = ["#ff3b30", "#ff9430", "#ffdc32", "#34d158", "#33e9e9", "#2f6bff", "#9a4dff"];
 // mean band level, as a 0-100 reading per channel
 const lvl = (a, n) => {
   let s = 0;
@@ -633,17 +636,26 @@ const DIRS = () => (opt.mirror ? [1, -1] : [1]);
 const MODES = [
   {
     name: "edge bars",
-    note: "One bar per band, growing inward from each side. The plainest reading of the spectrum.",
+    note: "One bar per band, growing inward from each side, each running the title's rainbow along its length — so the colour a bar reaches is how loud its band is.",
     draw(g, w, h, L, R) {
       const n = L.length;
       for (const [right, v] of [[0, L], [1, R]]) {
+        // One gradient per side, laid from the edge inward across the full bar
+        // depth, and every bar fills from it: the rainbow then runs ALONG each
+        // bar, and how far into the rainbow a bar gets is its level. Because the
+        // gradient is in canvas space rather than per bar, that colour means the
+        // same length on every bar — and it is one gradient a frame, not n.
+        const grad = g.createLinearGradient(right ? w : 0, 0, right ? w - opt.depth : opt.depth, 0);
+        for (let k = 0; k < RAINBOW.length; k++) grad.addColorStop(k / (RAINBOW.length - 1), RAINBOW[k]);
+        g.fillStyle = grad;
+        g.globalAlpha = 0.9;
         for (let i = 0; i < n; i++) {
-          g.fillStyle = `hsl(${hue(i, n)} 90% 60% / .85)`;
           const len = v[i] * opt.depth;
           for (const [y, bh] of slots(i, n, h)) {
             g.fillRect(right ? w - len : 0, y + 0.5, len, Math.max(1, bh - 1));
           }
         }
+        g.globalAlpha = 1;
       }
     },
   },
