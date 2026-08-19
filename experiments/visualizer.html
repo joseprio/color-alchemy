@@ -17,9 +17,12 @@
        - it is a RAINBOW across frequency, low to high, in the same order as the
          title's gradient — red at the bass end, violet at the top.
 
-     1-6 switch, G the mock board, H hides this panel (it sits over the right
-     channel, which is half the point of the thing), space plays and pauses, and
-     the sliders retune the analysis. -->
+     1-6 switch, G the mock board, H hides the panel, space plays and pauses.
+     Two of the sliders matter more than the rest: TOP FREQ, because the music is
+     low-passed at 1500-2000 Hz and bands spread past that are dead air, and
+     AUTO-LEVEL, because the bass is sustained and pins any fixed scale while the
+     highs never leave the floor. CENTRED puts the bass at the middle of each
+     edge and the treble out at the corners. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -114,6 +117,9 @@
   <label><span>sensitivity</span><input id="sens" type="range" min="50" max="400" value="120"><i class="val" id="sensV">1.2</i></label>
   <label><span>smoothing</span><input id="smooth" type="range" min="0" max="95" value="45"><i class="val" id="smoothV">.45</i></label>
   <label><span>depth</span><input id="depth" type="range" min="20" max="300" value="120"><i class="val" id="depthV">120</i></label>
+  <label><span>top freq</span><input id="top" type="range" min="1000" max="12000" step="250" value="5000"><i class="val" id="topV">5k</i></label>
+  <label><span>auto-level</span><input id="agc" type="checkbox" checked><i class="val"></i></label>
+  <label><span>centred</span><input id="mirror" type="checkbox" checked><i class="val"></i></label>
   <button id="play">PLAY  (space)</button>
   <div class="note" style="margin: 8px 0 0 0">G board &middot; H hide this &middot; space play</div>
   <div id="meter"></div>
@@ -540,25 +546,47 @@ function toggleAudio() {
 playBtn.addEventListener("click", toggleAudio);
 
 /* ----------------------------------------------------------------- analysis */
-const opt = { bands: 40, sens: 1.6, smooth: 0.7, depth: 120 };
+// Where the music actually is, measured on the engine at its densest, in dB
+// below the peak:
+//     20-160 Hz    0      640-1280 Hz  -18      2560-5120 Hz  -54
+//     160-320     -8     1280-2560     -39      5120-10240    -76
+//     320-640    -12                            10240+        -99
+// The mixer low-passes the pad at 1500 Hz and the pulse bus at 2000, so there is
+// nothing in the top half of the spectrum by construction. Spreading the bands
+// across the analyser's full 0-24 kHz therefore left the top bars permanently
+// dark; they run 40 Hz to `top` instead.
+const opt = { bands: 40, sens: 1.2, smooth: 0.45, depth: 120, top: 5000, agc: 1, mirror: 1 };
 let freqL, freqR, timeL, timeR;
+const peakL = new Float32Array(96).fill(0.2), peakR = new Float32Array(96).fill(0.2);
 
-// Log-spaced bands: an FFT's linear bins put almost everything in the top
-// octaves, which looks like a wall on the right and nothing on the left.
-// Each band takes the loudest bin it covers, so quiet detail is not averaged away.
-function bands(data, n, out) {
-  const bins = data.length;
+// One log-spaced band per bar between 40 Hz and opt.top, each taking the loudest
+// bin it covers — an average washes the detail out.
+//
+// Then auto-level, per band. The bass here is a sustained pad under a sustained
+// bass line: on any fixed scale it sits pinned at the ceiling and stops moving,
+// while the highs never leave the floor — which is both "the bottom bars don't
+// move" and "the top bars never show". Dividing each band by its own
+// slowly-decaying peak gives every bar the full height and shows its own
+// variation rather than the mix's balance. Turn it off to see the raw balance.
+function bands(data, n, out, peak) {
+  const binHz = (ctx ? ctx.sampleRate : 48000) / (anL ? anL.fftSize : 2048);
+  const lo0 = Math.max(1, Math.round(40 / binHz));
+  const hi0 = Math.max(lo0 + n, Math.min(data.length, Math.round(opt.top / binHz)));
+  const ratio = hi0 / lo0;
   for (let i = 0; i < n; i++) {
-    const lo = Math.floor(bins ** (i / n)), hi = Math.max(lo + 1, Math.floor(bins ** ((i + 1) / n)));
+    const lo = Math.round(lo0 * ratio ** (i / n));
+    const hi = Math.max(lo + 1, Math.round(lo0 * ratio ** ((i + 1) / n)));
     let m = 0;
-    for (let j = lo; j < hi && j < bins; j++) if (data[j] > m) m = data[j];
-    // tanh, not min(1, …): a hard clip pins every loud band to exactly 1 on
-    // BOTH channels, which erases the stereo difference precisely where the
-    // music is loudest — the page looked mono at 0.7 dB of L/R difference where
-    // the signal actually carries 3 to 4. This keeps the ceiling without the
-    // collision.
-    const v = Math.tanh((m / 255) * opt.sens);
-    out[i] = out[i] * opt.smooth + v * (1 - opt.smooth);      // per-band smoothing on top of the analyser's
+    for (let j = lo; j < hi && j < data.length; j++) if (data[j] > m) m = data[j];
+    let v = (m / 255) * opt.sens;
+    if (opt.agc) {
+      peak[i] = Math.max(v, peak[i] * 0.9995 + 0.00005);     // jump up, drift down
+      v /= Math.max(peak[i], 0.08);                          // floor: silence stays silent
+    }
+    // tanh, not min(1, …): a hard clip pins loud bands to exactly 1 on BOTH
+    // channels, which erases the stereo difference where the music is loudest.
+    v = Math.tanh(v * 1.1);
+    out[i] = out[i] * opt.smooth + v * (1 - opt.smooth);     // on top of the analyser's own
   }
   return out;
 }
@@ -570,39 +598,72 @@ const lvl = (a, n) => {
   return Math.round((s / n) * 100);
 };
 
+/* ----------------------------------------------------------------- geometry */
+// Where band i sits on a side, as [y, height] pairs. Centred — the default —
+// puts the bass at the middle of each edge and runs the treble out to both
+// corners, so the picture is symmetric about the middle of the screen and the
+// energy is not all piled in one corner. Otherwise it stacks bottom to top.
+function slots(i, n, h) {
+  if (!opt.mirror) {
+    const bh = h / n;
+    return [[h - (i + 1) * bh, bh]];
+  }
+  const bh = h / 2 / n, y = h / 2 - (i + 1) * bh;
+  return [[y, bh], [h - y - bh, bh]];
+}
+
+// A point on the border for one channel. Centred: t = 0 at the middle of the
+// side, running out to the corner (dir 1 up, -1 down) and then in along the top
+// or bottom edge to the middle. Otherwise t = 0 at the bottom corner, up and over.
+function edgePoint(side, t, w, h, dir) {
+  const x0 = side < 0 ? 0 : w;
+  const along = opt.mirror ? h / 2 : h;
+  const across = w / 2;
+  const d = t * (along + across);
+  const start = opt.mirror ? h / 2 : h;
+  if (d < along) return [x0, start - dir * d];
+  const inward = (side < 0 ? 1 : -1) * (d - along);
+  return [x0 + inward, opt.mirror ? (dir > 0 ? 0 : h) : 0];
+}
+const DIRS = () => (opt.mirror ? [1, -1] : [1]);
+
 /* ------------------------------------------------------------------ modes */
-// Each mode draws one frame over the whole canvas. bandsL/bandsR are 0..1,
+// Each mode draws one frame over the whole canvas. L and R are 0..1 per band,
 // low frequency first; w/h are CSS pixels.
 const MODES = [
   {
     name: "edge bars",
     note: "One bar per band, growing inward from each side. The plainest reading of the spectrum.",
     draw(g, w, h, L, R) {
-      const n = L.length, bh = h / n;
-      for (let i = 0; i < n; i++) {
-        const y = h - (i + 1) * bh;
-        g.fillStyle = `hsl(${hue(i, n)} 90% 60% / .85)`;
-        g.fillRect(0, y + 1, L[i] * opt.depth, bh - 2);
-        g.fillRect(w - R[i] * opt.depth, y + 1, R[i] * opt.depth, bh - 2);
+      const n = L.length;
+      for (const [right, v] of [[0, L], [1, R]]) {
+        for (let i = 0; i < n; i++) {
+          g.fillStyle = `hsl(${hue(i, n)} 90% 60% / .85)`;
+          const len = v[i] * opt.depth;
+          for (const [y, bh] of slots(i, n, h)) {
+            g.fillRect(right ? w - len : 0, y + 0.5, len, Math.max(1, bh - 1));
+          }
+        }
       }
     },
   },
   {
     name: "perimeter ribbon",
-    note: "The spectrum runs around the border: bass at the bottom corners, treble meeting at the top. Thickness is level.",
+    note: "The spectrum wrapped around the border — bass at the middle of each side, treble out to the corners. Thickness is level.",
     draw(g, w, h, L, R) {
       const n = L.length;
       g.lineCap = "round";
       for (const [side, v] of [[-1, L], [1, R]]) {
-        for (let i = 0; i < n; i++) {
-          const t = i / n;                     // 0 at the bottom corner, 1 at the top middle
-          const p = edgePoint(side, t, w, h), q = edgePoint(side, (i + 1) / n, w, h);
-          g.strokeStyle = `hsl(${hue(i, n)} 95% 60% / .9)`;
-          g.lineWidth = 2 + v[i] * opt.depth * 0.5;
-          g.beginPath();
-          g.moveTo(p[0], p[1]);
-          g.lineTo(q[0], q[1]);
-          g.stroke();
+        for (const dir of DIRS()) {
+          for (let i = 0; i < n; i++) {
+            const p = edgePoint(side, i / n, w, h, dir), q = edgePoint(side, (i + 1) / n, w, h, dir);
+            g.strokeStyle = `hsl(${hue(i, n)} 95% 60% / .9)`;
+            g.lineWidth = 2 + v[i] * opt.depth * 0.5;
+            g.beginPath();
+            g.moveTo(p[0], p[1]);
+            g.lineTo(q[0], q[1]);
+            g.stroke();
+          }
         }
       }
     },
@@ -613,14 +674,21 @@ const MODES = [
     draw(g, w, h, L, R) {
       const n = L.length;
       g.filter = "blur(18px)";
-      for (const [side, v] of [[0, L], [1, R]]) {
-        const x = side ? w : 0;
-        const grad = g.createLinearGradient(x, h, x, 0);
-        for (let i = 0; i < n; i++) {
-          grad.addColorStop(i / (n - 1), `hsl(${hue(i, n)} 95% 55% / ${0.05 + v[i] * 0.85})`);
+      for (const [right, v] of [[0, L], [1, R]]) {
+        const x = right ? w - opt.depth : 0;
+        const col = (i) => `hsl(${hue(i, n)} 95% 55% / ${0.04 + v[i] * 0.8})`;
+        // one gradient down the whole side, mirrored around the middle when
+        // centred — two blurred rectangles per side cost 25fps against 50, and
+        // ctx.filter is the expensive part of this mode
+        const grad = g.createLinearGradient(0, 0, 0, h);
+        if (opt.mirror) {
+          for (let i = n - 1; i >= 0; i--) grad.addColorStop(0.5 * (1 - i / (n - 1)), col(i));
+          for (let i = 0; i < n; i++) grad.addColorStop(0.5 + 0.5 * (i / (n - 1)), col(i));
+        } else {
+          for (let i = n - 1; i >= 0; i--) grad.addColorStop(1 - i / (n - 1), col(i));
         }
         g.fillStyle = grad;
-        g.fillRect(side ? w - opt.depth : 0, 0, opt.depth, h);
+        g.fillRect(x, 0, opt.depth, h);
       }
       g.filter = "none";
     },
@@ -629,8 +697,8 @@ const MODES = [
     name: "mirror wave",
     note: "The waveform itself rather than its spectrum, mirrored down each edge — it moves with the beat instead of the pitch.",
     draw(g, w, h, L, R, tL, tR) {
-      for (const [side, t] of [[0, tL], [1, tR]]) {
-        const x = side ? w : 0, dir = side ? -1 : 1, n = t.length;
+      for (const [right, t] of [[0, tL], [1, tR]]) {
+        const x = right ? w : 0, dir = right ? -1 : 1, n = t.length;
         const grad = g.createLinearGradient(0, h, 0, 0);
         for (let i = 0; i <= 6; i++) grad.addColorStop(i / 6, `hsl(${280 * (i / 6)} 95% 60%)`);
         g.strokeStyle = grad;
@@ -653,15 +721,17 @@ const MODES = [
       const n = L.length;
       g.lineCap = "butt";
       for (const [side, v] of [[-1, L], [1, R]]) {
-        for (let i = 0; i < n; i++) {
-          const p = edgePoint(side, i / n, w, h), q = edgePoint(side, (i + 0.98) / n, w, h);
-          const lit = v[i];
-          g.strokeStyle = `hsl(${hue(i, n)} 95% ${25 + lit * 45}% / ${0.25 + lit * 0.75})`;
-          g.lineWidth = 6 + lit * opt.depth * 0.35;
-          g.beginPath();
-          g.moveTo(p[0], p[1]);
-          g.lineTo(q[0], q[1]);
-          g.stroke();
+        for (const dir of DIRS()) {
+          for (let i = 0; i < n; i++) {
+            const p = edgePoint(side, i / n, w, h, dir), q = edgePoint(side, (i + 0.98) / n, w, h, dir);
+            const lit = v[i];
+            g.strokeStyle = `hsl(${hue(i, n)} 95% ${25 + lit * 45}% / ${0.25 + lit * 0.75})`;
+            g.lineWidth = 6 + lit * opt.depth * 0.35;
+            g.beginPath();
+            g.moveTo(p[0], p[1]);
+            g.lineTo(q[0], q[1]);
+            g.stroke();
+          }
         }
       }
     },
@@ -672,30 +742,21 @@ const MODES = [
     trails: true,
     draw(g, w, h, L, R) {
       const n = L.length;
-      for (const [side, v] of [[0, L], [1, R]]) {
+      for (const [right, v] of [[0, L], [1, R]]) {
         for (let i = 0; i < n; i++) {
           if (v[i] < 0.02) continue;
-          const y = h - ((i + 0.5) / n) * h;
-          const x = (side ? w : 0) + (side ? -1 : 1) * (8 + v[i] * opt.depth);
-          g.fillStyle = `hsl(${hue(i, n)} 95% 62% / .9)`;
-          g.beginPath();
-          g.arc(x, y, 1.5 + v[i] * 7, 0, 7);
-          g.fill();
+          for (const [y, bh] of slots(i, n, h)) {
+            const x = (right ? w : 0) + (right ? -1 : 1) * (8 + v[i] * opt.depth);
+            g.fillStyle = `hsl(${hue(i, n)} 95% 62% / .9)`;
+            g.beginPath();
+            g.arc(x, y + bh / 2, 1.5 + v[i] * 7, 0, 7);
+            g.fill();
+          }
         }
       }
     },
   },
 ];
-
-// A point on the border for a channel: t runs 0 (bottom corner) -> 1 (top
-// centre), up the side and then inward along the top.
-function edgePoint(side, t, w, h) {
-  const x0 = side < 0 ? 0 : w;
-  const up = h, across = w / 2, total = up + across;
-  const d = t * total;
-  if (d < up) return [x0, h - d];
-  return [x0 + (side < 0 ? 1 : -1) * (d - up), 0];
-}
 
 /* ------------------------------------------------------------------- draw */
 const cv = document.getElementById("viz"), g = cv.getContext("2d");
@@ -728,7 +789,7 @@ function frame(now) {
     anL.getByteTimeDomainData(timeL);
     anR.getByteTimeDomainData(timeR);
     const n = opt.bands;
-    const L = bands(freqL, n, bl).subarray(0, n), R = bands(freqR, n, br).subarray(0, n);
+    const L = bands(freqL, n, bl, peakL).subarray(0, n), R = bands(freqR, n, br, peakR).subarray(0, n);
     // how far apart the two sides actually are, in the bands being drawn — the
     // reverb decorrelates the channels, and this says by how much
     let d = 0, c = 0;
@@ -781,7 +842,7 @@ const slider = (id, key, fmt, scale) => {
   const apply = () => {
     opt[key] = +el.value * scale;
     out.textContent = fmt(opt[key]);
-    if (key === "bands") { bl.fill(0); br.fill(0); }
+    if (key === "bands" || key === "top") { bl.fill(0); br.fill(0); peakL.fill(0.2); peakR.fill(0.2); }
   };
   el.addEventListener("input", apply);
   apply();
@@ -790,6 +851,22 @@ slider("bands", "bands", (v) => v, 1);
 slider("sens", "sens", (v) => v.toFixed(1), 0.01);
 slider("smooth", "smooth", (v) => v.toFixed(2).slice(1), 0.01);
 slider("depth", "depth", (v) => v, 1);
+slider("top", "top", (v) => (v >= 1000 ? (v / 1000).toFixed(1).replace(".0", "") + "k" : v), 1);
+
+// auto-level and centred are the two that answer "the bars do not move" and
+// "it is not centred", so they are switches rather than buried constants
+const toggle = (id, key) => {
+  const el = document.getElementById(id);
+  const apply = () => {
+    opt[key] = el.checked ? 1 : 0;
+    peakL.fill(0.2);
+    peakR.fill(0.2);
+  };
+  el.addEventListener("change", apply);
+  apply();
+};
+toggle("agc", "agc");
+toggle("mirror", "mirror");
 
 addEventListener("keydown", (e) => {
   if (e.key >= "1" && e.key <= String(MODES.length)) pick(+e.key - 1);
