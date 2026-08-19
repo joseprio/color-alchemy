@@ -308,7 +308,7 @@ export function startMusic(): void {
   try {
     const c = ac(), next = sampler(SONG_SR), step = SONG_SR / c.sampleRate;
     let pos = 0, a = next(), b = next();
-    node = c.createScriptProcessor(4096, 0, 2);
+    node = c.createScriptProcessor(4096, 1, 2);
     node.onaudioprocess = (e: AudioProcessingEvent): void => {
       const l = e.outputBuffer.getChannelData(0), r = e.outputBuffer.getChannelData(1);
       for (let i = 0; i < l.length; i++) {
@@ -320,6 +320,14 @@ export function startMusic(): void {
     };
     node.connect(c.destination);
   } catch {}
+}
+
+// Every pointer and key event lands here, not just the first: creating the
+// node is idempotent, and ac() resumes a context that is suspended — which iOS
+// can leave it even after a gesture, and which nothing else would retry.
+export function wakeAudio(): void {
+  try { ac(); } catch {}
+  startMusic();
 }
 
 // Mutes the interface sounds too — one control for all the audio. A disconnected
