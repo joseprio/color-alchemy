@@ -59,7 +59,11 @@
 
   /* controls */
   #ui {
-    position: fixed; top: 12px; right: 12px; width: 300px; z-index: 5;
+    /* dead centre, because that is the one region every option leaves alone:
+       against the right edge it covered the right channel, and the page looked
+       mono when it is not */
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 340px; max-height: 88vh; overflow: auto; z-index: 5;
     background: #080c18e8; border: 1px solid #223052; border-radius: 12px; padding: 12px 14px;
   }
   #ui h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .16em; color: #ffd75e; }
@@ -82,7 +86,8 @@
     width: 100%; margin-top: 10px; padding: 9px; background: #101528; color: #ffd75e;
     border: 1px solid #ffd75e; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer;
   }
-  #fps { position: fixed; left: 12px; top: 12px; color: #55708e; z-index: 5; }
+  #meter { color: #55708e; font-size: 11px; margin-top: 8px; }
+  #meter b { color: #7dff9a; font-weight: 400; }
   /* the panel covers the right channel, so it gets out of the way on H */
   #ui.hidden { display: none; }
 </style>
@@ -102,16 +107,16 @@
   <div class="foot">combine: tap two elements &middot; hint: H &middot; mute: M</div>
 </div>
 
-<div id="fps"></div>
 <div id="ui">
   <h2>VISUALIZER</h2>
   <div id="opts"></div>
   <label><span>bands</span><input id="bands" type="range" min="8" max="96" value="40"><i class="val" id="bandsV">40</i></label>
-  <label><span>sensitivity</span><input id="sens" type="range" min="50" max="400" value="160"><i class="val" id="sensV">1.6</i></label>
-  <label><span>smoothing</span><input id="smooth" type="range" min="0" max="95" value="70"><i class="val" id="smoothV">.70</i></label>
+  <label><span>sensitivity</span><input id="sens" type="range" min="50" max="400" value="120"><i class="val" id="sensV">1.2</i></label>
+  <label><span>smoothing</span><input id="smooth" type="range" min="0" max="95" value="45"><i class="val" id="smoothV">.45</i></label>
   <label><span>depth</span><input id="depth" type="range" min="20" max="300" value="120"><i class="val" id="depthV">120</i></label>
   <button id="play">PLAY  (space)</button>
   <div class="note" style="margin: 8px 0 0 0">G board &middot; H hide this &middot; space play</div>
+  <div id="meter"></div>
 </div>
 
 <script>
@@ -492,6 +497,12 @@ function startAudio() {
   anL = ctx.createAnalyser();
   anR = ctx.createAnalyser();
   anL.fftSize = anR.fftSize = 2048;
+  // getByteFrequencyData maps decibels into 0..255 between minDecibels and
+  // maxDecibels, and the defaults (-100..-30) put this music's loud bands ABOVE
+  // the top of the range, where both channels read 255 and every stereo
+  // difference is clipped away. -90..-10 keeps the whole tune inside the scale.
+  anL.minDecibels = anR.minDecibels = -90;
+  anL.maxDecibels = anR.maxDecibels = -10;
   bus.connect(split);
   split.connect(anL, 0);
   split.connect(anR, 1);
@@ -541,7 +552,12 @@ function bands(data, n, out) {
     const lo = Math.floor(bins ** (i / n)), hi = Math.max(lo + 1, Math.floor(bins ** ((i + 1) / n)));
     let m = 0;
     for (let j = lo; j < hi && j < bins; j++) if (data[j] > m) m = data[j];
-    const v = Math.min(1, (m / 255) * opt.sens);
+    // tanh, not min(1, …): a hard clip pins every loud band to exactly 1 on
+    // BOTH channels, which erases the stereo difference precisely where the
+    // music is loudest — the page looked mono at 0.7 dB of L/R difference where
+    // the signal actually carries 3 to 4. This keeps the ceiling without the
+    // collision.
+    const v = Math.tanh((m / 255) * opt.sens);
     out[i] = out[i] * opt.smooth + v * (1 - opt.smooth);      // per-band smoothing on top of the analyser's
   }
   return out;
@@ -677,7 +693,7 @@ function edgePoint(side, t, w, h) {
 
 /* ------------------------------------------------------------------- draw */
 const cv = document.getElementById("viz"), g = cv.getContext("2d");
-let mode = 0, bl = new Float32Array(96), br = new Float32Array(96), last = 0, frames = 0, fpsAt = 0;
+let mode = 0, bl = new Float32Array(96), br = new Float32Array(96), frames = 0, fpsAt = 0, stereo = 0;
 
 function resize() {
   const r = Math.min(devicePixelRatio || 1, 2);
@@ -698,13 +714,21 @@ function frame(now) {
   }
 
   if (anL) {
-    anL.smoothingTimeConstant = anR.smoothingTimeConstant = 0.5;
+    anL.smoothingTimeConstant = anR.smoothingTimeConstant = 0.3;
     anL.getByteFrequencyData(freqL);
     anR.getByteFrequencyData(freqR);
     anL.getByteTimeDomainData(timeL);
     anR.getByteTimeDomainData(timeR);
     const n = opt.bands;
     const L = bands(freqL, n, bl).subarray(0, n), R = bands(freqR, n, br).subarray(0, n);
+    // how far apart the two sides actually are, in the bands being drawn — the
+    // reverb decorrelates the channels, and this says by how much
+    let d = 0, c = 0;
+    for (let i = 0; i < n; i++) {
+      if (L[i] > 0.02 || R[i] > 0.02) { d += Math.abs(20 * Math.log10((L[i] + 1e-4) / (R[i] + 1e-4))); c++; }
+    }
+    stereo = stereo * 0.9 + (c ? d / c : 0) * 0.1;
+
     g.save();
     m.draw(g, w, h, L, R, timeL, timeR);
     g.restore();
@@ -712,8 +736,9 @@ function frame(now) {
 
   frames++;
   if (now - fpsAt > 500) {
-    document.getElementById("fps").textContent =
-      Math.round((frames * 1000) / (now - fpsAt)) + " fps  ·  " + m.name;
+    document.getElementById("meter").innerHTML =
+      Math.round((frames * 1000) / (now - fpsAt)) + " fps &middot; " + m.name +
+      " &middot; L/R differ by <b>" + stereo.toFixed(1) + " dB</b> across bands";
     frames = 0;
     fpsAt = now;
   }
