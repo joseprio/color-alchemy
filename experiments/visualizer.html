@@ -594,6 +594,22 @@ const hue = (i, n) => 280 * (i / n);      // red at the bass end, violet at the 
 // the title's own gradient stops, for the bars that run the rainbow along their
 // length rather than across the bands
 const RAINBOW = ["#ff3b30", "#ff9430", "#ffdc32", "#34d158", "#33e9e9", "#2f6bff", "#9a4dff"];
+// Reversed — violet at the edge, red at the tip — and cached by rounded length
+// and side, since lengths repeat every frame and only the ends move.
+const gradCache = new Map();
+function barGrad(g, x0, len) {
+  const key = Math.round(len);
+  let grad = gradCache.get(key);
+  if (!grad) {
+    grad = g.createLinearGradient(x0, 0, x0 + len, 0);
+    for (let k = 0; k < RAINBOW.length; k++) {
+      grad.addColorStop(k / (RAINBOW.length - 1), RAINBOW[RAINBOW.length - 1 - k]);
+    }
+    if (gradCache.size > 2000) gradCache.clear();
+    gradCache.set(key, grad);
+  }
+  return grad;
+}
 // mean band level, as a 0-100 reading per channel
 const lvl = (a, n) => {
   let s = 0;
@@ -636,27 +652,26 @@ const DIRS = () => (opt.mirror ? [1, -1] : [1]);
 const MODES = [
   {
     name: "edge bars",
-    note: "One bar per band, growing inward from each side, each running the title's rainbow along its length — so the colour a bar reaches is how loud its band is.",
+    note: "One bar per band, growing inward from each side. Each runs the title's rainbow along its own length, violet at the edge to red at the tip — so the tip is red however long the bar is.",
     draw(g, w, h, L, R) {
       const n = L.length;
+      // A gradient per BAR, scaled to that bar's own length, which is what keeps
+      // the tip red at every level: a single canvas-space gradient would put red
+      // at a fixed distance from the edge instead, so only bars of one length
+      // would end on it. Costs n gradients a frame rather than one; measured at
+      // 60fps, and cached by length below to keep it there.
+      g.globalAlpha = 0.9;
       for (const [right, v] of [[0, L], [1, R]]) {
-        // One gradient per side, laid from the edge inward across the full bar
-        // depth, and every bar fills from it: the rainbow then runs ALONG each
-        // bar, and how far into the rainbow a bar gets is its level. Because the
-        // gradient is in canvas space rather than per bar, that colour means the
-        // same length on every bar — and it is one gradient a frame, not n.
-        const grad = g.createLinearGradient(right ? w : 0, 0, right ? w - opt.depth : opt.depth, 0);
-        for (let k = 0; k < RAINBOW.length; k++) grad.addColorStop(k / (RAINBOW.length - 1), RAINBOW[k]);
-        g.fillStyle = grad;
-        g.globalAlpha = 0.9;
         for (let i = 0; i < n; i++) {
           const len = v[i] * opt.depth;
+          if (len < 1) continue;
+          g.fillStyle = barGrad(g, right ? w : 0, right ? -len : len);
           for (const [y, bh] of slots(i, n, h)) {
             g.fillRect(right ? w - len : 0, y + 0.5, len, Math.max(1, bh - 1));
           }
         }
-        g.globalAlpha = 1;
       }
+      g.globalAlpha = 1;
     },
   },
   {
@@ -781,6 +796,8 @@ function resize() {
   cv.style.width = innerWidth + "px";    // and the CSS box: viewport pixels
   cv.style.height = innerHeight + "px";  // (never left to the intrinsic size)
   g.setTransform(r, 0, 0, r, 0, 0);      // so drawing code works in CSS pixels
+  // the cached bar gradients are anchored at the right edge, which just moved
+  gradCache.clear();
 }
 addEventListener("resize", resize);
 resize();
