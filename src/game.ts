@@ -35,6 +35,7 @@ const K_FULL = "colorAlchemy.bestFull." + TREE;
 const store = {
   get(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } },
   set(k: string, v: string | number): void { try { localStorage.setItem(k, String(v)); } catch {} },
+  del(k: string): void { try { localStorage.removeItem(k); } catch {} },
 };
 
 /* ------------------------------------------------------------------- state */
@@ -51,7 +52,14 @@ const codexK = new Set<string>();
 let moves = 0;                      // every combination attempt, incl. failures
 let questDone = false;              // Rainbow + Unicorn found this run
 let fullDone = false;               // all elements found this run
-let sel = -1;                       // index (into order) of the first selection
+// "Unlock all" hands you the whole board, so the run must never score again.
+// Persisted with the run: a reload cannot launder a cheated run into a best.
+let cheated = false;
+let sel = -1;                       // index (into order) of the LOCKED element, -1 when empty
+let slotA: string | null = null;    // A when nothing is locked (a drag, or CA.attempt)
+let slotB: string | null = null;    // the second element, until the attempt resolves
+let slotR: string | null = null;    // the result, likewise
+let clearTimer = 0;
 let cursor = 0;                     // keyboard/gamepad focus index
 let padMode = false;                // show the focus ring only once kb/pad is used
 
@@ -61,7 +69,7 @@ const tiles: HTMLElement[] = [];    // DOM nodes parallel to `order`
 const rkey = (a: string, b: string): string => [a, b].sort().join("+");
 
 function save(): void {
-  store.set(K_RUN, JSON.stringify({ f: order, m: moves, q: questDone, c: fullDone }));
+  store.set(K_RUN, JSON.stringify({ f: order, m: moves, q: questDone, c: fullDone, x: cheated }));
 }
 const K_CODEX = "colorAlchemy.codex";
 function saveCodex(): void {
@@ -74,7 +82,9 @@ function hud(): void {
   $("count").textContent = found.size + " / " + ELEMENTS.length;
   const bq = store.get(K_QUEST);
   $("bestq").textContent = bq ? "Best quest: " + bq : "";
-  $("goal").innerHTML = fullDone
+  $("goal").innerHTML = cheated
+    ? "Unlocked &mdash; this run does not score"
+    : fullDone
     ? "Complete. \u{1F451}"
     : questDone
       ? "Endgame: discover all " + ELEMENTS.length + " elements"
@@ -162,6 +172,9 @@ function flash(cls: "bad" | "hit", ...ids: string[]): void {
 function renderFocus(): void {
   tiles.forEach((t, i) => {
     t.classList.toggle("sel", i === sel);
+    // the second element stays marked on the board for exactly as long as it
+    // is sitting in the cauldron's second slot
+    t.classList.toggle("sel2", order[i] === slotB);
     t.classList.toggle("cur", padMode && i === cursor);
   });
 }
@@ -275,25 +288,93 @@ function cancelPress(): void {
 }
 
 /* --------------------------------------------------------------- gameplay */
-export type Phase = "modal" | "overlay" | "menu" | "play";
+export type Phase = "overlay" | "menu" | "play";
 export function phase(): Phase {
-  return $("modal").classList.contains("show") ? "modal"
-       : $("overlay").classList.contains("show") ? "overlay"
+  return $("overlay").classList.contains("show") ? "overlay"
        : $("title").classList.contains("show") ? "menu" : "play";
 }
+/* ---------------------------------------------------------------- cauldron */
+// The altar is the whole discovery UI now: a result lands in #cR instead of
+// behind a veil, so nothing has to be dismissed before the next attempt.
+function fill(box: string, id: string | null): void {
+  const el = id ? BY_ID[id] : null;
+  $(box).innerHTML = el
+    ? (el.c || el.bg || el.s ? iconHtml(el) : '<span class="ic">' + el.e + "</span>") +
+      "<span>" + el.n + "</span>"
+    : "";
+}
+function paintCauldron(): void {
+  // a locked element wins; otherwise show whatever the last attempt used, so a
+  // drag fills the altar too instead of leaving A empty beside a full B
+  fill("cA", sel >= 0 ? order[sel] : slotA);
+  fill("cB", slotB);
+  fill("cR", slotR);
+  $("cA").classList.toggle("on", sel >= 0);
+  renderFocus();   // the board mirrors both slots, so they change together
+}
+// B and the result are transient: they clear a beat after the attempt so the
+// locked element is left facing an empty second slot, ready for the next try.
+function clearSlots(): void {
+  clearTimeout(clearTimer);
+  slotA = slotB = slotR = null;
+  $("cq").innerHTML = "";
+}
+function sweep(ms: number): void {
+  clearTimeout(clearTimer);
+  clearTimer = setTimeout(() => { clearSlots(); paintCauldron(); }, ms);
+}
+// Letting go empties the WHOLE altar, not just the lock: leaving a stale cyan
+// secondary behind would mean the next tap on it promoted rather than mixed.
+/* ------------------------------------------- first-ever discovery (full screen) */
+let discTimer = 0;
+export function closeDisc(): void {
+  clearTimeout(discTimer);
+  $("disc").classList.remove("on");
+  $("disc").innerHTML = "";
+}
+// Only ever for an element never discovered in ANY previous run — the codex is
+// what decides that. Rediscoveries and repeats stay in the cauldron.
+function openDisc(id: string, aId: string, bId: string): void {
+  let k = "";
+  for (let i = 0; i < 14; i++) {
+    k += '<span class="k" style="transform:rotate(' + (i * 25.7 + 8) +
+      "deg);--c:hsl(" + ((i * 360 / 14) | 0) + ' 95% 62%);animation-delay:' +
+      (1.05 + i * 0.012) + 's"></span>';
+  }
+  const el = BY_ID[id];
+  $("disc").innerHTML = k + '<span class="f"></span>' +
+    '<span class="m"><span class="g a">' + iconHtml(BY_ID[aId]) + "</span></span>" +
+    '<span class="m"><span class="g b">' + iconHtml(BY_ID[bId]) + "</span></span>" +
+    '<span class="m"><span class="g r">' + iconHtml(el) + "</span></span>" +
+    '<span class="c"><b>' + el.n + "</b><i>“" + el.q + "”</i></span>";
+  void $("disc").offsetWidth;   // re-arm the fade when one discovery follows another
+  $("disc").classList.add("on");
+  discTimer = setTimeout(closeDisc, 2750);
+}
+
+export function unlock(): void {
+  if (sel < 0 && !slotB) return;
+  sel = -1;
+  clearSlots();
+  SFX.cancel();
+  renderFocus();
+  paintCauldron();
+}
+// Nothing held -> this element becomes the locked one and STAYS locked.
+// The same element again -> unlock. A different one -> combine, and the lock
+// survives it, so the next attempt is one tap away.
 export function selectAt(i: number): void {
   if (phase() !== "play" || i < 0 || i >= order.length) return;
   cursor = i;
   if (sel === i) { sel = -1; SFX.cancel(); }
+  // the cyan one, still sitting in slot B: tapping it promotes it to the lock
+  // rather than mixing it again — you just used it, so building from it next is
+  // the likelier move, and mixing the same pair twice is a wasted move anyway
+  else if (order[i] === slotB) { sel = i; clearSlots(); SFX.select(); }
   else if (sel < 0) { sel = i; SFX.select(); }
-  else {
-    const a = order[sel], b = order[i];
-    sel = -1;
-    renderFocus();
-    attempt(a, b);
-    return;
-  }
+  else { renderFocus(); attempt(order[sel], order[i]); return; }
   renderFocus();
+  paintCauldron();
 }
 // keyboard/gamepad select: mark pad mode so the focus ring shows
 export function padSelect(): void {
@@ -301,29 +382,43 @@ export function padSelect(): void {
   selectAt(cursor);
 }
 export function clearSel(): boolean {
-  if (sel >= 0) { sel = -1; SFX.cancel(); renderFocus(); return true; }
+  if (sel >= 0) { unlock(); return true; }
   return false;
 }
 export function attempt(aId: string, bId: string): void {
+  closeDisc();   // a new attempt cuts any discovery still playing
   moves++;
   const res = RECIPE[rkey(aId, bId)];
   if (res && !codexK.has(rkey(aId, bId))) { codexK.add(rkey(aId, bId)); saveCodex(); }
+  slotA = aId;
+  slotB = bId;
+  slotR = res || null;
   if (res && !found.has(res)) {
     found.add(res);
     addTile(res);
-    const firstEver = !codexF.includes(res);
-    if (firstEver) { codexF.push(res); saveCodex(); }
-    openModal(res, aId, bId, firstEver);
+    if (!codexF.includes(res)) { codexF.push(res); saveCodex(); openDisc(res, aId, bId); }
+    const el = BY_ID[res];
+    $("cq").innerHTML = "<b>" + el.n + "</b> &mdash; &ldquo;" + el.q + "&rdquo;";
     SFX.discover();
+    sweep(2200);
   } else if (res) {
-    toast(N(aId) + " + " + N(bId) + " = " + N(res) + " — already discovered");
+    $("cq").innerHTML = "<b>" + N(res) + "</b> <i>&mdash; already discovered</i>";
     flash("hit", res); // point at the element you already own
     SFX.dupe();
+    sweep(1500);
   } else {
-    toast(N(aId) + " + " + N(bId) + " … nothing happens");
-    flash("bad", aId, bId);
+    $("cq").innerHTML = "<i>nothing happens</i>";
     SFX.fail();
+    sweep(1100);
   }
+  paintCauldron();
+  checkMilestones();
+  // re-arm both one-shots: the same pair tried twice has to react twice
+  const alt = $("cdrn"), well = $("cR");
+  alt.classList.remove("bad");
+  well.classList.remove("pop");
+  void alt.offsetWidth;
+  (res ? well : alt).classList.add(res ? "pop" : "bad");
   hud();
   save();
 }
@@ -378,40 +473,6 @@ export function hint(): void {
   save();
 }
 
-/* ------------------------------------------------- discovery card (modal) */
-let modalAt = 0;
-function openModal(id: string, aId: string, bId: string, firstEver?: boolean): void {
-  const el = BY_ID[id];
-  // A first-EVER discovery (never seen in any previous run) opens with the
-  // merge animation: the two ingredients fly together, flash, and the new
-  // element pops out; the card text fades in after. All pure CSS with
-  // animation delays — nothing to cancel if the card is dismissed early.
-  const stage = firstEver
-    ? '<div class="mstage">' +
-        '<span class="mhalf mA">' + iconHtml(BY_ID[aId]) + "</span>" +
-        '<span class="mhalf mB">' + iconHtml(BY_ID[bId]) + "</span>" +
-        '<span class="mring"></span>' +
-        '<span class="mres">' + iconHtml(el) + "</span>" +
-      "</div>"
-    : '<div class="big">' + iconHtml(el) + "</div>";
-  $("mcard").innerHTML = stage +
-    '<div class="mbody' + (firstEver ? " anim" : "") + '">' +
-    '<div class="tag">NEW ELEMENT</div>' +
-    "<h2>" + el.n + "</h2>" +
-    '<div class="quote">“' + el.q + "”</div>" +
-    '<div class="recipe">' + N(aId) + " + " + N(bId) + "</div>" +
-    '<div class="hint">tap / Enter / Ⓐ</div>' +
-    "</div>";
-  $("modal").classList.add("show");
-  modalAt = performance.now();
-}
-export function dismissModal(force?: boolean): void {
-  if (phase() !== "modal") return;
-  if (!force && performance.now() - modalAt < 250) return; // eat the double-click that opened it
-  $("modal").classList.remove("show");
-  checkMilestones();
-}
-
 /* ------------------------------------------------------- goals & overlays */
 type OverlayButton = [string, () => void];
 let obFns: (() => void)[] = [];
@@ -457,6 +518,7 @@ function bestLine(key: string, val: number): string {
   return '<div class="line best">best: ' + prev + "</div>";
 }
 function checkMilestones(): void {
+  if (cheated) return;   // nothing an unlocked board reaches is earned
   if (!questDone && found.has("rainbow") && found.has("unicorn")) {
     questDone = true;
     const q = bestLine(K_QUEST, moves);
@@ -498,8 +560,12 @@ function finishFull(questHtml: string): void {
 // title floats over the bare background (body.menu hides the game UI), and
 // Highscore / Encyclopedia swap the button column for the #mpanel subscreen.
 let mCur = 0;
-let ngArmed = false;       // "New game" double-press confirm, like the old Restart
-let ngTimer = 0;
+let armIdx = -1;           // menu button awaiting its confirming second press
+let armLabel = "";         // ...and the label to put back when it disarms
+let armTimer = 0;
+// "Continue" is only offered when there is something to continue: a fresh
+// boot, and a Reset everything, both leave nothing behind it
+const inRun = (): boolean => moves > 0 || found.size > STARTERS.length;
 
 function menuButtons(): HTMLElement[] {
   return [...$("menu").querySelectorAll("button")] as HTMLElement[];
@@ -507,24 +573,54 @@ function menuButtons(): HTMLElement[] {
 function mPaint(): void {
   menuButtons().forEach((b, i) => b.classList.toggle("obfocus", i === mCur));
 }
-function disarmNg(): void {
-  ngArmed = false;
-  clearTimeout(ngTimer);
-  const b = menuButtons()[1];
-  if (b) { b.textContent = "New game"; b.classList.remove("armed"); }
+function disarm(): void {
+  const b = armIdx >= 0 ? menuButtons()[armIdx] : null;
+  if (b) { b.textContent = armLabel; b.classList.remove("armed"); }
+  armIdx = -1;
+  clearTimeout(armTimer);
 }
-function newGame(): void {
-  if (!ngArmed && (moves > 0 || found.size > STARTERS.length)) {
-    ngArmed = true;
-    const b = menuButtons()[1];
-    b.textContent = "Sure? (wipes the run)";
-    b.classList.add("armed");
-    ngTimer = setTimeout(disarmNg, 2500);
-    return;
-  }
-  disarmNg();
+// First press relabels the button with the warning and arms it; a second
+// press within 2.5s goes through. Anything destructive routes through here.
+function armed(i: number, warn: string): boolean {
+  if (armIdx === i) { disarm(); return true; }
+  disarm();
+  armIdx = i;
+  const b = menuButtons()[i];
+  armLabel = b.textContent as string;
+  b.textContent = warn;
+  b.classList.add("armed");
+  armTimer = setTimeout(disarm, 2500);
+  return false;
+}
+function newGame(i: number): void {
+  if ((moves > 0 || found.size > STARTERS.length) && !armed(i, "Sure? (wipes the run)")) return;
+  disarm();
   reset();
   closeMenu();
+}
+// Hands you every element. Costs no moves and earns nothing: the run is
+// flagged from here on, so no best can come out of it.
+function unlockAll(i: number): void {
+  if (!armed(i, "Sure? (ends scoring)")) return;
+  ELEMENTS.forEach(e => { if (!found.has(e.id)) { found.add(e.id); addTile(e.id); } });
+  cheated = true;
+  renderFocus();
+  hud();
+  save();
+  closeMenu();
+}
+// The factory reset New game deliberately is not: run, both bests, and the
+// all-time codex.
+function wipeAll(i: number): void {
+  if (!armed(i, "Sure? (scores and codex too)")) return;
+  [K_RUN, K_QUEST, K_FULL, K_CODEX].forEach(k => store.del(k));
+  codexF.length = 0;
+  codexK.clear();
+  reset();
+  paintMenu();
+  // deliberately NOT closeMenu(): New game means "start playing", this means
+  // "put everything back" — you stay where you were, on the title screen
+  toast("Everything reset");
 }
 function continueGame(): void {
   closeMenu();
@@ -532,34 +628,46 @@ function continueGame(): void {
   if (fullDone) showRestoredCompletion();
   hud();
 }
-const MENU: [string, () => void][] = [
+// the index is handed to the handler so the confirm flow never hardcodes a
+// position — reorder this list freely
+const MENU: [string, (i: number) => void][] = [
   ["Continue", continueGame],
   ["New game", newGame],
   ["Highscore", () => openPanel("HIGHSCORES", highscoreHtml())],
   ["Encyclopedia", () => openPanel("ENCYCLOPEDIA", encycloHtml())],
+  ["Unlock all", unlockAll],
+  ["Reset everything", wipeAll],
 ];
+// Rebuilt rather than toggled, because which buttons exist depends on state:
+// Reset everything calls this too, so Continue leaves with the run it pointed at.
+function paintMenu(): void {
+  const box = $("menu");
+  box.innerHTML = "";
+  let n = 0;
+  MENU.forEach(([label, fn], i) => {
+    if (!i && !inRun()) return;
+    const j = n++;
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.addEventListener("click", () => fn(j));
+    b.addEventListener("pointerenter", () => { mCur = j; mPaint(); });
+    box.appendChild(b);
+  });
+  mCur = 0;
+  armIdx = -1;
+  mPaint();
+}
 export function openMenu(): void {
   if (phase() !== "play") return;
   cancelPress();
   clearSel();
-  const box = $("menu");
-  box.innerHTML = "";
-  MENU.forEach(([label, fn], i) => {
-    const b = document.createElement("button");
-    b.textContent = label;
-    b.addEventListener("click", fn);
-    b.addEventListener("pointerenter", () => { mCur = i; mPaint(); });
-    box.appendChild(b);
-  });
-  mCur = 0;
-  ngArmed = false;
+  paintMenu();
   closePanel();
-  mPaint();
   $("title").classList.add("show");
   document.body.classList.add("menu");
 }
 function closeMenu(): void {
-  disarmNg();
+  disarm();
   closePanel();
   $("title").classList.remove("show");
   document.body.classList.remove("menu");
@@ -577,8 +685,8 @@ function closePanel(): void {
 }
 export function menuMove(d: number): void {
   if (!$("mpanel").hidden) { $("mlist").scrollTop += d * 60; return; }
-  disarmNg();
-  mCur = (mCur + d + MENU.length) % MENU.length;
+  disarm();
+  mCur = (mCur + d + menuButtons().length) % menuButtons().length;
   mPaint();
   SFX.select();
 }
@@ -589,7 +697,7 @@ export function menuGo(): void {
 }
 export function menuBack(): void {
   if (!$("mpanel").hidden) { closePanel(); return; }
-  if (ngArmed) { disarmNg(); return; }
+  if (armIdx >= 0) { disarm(); return; }
   continueGame();
 }
 function highscoreHtml(): string {
@@ -627,18 +735,20 @@ function encycloHtml(): string {
 export function reset(): void {
   cancelPress();
   closeOverlay();
-  $("modal").classList.remove("show");
+  closeDisc();
+  clearSlots();
   found = new Set(); // the codex deliberately survives — New game wipes the board, not the knowledge
   order.length = 0;
   tiles.length = 0;
   $("grid").innerHTML = "";
   moves = 0;
-  questDone = fullDone = false;
+  questDone = fullDone = cheated = false;
   sel = -1;
   cursor = 0;
   lastHint = null;  // its ingredients just left the board
   STARTERS.forEach(id => { found.add(id); addTile(id); });
   renderFocus();
+  paintCauldron();
   hud();
   save();
 }
@@ -650,7 +760,8 @@ export function boot(): void {
   paintSound();
   $("hnt").addEventListener("click", hint);
   $("mback").addEventListener("click", menuBack);
-  $("modal").addEventListener("click", () => dismissModal());
+  $("cA").addEventListener("click", unlock);   // the X empties the locked slot
+  $("disc").addEventListener("pointerdown", closeDisc);   // a tap anywhere skips it
   // non-passive so an active drag can stop a pan from starting; until the
   // long-press lifts the tile, touch scrolling behaves normally
   window.addEventListener("touchmove", e => { if (dragging) e.preventDefault(); }, { passive: false });
@@ -668,7 +779,7 @@ export function boot(): void {
   STARTERS.forEach(id => { if (!codexF.includes(id)) codexF.push(id); });
 
   // then the saved run
-  let run: { f?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean } | null = null;
+  let run: { f?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean } | null = null;
   const raw = store.get(K_RUN);
   try { run = raw ? JSON.parse(raw) : null; } catch {}
   if (run && Array.isArray(run.f)) {
@@ -681,6 +792,7 @@ export function boot(): void {
     moves = Math.max(0, (run.m as number) | 0);
     questDone = !!run.q;
     fullDone = !!run.c;
+    cheated = !!run.x;
   } else {
     STARTERS.forEach(id => { found.add(id); addTile(id); });
   }

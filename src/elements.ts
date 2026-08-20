@@ -9,11 +9,14 @@
 // r = recipes (unordered pairs of ids); several recipes may make one element
 // (Bone has eleven routes — a four-legged creature and fire, or a predator and
 // what it caught; fire does not reduce the fish or the bee at all, and a Bird
-// answers it with a Phoenix; White Light, Sand and Rainbow have three; Aurora,
-// Bird, Dog, Water and Cloud two each).
+// answers it with a Phoenix; White Light, Sand and Rainbow have three; Bird,
+// Charcoal, Dog, Water, Wood and Cloud two each).
 // An alternate may be cyclic — Fire + Ice remakes Water, which Ice needs,
-// Penguin + Air hands back the Bird the Penguin came from, and Wolf + Dog is
-// just another Dog — it is flavor for a pair players try, never a cheaper route.
+// Penguin + Air hands back the Bird the Penguin came from, Wolf + Dog is just
+// another Dog, Fire + Charcoal burns the Charcoal back down to Fire, Fire + Air
+// is a fanned fire and nothing more, and Axe + Tree makes the Wood the Axe
+// itself was cut from — it is flavor for a pair players try, never a cheaper
+// route.
 export interface ElementDef {
   id: string;
   n: string;
@@ -51,15 +54,13 @@ export const ELEMENTS: ElementDef[] = [
     bg:"radial-gradient(circle at 68% 30%, #fff3a0 0 6%, #ffdc32 6% 13%, transparent 17%)," +
        "radial-gradient(circle at 68% 30%, #ffdc3244 0 22%, transparent 30%)," +
        "linear-gradient(180deg, #a8dbff 0%, #7ec8ff 55%, #4f9fe8 100%)",
-    r:[["sun","air"]] },
+    r:[["air","blue"]] },
   { id:"gold",    n:"Gold",        c:"#f7c948", q:"Alchemists chased this for centuries. You mixed two squares.",
     r:[["yellow","orange"]] },
-  { id:"aurora",  n:"Aurora",      e:"\u{1F30C}", q:"Solar wind, painting after midnight.",
-    r:[["green","night"],["magenta","night"]] },
   { id:"water",   n:"Water",       e:"\u{1F4A7}", q:"It only looks blue because it borrowed the sky.",
     r:[["blue","cyan"],["fire","ice"]] },
   { id:"fire",    n:"Fire",        e:"\u{1F525}", q:"The oldest alchemy there is.",
-    r:[["red","orange"]] },
+    r:[["red","air"],["fire","charcoal"],["fire","air"]] },
   { id:"earth",   n:"Earth",       c:"#a4713f", q:"The other three get the poetry. This one grows the food.",
     bg:"radial-gradient(circle at 30% 35%, #7a4a26cc 0 5%, transparent 9%)," +
        "radial-gradient(circle at 62% 60%, #5c3a1e 0 4%, transparent 8%)," +
@@ -68,6 +69,12 @@ export const ELEMENTS: ElementDef[] = [
        "radial-gradient(circle at 15% 65%, #b98a55aa 0 3.5%, transparent 7%)," +
        "linear-gradient(180deg, #a4713f 0%, #7c5230 55%, #59391f 100%)",
     r:[["green","orange"]] },
+  { id:"clay",    n:"Clay",        c:"#c1663c", q:"Earth that agreed to hold a shape.",
+    bg:"radial-gradient(circle at 33% 26%, #ffc49faa 0 11%, transparent 32%),"
+       + "linear-gradient(150deg, #d4794c 0%, #c1663c 46%, #8f4526 100%)",
+    r:[["earth","water"]] },
+  { id:"pottery", n:"Pottery",     e:"\u{1F3FA}", q:"Clay that met a fire and kept the shape.",
+    r:[["clay","fire"]] },
   { id:"lava",    n:"Lava",        c:"#ff5a1f", q:"The ground, briefly reconsidering.",
     bg:"radial-gradient(circle at 27% 32%, #ffe08a 0 3.5%, transparent 7%)," +
        "radial-gradient(circle at 72% 62%, #ffc04dcc 0 4%, transparent 8%)," +
@@ -75,6 +82,8 @@ export const ELEMENTS: ElementDef[] = [
        "transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%)," +
        "linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)",
     r:[["earth","fire"]] },
+  { id:"volcano", n:"Volcano",     e:"\u{1F30B}", q:"A mountain that kept the receipt.",
+    r:[["lava","earth"]] },
   { id:"stone",   n:"Stone",       c:"#9aa4ad", q:"Cooled, hardened, and in no hurry.",
     bg:"radial-gradient(circle at 30% 32%, #6f7880 0 5%, transparent 9%)," +
        "radial-gradient(circle at 66% 58%, #c8d0d8aa 0 4%, transparent 8%)," +
@@ -87,8 +96,10 @@ export const ELEMENTS: ElementDef[] = [
        "#ffffff55 62% 68%, transparent 68%)," +
        "linear-gradient(180deg, #e6edf3 0%, #aab6c2 38%, #6e7a86 62%, #cdd7e0 100%)",
     r:[["fire","stone"]] },
-  { id:"axe",     n:"Axe",         e:"\u{1FA93}", q:"The first machine. Everything after is optimization.",
+  { id:"knife",   n:"Knife",       e:"\u{1F52A}", q:"The oldest tool that still lives in a drawer.",
     r:[["fire","metal"]] },
+  { id:"axe",     n:"Axe",         e:"\u{1FA93}", q:"The first machine. Everything after is optimization.",
+    r:[["wood","metal"]] },
   { id:"sand",    n:"Sand",        c:"#e0c078", q:"What mountains become, given enough wind.",
     bg:"radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%)," +
        "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
@@ -99,10 +110,10 @@ export const ELEMENTS: ElementDef[] = [
     bg:"linear-gradient(135deg, transparent 0 28%, #ffffff99 28% 37%, transparent 37% 54%, #ffffff55 54% 60%, transparent 60% 100%)," +
        "linear-gradient(180deg, #d8f1f8 0%, #a8d8ea 60%, #8ec4dc 100%)",
     r:[["sand","fire"]] },
-  { id:"mirror",  n:"Mirror",      e:"\u{1FA9E}", q:"Mirror Mirror on the Wall",
+  { id:"mirror",  n:"Mirror",      e:"\u{1FA9E}", q:"Who's the Fairest of Them All?",
     r:[["glass","metal"]] },
   { id:"sun",     n:"Sun",         e:"☀️", q:"A very local star.",
-    r:[["fire","air"]] },
+    r:[["fire","sky"]] },
   // Black + Sky, so the gradient is exactly that: the day's blue at the top
   // edge, falling to the Black it was mixed with. Stars unchanged.
   { id:"night",   n:"Night",       c:"#4a7fd0", q:"The sky, resting.",
@@ -130,10 +141,16 @@ export const ELEMENTS: ElementDef[] = [
     r:[["air","storm"]] },
   { id:"life",    n:"Life",        e:"\u{1F9EC}", q:"One spark in the right puddle, and here we all are.",
     r:[["lightning","water"]] },
+  { id:"egg",     n:"Egg",         e:"\u{1F95A}", q:"Life, packed for the journey.",
+    r:[["stone","life"]] },
   { id:"animal",  n:"Animal",      e:"\u{1F43E}", q:"Life, plus the decision to move.",
     r:[["earth","life"]] },
-  { id:"horse",   n:"Horse",       e:"\u{1F434}", q:"A horse! A horse! My kingdom for a horse!",
+  { id:"lizard",  n:"Lizard",      e:"\u{1F98E}", q:"The first draft that never needed a second.",
+    r:[["stone","animal"]] },
+  { id:"horse",   n:"Horse",       e:"\u{1F434}", q:"My kingdom for a horse!",
     r:[["animal","field"]] },
+  { id:"hippo",   n:"Hippo",       e:"\u{1F99B}", q:"River horse, and it means that literally.",
+    r:[["horse","water"]] },
   { id:"wolf",    n:"Wolf",        e:"\u{1F43A}", q:"The animal that answered the moon.",
     r:[["animal","moon"]] },
   { id:"bone",    n:"Bone",        e:"\u{1F9B4}", q:"What the fire could not talk out of leaving.",
@@ -142,12 +159,18 @@ export const ELEMENTS: ElementDef[] = [
        ["bear","horse"],["wolf","horse"],["bear","dog"]] },
   { id:"dog",     n:"Dog",         e:"\u{1F415}", q:"A wolf that decided to stay.",
     r:[["wolf","bone"],["dog","wolf"]] },
-  { id:"cow",     n:"Cow",         e:"\u{1F404}", q:"Grass, on the long way round to milk.",
-    r:[["animal","grass"]] },
+  { id:"cow",     n:"Cow",         e:"\u{1F404}", q:"A plant, on the long way round to milk.",
+    r:[["animal","plant"]] },
+  { id:"squirrel",n:"Squirrel",    e:"\u{1F43F}\u{FE0F}", q:"Buries more than it will ever dig up.",
+    r:[["animal","tree"]] },
   { id:"bird",    n:"Bird",        e:"\u{1F426}", q:"The animal that gave up on the ground.",
     r:[["air","animal"],["air","penguin"]] },
+  { id:"chick",   n:"Chick",       e:"\u{1F425}", q:"The egg, arguing its way out.",
+    r:[["egg","bird"]] },
   { id:"penguin", n:"Penguin",     e:"\u{1F427}", q:"A bird that traded the sky for the sea.",
     r:[["bird","ice"]] },
+  { id:"duck",    n:"Duck",        e:"\u{1F986}", q:"Kept the sky, took the water too.",
+    r:[["bird","water"]] },
   { id:"fish",    n:"Fish",        e:"\u{1F41F}", q:"Life, never seeing the need to leave.",
     r:[["animal","water"]] },
   { id:"owl",     n:"Owl",         e:"\u{1F989}", q:"The night, keeping an eye on things.",
@@ -182,28 +205,38 @@ export const ELEMENTS: ElementDef[] = [
     r:[["diamond","glass"]] },
   { id:"rainbow", n:"Rainbow",     e:"\u{1F308}", q:"White light, confessing everything.",
     r:[["white","prism"],["sun","rain"],["prism","sun"]] },
-  { id:"magic",   n:"Magic",       e:"✨", q:"Science we haven't named yet.",
-    r:[["star","aurora"]] },
-  { id:"unicorn", n:"Unicorn",     e:"\u{1F984}", q:"It was real the whole time.",
+  { id:"magic",   n:"Magic",       e:"\u{1FA84}", q:"Science we haven't named yet.",
+    r:[["wood","star"]] },
+  { id:"crystalball",n:"Crystal Ball", e:"\u{1F52E}", q:"Glass that claims to have read ahead.",
+    r:[["magic","glass"]] },
+  { id:"unicorn", n:"Unicorn",     e:"\u{1F984}", q:"Always be yourself. Unless you can be a unicorn, then always be a unicorn.",
     r:[["horse","magic"]] },
   { id:"sunset",  n:"Sunset",      e:"\u{1F305}", q:"The sun's long goodbye.",
     r:[["sun","pink"]] },
-  { id:"grass",   n:"Grass",       e:"\u{1F33F}", q:"Patience, photosynthesizing.",
-    r:[["earth","water"],["green","life"]] },
+  { id:"plant",   n:"Plant",       e:"\u{1F33F}", q:"Patience, photosynthesizing.",
+    r:[["life","sun"],["green","life"]] },
+  { id:"cactus",  n:"Cactus",      e:"\u{1F335}", q:"A plant that read the terms of the desert.",
+    r:[["plant","sand"]] },
   // a horizon rather than an object: sky above, green below, hard stop between
-  { id:"field",   n:"Field",       c:"#5fb54a", q:"Grass, as far as the argument goes.",
+  { id:"field",   n:"Field",       c:"#5fb54a", q:"Plants, as far as the argument goes.",
     bg:"linear-gradient(180deg, #a8dbff 0%, #7ec8ff 46%, #5fb54a 46%, #3f8c36 100%)",
-    r:[["earth","grass"]] },
+    r:[["earth","plant"]] },
+  { id:"park",    n:"Park",        e:"\u{1F3DE}\u{FE0F}", q:"A field with a fence and an opinion about litter.",
+    r:[["field","water"]] },
   { id:"tree",    n:"Tree",        e:"\u{1F333}", q:"A century of standing still, on purpose.",
-    r:[["water","grass"]] },
+    r:[["water","plant"]] },
+  { id:"fruit",   n:"Fruit",       e:"\u{1F34E}", q:"A tree, bribing something to carry its seeds.",
+    r:[["tree","sun"]] },
   { id:"wood",    n:"Wood",        e:"\u{1FAB5}", q:"A tree, minus the patience.",
-    r:[["axe","tree"]] },
+    r:[["tree","knife"],["axe","tree"]] },
   { id:"charcoal",n:"Charcoal",    c:"#8a3a14", q:"Wood, with everything unnecessary burned away.",
     bg:"radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%)," +
        "radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%)," +
        "linear-gradient(125deg, #2c2c2f 0 28%, #171719 28% 44%, #333338 44% 60%," +
        "#1b1b1e 60% 78%, #27272b 78% 100%)",
-    r:[["wood","fire"]] },
+    r:[["wood","fire"],["tree","fire"]] },
+  { id:"pencil",  n:"Pencil",      e:"\u{270F}\u{FE0F}", q:"A tree and a fire, arguing on paper.",
+    r:[["wood","charcoal"]] },
   // The one color no amount of mixing light can reach, so it arrives through
   // the materials instead. A plain black square would vanish into the tile, so
   // the swatch keeps a soft top-left sheen and lends a grey — not black — glow.
@@ -215,8 +248,8 @@ export const ELEMENTS: ElementDef[] = [
     r:[["black","white"]] },
   { id:"diamond", n:"Diamond",     e:"\u{1F48E}", q:"Carbon, under enough pressure to become interesting.",
     r:[["charcoal","lava"]] },
-  { id:"flower",  n:"Flower",      e:"\u{1F338}", q:"The grass, showing off.",
-    r:[["grass","pink"]] },
+  { id:"flower",  n:"Flower",      e:"\u{1F338}", q:"The plant, showing off.",
+    r:[["plant","pink"]] },
   { id:"sunflower",n:"Sunflower",  e:"\u{1F33B}", q:"A flower with a favorite.",
     r:[["sun","flower"],["flower","yellow"]] },
 ];

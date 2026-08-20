@@ -47,6 +47,60 @@ h1 {
 /* muted: the button reads "Muted" and goes as quiet as it sounds */
 #snd.off { color: #55708e; border-color: #1b2540; }
 
+/* ------------------------------------------------------------------ cauldron
+   Always on screen, directly under the HUD: two slots and a result well. #cA
+   is the locked slot and keeps its element across combines; #cB and #cR are
+   transient and empty themselves a beat after each attempt. Sized so the whole
+   altar plus four rows of tiles clears a 640px phone. */
+/* The altar is docked: fixed to the bottom edge so it is in sight however far
+   the board has scrolled. body gets --dock of bottom padding so the last row of
+   tiles can still scroll clear of it, and the toast and the keyboard cursor's
+   scrollIntoView both step over it. */
+:root { --dock: 134px; }
+#dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7;
+  background: #070a14f2; border-top: 1px solid #16203a; padding: 9px 0 11px;
+}
+#cdrn { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.cslot, .cwell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border: 1px solid #223052; background: #0c1122cc; border-radius: 14px;
+  font-size: 11px; color: #b9d2ee; line-height: 1; text-align: center;
+}
+.cslot { position: relative; width: 84px; height: 84px; }
+.cwell { width: 96px; height: 96px; border-radius: 16px; }
+.cslot .sw, .cwell .sw { width: 34px; height: 34px; border-radius: 7px; }
+.cslot .ic, .cwell .ic { font-size: 28px; height: 34px; display: flex; align-items: center; }
+.cwell .ic { font-size: 34px; height: 40px; }
+.cwell .sw { width: 40px; height: 40px; }
+/* empty: dashed and quiet, so the filled slots are the only thing lit */
+.cslot:empty, .cwell:empty { border-style: dashed; border-color: #1b2540; }
+/* #cA carries the lock. Clicking it empties it — the X says so. */
+#cA.on { border-color: #ffd75e; background: #14120acc; box-shadow: 0 0 16px #ffd75e22; cursor: pointer; }
+#cA.on::after {
+  content: "✕"; position: absolute; top: -8px; right: -8px;
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: #14120a; border: 1px solid #ffd75e; color: #ffd75e; font-size: 10px;
+}
+/* the empty B slot invites the second pick while A is held */
+#cA.on ~ #cB:empty { border-color: #33e9e9; color: #33e9e9; }
+#cR:not(:empty) { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 22px #ffd75e22; }
+.cop { color: #33e9e9; font-size: 15px; }
+/* the whole altar shakes when the pair makes nothing */
+#cdrn.bad { animation: shake .4s cubic-bezier(.36, .07, .19, .97); }
+/* the result's own line: name and quote, where the modal used to put them */
+#cq { min-height: 18px; margin: 6px 0 0; color: #8fb4d8; font-size: 12px; text-align: center; padding: 0 12px; }
+#cq b { color: #fff; }
+#cq i { color: #55708e; }
+/* the new element arrives in the well with the pop the merge card used to own */
+#cR.pop { animation: cpop .45s cubic-bezier(.2, 1.9, .4, 1); }
+@keyframes cpop { from { transform: scale(.3); } }
+@media (pointer: coarse) {
+  :root { --dock: 126px; }
+  .cslot { width: 76px; height: 76px; }
+  .cwell { width: 88px; height: 88px; }
+}
+
 #grid {
   display: grid; grid-template-columns: repeat(auto-fill, 92px); gap: 10px;
   justify-content: center; width: min(96vw, 640px); margin: 12px 0 8px; padding: 0 4px 8px;
@@ -57,10 +111,15 @@ h1 {
   user-select: none; -webkit-user-select: none;
   transition: transform .08s, border-color .12s, background .12s;
   animation: pop .25s ease-out;
+  /* keyboard/pad focus must not stop under the dock */
+  scroll-margin-bottom: calc(var(--dock) + 12px);
 }
 @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .tile:hover { border-color: #3d5584; }
 .tile.sel { border-color: #ffd75e; background: #1a1a10cc; transform: scale(1.06); box-shadow: 0 0 14px #ffd75e33; }
+/* the second element, marked on the board while it sits in the cauldron's
+   second slot — cyan, to match that slot, so it never reads as the gold lock */
+.tile.sel2 { border-color: #33e9e9; background: #0b1a1fcc; box-shadow: 0 0 12px #33e9e933; }
 .tile.cur { outline: 2px solid #33e9e9; outline-offset: 2px; }
 .tile.dragsrc { opacity: .35; }
 .tile.drop { border-color: #7dff9a; background: #101f14cc; transform: scale(1.06); box-shadow: 0 0 14px #7dff9a44; }
@@ -68,9 +127,8 @@ h1 {
    settled, so dropping .bad later cannot re-trigger it (.bad comes after,
    and wins for as long as it is set) */
 .tile.settled { animation: none; }
-/* a combination that does nothing: both mismatched tiles shake it off, then
-   the border eases back through .tile's own transition */
-.tile.bad { border-color: #ff6b6b; animation: shake .4s cubic-bezier(.36, .07, .19, .97); }
+/* a combination that does nothing shakes the CAULDRON, not the tiles: the
+   pair you tried is sitting in the slots, so that is where the answer belongs */
 @keyframes shake {
   10%, 90% { transform: translateX(-2px); }
   20%, 80% { transform: translateX(4px); }
@@ -94,10 +152,21 @@ h1 {
 .sw { width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 0 10px 1px var(--g, transparent); }
 .nm { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
 
-footer { margin: 4px 0 18px; color: #55708e; font-size: 11px; text-align: center; padding: 0 12px; }
+/* the dock is fixed over the bottom of the page, so the last thing in the flow
+   has to carry enough bottom margin for the final row of tiles to scroll clear
+   of it — body's own padding cannot, being height:100% with overflowing content */
+/* the dock is fixed over the bottom of the page, so the last thing in the flow
+   has to reserve room for the final row of tiles to scroll clear of it. PADDING,
+   not margin: a trailing margin — and body's own padding, body being height:100%
+   with overflowing content — is clipped from the scrollable overflow. Padding
+   inside the last element is real box height, so it survives. */
+footer {
+  margin: 4px 0 18px; color: #55708e; font-size: 11px;
+  text-align: center; padding: 0 12px calc(var(--dock) + 8px);
+}
 
 #toast {
-  position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%);
+  position: fixed; left: 50%; bottom: calc(var(--dock) + 12px); transform: translateX(-50%);
   background: #131a30f0; border: 1px solid #33436e; color: #cfe3ff;
   padding: 8px 16px; border-radius: 8px; font-size: 13px; text-align: center;
   /* Shrink-to-fit, so it stays one line whenever one line fits — but bounded,
@@ -107,6 +176,66 @@ footer { margin: 4px 0 18px; color: #55708e; font-size: 11px; text-align: center
   opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 8;
 }
 #toast.show { opacity: 1; }
+
+/* ------------------------------------------------ first-ever discovery
+   The one moment the game saves up for: an element never seen in ANY previous
+   run takes the whole screen. The pair wind in at full size, spinning faster
+   as they close, overlap and spin down to nothing — then the screen breaks and
+   the new element arrives on the crack, fourteen rays stepping round the
+   spectrum. Rediscoveries never see it; the cauldron handles those.
+   Skippable (a tap anywhere) and self-clearing after 2.4s. */
+#disc { position: fixed; inset: 0; z-index: 10; display: none; overflow: hidden; background: #04060ce8; }
+/* the last 350ms are a fade, so it leaves rather than blinks out; the JS timer
+   fires at 2.7s, when this has already taken it to zero */
+#disc.on { display: block; animation: dout .35s 2.4s ease-in forwards; }
+@keyframes dout { to { opacity: 0; } }
+#disc .m { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); }
+#disc .g { display: flex; line-height: 1; font-size: 62px; }
+#disc .g .sw { width: 62px; height: 62px; border-radius: 12px; }
+#disc .r { font-size: 110px; transform: scale(.2); opacity: 0; filter: blur(6px);
+  animation: dr .55s 1.05s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+#disc .r .sw { width: 110px; height: 110px; border-radius: 22px; }
+@keyframes dr { to { transform: scale(1); opacity: 1; filter: blur(0); } }
+#disc .a { animation: dA 1.25s linear both; }
+#disc .b { animation: dB 1.25s linear both; }
+@keyframes dA {
+  from { transform: translateX(-108px) rotate(0) scale(1); }
+  30% { transform: translateX(-84px) rotate(200deg) scale(1); }
+  47% { transform: translateX(-52px) rotate(480deg) scale(1); }
+  60% { transform: translateX(0) rotate(820deg) scale(1); opacity: 1; }
+  80% { transform: translateX(0) rotate(1150deg) scale(.5); opacity: 1; }
+  to { transform: translateX(0) rotate(1400deg) scale(.08); opacity: 0; }
+}
+@keyframes dB {
+  from { transform: translateX(108px) rotate(0) scale(1); }
+  30% { transform: translateX(84px) rotate(-200deg) scale(1); }
+  47% { transform: translateX(52px) rotate(-480deg) scale(1); }
+  60% { transform: translateX(0) rotate(-820deg) scale(1); opacity: 1; }
+  80% { transform: translateX(0) rotate(-1150deg) scale(.5); opacity: 1; }
+  to { transform: translateX(0) rotate(-1400deg) scale(.08); opacity: 0; }
+}
+#disc .k {
+  position: absolute; left: 50%; top: 44%; width: 2px; height: 0; transform-origin: 50% 0;
+  background: linear-gradient(180deg, #fff, var(--c) 40%, transparent);
+  animation: dk .62s 1.05s cubic-bezier(.1, .85, .3, 1) forwards;
+}
+@keyframes dk { from { height: 0; opacity: 1; } 55% { opacity: 1; } to { height: 520px; opacity: 0; } }
+#disc .f {
+  position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(circle at 50% 44%, #fff 0 4%, #ffd75e 8%, transparent 34%);
+  animation: df .38s 1.03s ease-out forwards;
+}
+@keyframes df { 20% { opacity: .95; } to { opacity: 0; } }
+#disc .c { position: absolute; left: 0; right: 0; top: 63%; text-align: center; padding: 0 24px; opacity: 0;
+  animation: dc .4s 1.5s ease-out forwards; }
+#disc .c b { display: block; font-size: 26px; color: #fff; margin-bottom: 6px; }
+#disc .c i { color: #8fb4d8; }
+@keyframes dc { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+/* reduced motion gets the still, not a faster animation */
+@media (prefers-reduced-motion: reduce) {
+  #disc .a, #disc .b, #disc .k, #disc .f { display: none; }
+  #disc .r, #disc .c { animation: none; opacity: 1; transform: none; filter: none; }
+}
 
 .veil {
   position: fixed; inset: 0; z-index: 9; display: none;
@@ -122,30 +251,6 @@ footer { margin: 4px 0 18px; color: #55708e; font-size: 11px; text-align: center
 .card .big .sw { width: 56px; height: 56px; border-radius: 10px; }
 .card .tag { font-size: 11px; letter-spacing: .3em; color: #33e9e9; }
 .card h2 { margin: 6px 0 2px; color: #fff; font-size: 22px; }
-.card .quote { color: #8fb4d8; font-style: italic; margin: 8px 0 2px; }
-.card .recipe { color: #55708e; font-size: 12px; margin: 6px 0 0; }
-.card .hint { color: #3d5584; font-size: 11px; margin: 14px 0 0; }
-
-/* first-ever discovery: the two ingredients fly together, flash, and the
-   new element pops out; the card text fades in after (all via delays) */
-.mstage { position: relative; height: 64px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
-.mstage .sw { width: 38px; height: 38px; }
-.mhalf { position: absolute; font-size: 36px; line-height: 1; display: flex; }
-.mA { animation: flyA .55s ease-in forwards; }
-.mB { animation: flyB .55s ease-in forwards; }
-@keyframes flyA { from { transform: translateX(-88px) scale(.95); } 70% { opacity: 1; } to { transform: translateX(0) scale(.5); opacity: 0; } }
-@keyframes flyB { from { transform: translateX(88px) scale(.95); } 70% { opacity: 1; } to { transform: translateX(0) scale(.5); opacity: 0; } }
-.mring {
-  position: absolute; width: 26px; height: 26px; border-radius: 50%;
-  border: 3px solid #fff; opacity: 0; animation: mring .55s .5s ease-out forwards;
-}
-@keyframes mring { from { transform: scale(.4); opacity: 1; } to { transform: scale(4.5); opacity: 0; } }
-.mres { position: absolute; font-size: 52px; line-height: 1; display: flex; transform: scale(0); animation: mpop .5s .6s cubic-bezier(.2, 1.9, .4, 1) forwards; }
-.mres .sw { width: 52px; height: 52px; border-radius: 10px; }
-@keyframes mpop { to { transform: scale(1); } }
-.mbody.anim { opacity: 0; animation: mfade .45s .85s ease-out forwards; }
-@keyframes mfade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
 #overlay .card { border-color: #ffd75e; box-shadow: 0 0 50px #ffd75e22; }
 #overlay .tag { color: #ffd75e; }
 #overlay .line { margin: 6px 0 0; color: #cfe3ff; }
@@ -164,7 +269,8 @@ footer { margin: 4px 0 18px; color: #55708e; font-size: 11px; text-align: center
   flex-direction: column; align-items: center; justify-content: center; gap: 8px;
 }
 .tscreen.show { display: flex; }
-body.menu header, body.menu #hud, body.menu #grid, body.menu footer { display: none; }
+body.menu header, body.menu #hud, body.menu #grid, body.menu footer,
+body.menu #dock { display: none; }
 /* The title lockup: shrink-to-fit, so its width is COLOR's width and #tsub
    below spreads AlchemY across the same measure. Nothing here is tuned per
    font — swap the family and the two stay matched. */

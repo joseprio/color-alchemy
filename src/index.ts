@@ -2,7 +2,7 @@
 // polling), and exposes the window.CA test hooks check.mjs drives.
 import "./css";                     // the stylesheet, before anything renders
 import { ELEMENTS, RECIPE } from "./elements";
-import { boot, attempt, selectAt, dismissModal, reset, caState, phase } from "./game";
+import { boot, attempt, selectAt, unlock, reset, caState, phase } from "./game";
 import { initKeyboard, pollPad } from "./input";
 import { wakeAudio, musicPlaying } from "./music";
 
@@ -31,7 +31,7 @@ requestAnimationFrame(frame);
   RECIPE,
   attempt,
   selectAt,
-  dismiss: () => dismissModal(true),
+  dismiss: unlock,   // kept under the old name: the harness calls it between attempts
   reset,
   state: caState,
 };

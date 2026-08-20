@@ -10,7 +10,7 @@ primaries.
 ```
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
-npm test                  # 87 headless checks against dist/bundle.html
+npm test                  # 110 headless checks against dist/bundle.html
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fouc-check        # is the sheet in place before the first paint?
@@ -93,7 +93,7 @@ src/music.ts      the background track: the floatbeat engine, and the node
 src/sfx.ts        WebAudio synth for the interface sounds, and the shared
                   AudioContext the music borrows
 src/elements.ts   the element tree: names, quotes, icons, recipes
-src/game.ts       state, grid, combining, discovery cards, goal overlays,
+src/game.ts       state, grid, the cauldron, combining, goal overlays,
                   scoring and persistence
 src/input.ts      keyboard listener + gamepad polling
 src/index.ts      entry: boot, gamepad frame loop, window.CA test hooks
@@ -158,15 +158,40 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   releases the next one. It is not saved with the run: a reload forgets the
   standing hint, which can only ever cost you, never the reverse.
 - Each element has a name, an icon (a plain square for the colors, an emoji or
-  a gradient swatch for the rest, and inline SVG for the Prism) and a quote
-  shown once, with a merge animation the first time it is EVER discovered.
-- A pair that combines into nothing shakes both tiles red; a pair you have
-  already combined pulses the element it makes — so both outcomes are obvious
-  without reading the toast.
+  a gradient swatch for the rest, and inline SVG for the Prism) and a quote,
+  which the cauldron prints under the result.
+- **The cauldron** is docked to the bottom of the viewport — two slots and a
+  result well, in sight however far the board has scrolled. The room for the
+  last row of tiles to scroll clear of it is `--dock` of **footer padding** —
+  not padding on `body` and not a trailing margin, both of which get clipped
+  from the scrollable overflow when the scroll container is `height: 100%`
+  with content overflowing it. Padding inside the last element in the flow is
+  real box height, so it survives. The toast and the keyboard cursor
+  (`scroll-margin-bottom`) both step over the dock too. The first element you pick is
+  **held** — it lands in the left slot and stays there through combine after
+  combine, so trying Fire against ten things is ten taps rather than twenty.
+  Its tile stays lit gold on the board, and the second element is marked cyan
+  there for exactly as long as it sits in the second slot — the two slots and
+  the two tiles always agree. Tapping that cyan one **promotes it to the
+  lock** rather than mixing the same pair again: you have just used it, so
+  building from it is the likelier next move, and re-mixing it would only
+  spend a move on a result you already have. Promoting costs nothing.
+- Letting go empties the whole altar, not just the lock — otherwise a stale
+  cyan secondary would sit there waiting to be promoted by a tap meant to mix. Picking it again lets go, as does the **X**
+  on the slot or Escape / ⓑ.
+- After each attempt the second slot and the well empty themselves — after
+  about a second for a dead end, two for a discovery — and the held element
+  is left facing an empty slot, ready for the next try. Nothing to dismiss:
+  there is no discovery card any more, which is why `phase()` has only three
+  states.
+- A pair that combines into nothing shakes the **cauldron** red rather than the
+  two tiles — the pair you tried is sitting in the slots, so that is where the
+  answer belongs. A pair you have already combined still pulses the element it
+  makes, out on the board.
 - **The quest:** forge the 🌈 **Rainbow** (White Light + Prism, or Sun + Rain)
   and the 🦄 **Unicorn**. When you hold both, your move count is compared with
   the stored best and kept if lower. You can then keep playing.
-- **The endgame:** discover all 69 elements. The total move count of a full
+- **The endgame:** discover all 83 elements. The total move count of a full
   clear is the *hidden highscore* — it is only ever compared and shown on the
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
@@ -180,7 +205,7 @@ columns at 320-414px and 6 from a tablet up, and the title scales on `vw` with a
 cap (`min(17vw, 100px)`), the two words staying locked to each other at every
 size. `npm run mobile-check` walks the packed page through seven viewports —
 320x568 up to 1280x800 — in each of the states that lay out differently: title
-screen, board, an open discovery card, a toast, the encyclopedia. It reports
+screen, board, a result in the cauldron, a toast, the encyclopedia. It reports
 horizontal overflow, any element wider than the screen, the column count and
 every tap target under 44px, and drops `.shot-mob-*.png` for a visual pass.
 
@@ -202,12 +227,12 @@ notched phone in landscape the footer can sit under the home indicator.
 
 ## Controls
 
-| Input    | Combine | Hint | Cancel / dismiss | Mute |
-|----------|---------|------|------------------|------|
-| Mouse    | click one element, then another — or drag one onto another | the HUD **Hint** button | click the discovery card; drop on empty space | the HUD **Sound** button |
-| Touch    | tap one element, then another — or long-press (~¼s) to lift, then drag onto another | the HUD **Hint** button | tap the discovery card; drop on empty space | the HUD **Sound** button |
-| Keyboard | arrows / WASD move, Enter or Space selects | **H** | Escape (clears the selection, else opens the menu) | **M** |
-| Gamepad  | d-pad or left stick move, Ⓐ selects | Ⓨ | Ⓑ (clears the selection, else opens the menu); Start opens/closes the menu; overlays: ←/→ + Ⓐ | Ⓧ |
+| Input    | Combine | Hint | Let go of the held element | Mute |
+|----------|---------|------|----------------------------|------|
+| Mouse    | click one element to hold it, then another to mix — or drag one onto another | the HUD **Hint** button | click the held element again, or the **X** on the cauldron | the HUD **Sound** button |
+| Touch    | tap one element to hold it, then another to mix — or long-press (~¼s) to lift, then drag onto another | the HUD **Hint** button | tap the held element again, or the **X** on the cauldron | the HUD **Sound** button |
+| Keyboard | arrows / WASD move, Enter or Space holds / mixes | **H** | Escape (lets go, else opens the menu) | **M** |
+| Gamepad  | d-pad or left stick move, Ⓐ holds / mixes | Ⓨ | Ⓑ (lets go, else opens the menu); Start opens/closes the menu; overlays: ←/→ + Ⓐ | Ⓧ |
 
 Ⓨ is the hint because the top face button is the info slot by convention, and
 it sits diagonally opposite Ⓐ — so a thumb roll off confirm cannot spend a move
@@ -218,7 +243,7 @@ report as axes instead.
 
 **M**, Ⓧ and the HUD **Sound** button all mute *everything* — music and
 interface sounds — and the key and pad button work from any phase, including the
-title screen and an open discovery card. The choice is remembered across runs and
+title screen. The choice is remembered across runs and
 reloads. The button is the state as well as the switch: it reads **Sound**, and
 **Muted** dimmed to match, which is why all three routes go through one
 `muteToggle` in `game.ts` — a second path that skipped the repaint would leave
@@ -358,11 +383,11 @@ stops the whole game from loading.)
 
 ## Recipe tree — SPOILERS
 
-A perfect quest is **34 moves**, through the Sun + Rain rainbow; the two Prism
-routes cost **37**. That gap used to be seven moves and is now three: the quest
+A perfect quest is **33 moves**, through the Sun + Rain rainbow; the two Prism
+routes cost **36**. That gap used to be seven moves and is now three: the quest
 already has to reach Charcoal on its way to Black, and a Diamond is only a Lava
 away from there, so the Prism is a much shorter detour than it looks.
-A perfect full clear is **66** - one move per element, since nothing can be
+A perfect full clear is **80** - one move per element, since nothing can be
 made twice. Best scores are scoped to the current recipe tree, so all of this
 started fresh records automatically.
 
@@ -370,11 +395,12 @@ The Rainbow half of the quest is cheap. Everything else is not, because the two
 remaining halves both bottom out in the same place. The Unicorn needs a
 **Horse**, which pulls the entire life branch onto the critical path (mineral
 chain -> Acid + Metal battery -> Electricity -> Lightning -> Life -> Animal,
-plus a Field for it to stand in). Magic needs a **Star**, which needs Night -
-and since Night became Black + Sky, that pulls the whole wood chain on too
-(Axe + Tree -> Wood -> Charcoal -> Black). Both branches run off one
-Earth/Lava/Stone/Metal spine, which is what keeps 34 from being far worse, and
-the Cloud earns its keep twice: once for the Rain, once for the Lightning.
+plus a Field for it to stand in). Magic needs **Wood + Star**, and the wood
+chain pays for both halves of that: the Wood itself, and the Charcoal -> Black
+past it that Night - and so the Star - is built from (Knife + Tree -> Wood ->
+Charcoal -> Black). Both branches run off one Earth/Lava/Stone/Metal spine,
+which is what keeps 33 from being far worse, and the Cloud earns its keep
+twice: once for the Rain, once for the Lightning.
 
 Additive color mixing does the early work: primaries pair into secondaries,
 and any **complementary pair** (Blue+Yellow, Red+Cyan, Green+Magenta) makes
@@ -383,9 +409,11 @@ darkness, so the one color the light half of the tree cannot reach has to
 arrive through the material half instead, as Charcoal + Stone.
 
 Several elements have more than one route, so an intuitive guess tends to land
-somewhere. Three of them are deliberately cyclic - Fire + Ice remakes Water,
+somewhere. Six of them are deliberately cyclic - Fire + Ice remakes Water,
 which Ice itself needs; Penguin + Air hands back the Bird the Penguin came from;
-and Wolf + Dog is just another Dog - flavor for a pair players try, never a
+Wolf + Dog is just another Dog; Fire + Charcoal burns the Charcoal back down to
+Fire; Fire + Air is a fanned fire and nothing more; and Axe + Tree makes the
+Wood the Axe itself was cut from - flavor for a pair players try, never a
 cheaper path.
 
 | Element | Recipe |
@@ -399,20 +427,23 @@ cheaper path.
 | Indigo | Blue + Violet |
 | Pink | Red + White Light |
 | Air | Blue + White Light |
-| Sky | Sun + Air |
+| Sky | Air + Blue |
 | Gold | Yellow + Orange |
-| Aurora | Green + Night · Magenta + Night |
 | Water | Blue + Cyan · Fire + Ice |
-| Fire | Red + Orange |
+| Fire | Red + Air · Fire + Charcoal · Fire + Air |
 | Earth | Green + Orange |
+| Clay | Earth + Water |
+| Pottery | Clay + Fire |
 | Lava | Earth + Fire |
+| Volcano | Lava + Earth |
 | Stone | Lava + Water |
 | Metal | Fire + Stone |
-| Axe | Fire + Metal |
+| Knife | Fire + Metal |
+| Axe | Wood + Metal |
 | Sand | Earth + Air · Earth + Sun · Stone + Air |
 | Glass | Sand + Fire |
 | Mirror | Glass + Metal |
-| Sun | Fire + Air |
+| Sun | Fire + Sky |
 | Night | Black + Sky |
 | Star | Night + White Light |
 | Moon | Night + Sun |
@@ -424,14 +455,20 @@ cheaper path.
 | Storm | Lightning + Rain |
 | Tornado | Air + Storm |
 | Life | Lightning + Water |
+| Egg | Stone + Life |
 | Animal | Earth + Life |
+| Lizard | Stone + Animal |
 | Horse | Animal + Field |
+| Hippo | Horse + Water |
 | Wolf | Animal + Moon |
 | Bone | Animal + Fire · Wolf + Fire · Horse + Fire · Unicorn + Fire · Bear + Fire · Polar Bear + Fire · Dog + Fire · Cow + Fire · Bear + Horse · Wolf + Horse · Bear + Dog |
 | Dog | Wolf + Bone · Dog + Wolf |
-| Cow | Animal + Grass |
+| Cow | Animal + Plant |
+| Squirrel | Animal + Tree |
 | Bird | Air + Animal · Air + Penguin |
+| Chick | Egg + Bird |
 | Penguin | Bird + Ice |
+| Duck | Bird + Water |
 | Fish | Animal + Water |
 | Owl | Bird + Night |
 | Phoenix | Bird + Fire |
@@ -443,16 +480,21 @@ cheaper path.
 | Snow | Cloud + Ice |
 | Prism | Diamond + Glass |
 | **Rainbow** | **White Light + Prism** · **Sun + Rain** · **Prism + Sun** |
-| Magic | Star + Aurora |
+| Magic | Wood + Star |
+| Crystal Ball | Magic + Glass |
 | **Unicorn** | **Horse + Magic** |
 | Sunset | Sun + Pink |
-| Grass | Earth + Water · Life + Green |
-| Tree | Water + Grass |
-| Wood | Axe + Tree |
-| Charcoal | Wood + Fire |
+| Plant | Life + Sun · Life + Green |
+| Tree | Water + Plant |
+| Fruit | Tree + Sun |
+| Wood | Tree + Knife · Axe + Tree |
+| Charcoal | Wood + Fire · Tree + Fire |
+| Pencil | Wood + Charcoal |
 | Black | Charcoal + Stone |
 | Grey | Black + White Light |
 | Diamond | Charcoal + Lava |
-| Field | Earth + Grass |
-| Flower | Grass + Pink |
+| Field | Earth + Plant |
+| Park | Field + Water |
+| Cactus | Plant + Sand |
+| Flower | Plant + Pink |
 | Sunflower | Sun + Flower · Flower + Yellow |

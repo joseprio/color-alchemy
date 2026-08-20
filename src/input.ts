@@ -2,7 +2,7 @@
 // their own click handlers, and drag-and-drop lives with the tiles too
 // (see game.ts — addTile and the drag & drop section).
 import {
-  phase, dismissModal, obMove, obGo, moveCursor, padSelect, clearSel,
+  phase, obMove, obGo, moveCursor, padSelect, clearSel,
   openMenu, menuMove, menuGo, menuBack, hint, muteToggle,
 } from "./game";
 
@@ -16,14 +16,6 @@ export function initKeyboard(): void {
     const k = e.key;
     if (!e.repeat && k === "m") { muteToggle(); e.preventDefault(); return; }
     const p = phase();
-    if (p === "modal") {
-      // e.repeat guard: a held Enter must not dismiss the card it just opened
-      if (!e.repeat && (k === "Enter" || k === " " || k === "Escape")) {
-        dismissModal();
-        e.preventDefault();
-      }
-      return;
-    }
     if (p === "overlay") {
       if (k === "ArrowLeft" || k === "ArrowRight" || k === "Tab") {
         obMove(k === "ArrowLeft" ? -1 : 1);
@@ -105,23 +97,20 @@ export function pollPad(now: number): void {
   const a = bt(0), b = bt(1), x = bt(2), y = bt(3), st = bt(9);
   if (a && !prevA) {
     const p = phase();
-    if (p === "modal") dismissModal();
-    else if (p === "overlay") obGo();
+    if (p === "overlay") obGo();
     else if (p === "menu") menuGo();
     else padSelect();
   }
   if (b && !prevB) {
     const p = phase();
-    if (p === "modal") dismissModal();
-    else if (p === "menu") menuBack();
+    if (p === "menu") menuBack();
     else if (p === "play") { if (!clearSel()) openMenu(); } // Ⓑ mirrors Escape
   }
   if (x && !prevX) muteToggle();                 // Ⓧ mirrors M, in every phase
   if (y && !prevY && phase() === "play") hint(); // Ⓨ mirrors H; ignored elsewhere
   if (st && !prevStart) {
     const p = phase();
-    if (p === "modal") dismissModal();
-    else if (p === "overlay") obGo();
+    if (p === "overlay") obGo();
     else if (p === "menu") menuBack();  // Start toggles the pause menu closed
     else openMenu();                    // and open
   }

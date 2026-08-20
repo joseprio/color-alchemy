@@ -53,35 +53,58 @@ check("boot: COLOR and AlchemY come out the same width", await evalJs(`(() => {
   const b = k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left;
   return Math.abs(a - b) / a < 0.02;
 })()`));
-check("boot: menu offers the four options",
+check("boot: a fresh boot offers no Continue, having nothing to continue",
   (await evalJs(`[...document.querySelectorAll('#menu button')].map(b => b.textContent).join()`)) ===
-  "Continue,New game,Highscore,Encyclopedia");
+  "New game,Highscore,Encyclopedia,Unlock all,Reset everything");
 await shot("title");
-await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Continue').click()`);
+await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'New game').click()`);
 s = await state();
-check("menu: Continue enters the game", s.phase === "play");
+check("menu: New game enters the game", s.phase === "play");
 
 // --- mouse: Red + Green -> Yellow ----------------------------------------
 await click("red");
+s = await state();
+check("lock: the first pick locks into the cauldron",
+  s.sel === 0 && await evalJs(`document.getElementById('cA').classList.contains('on')`) &&
+  await evalJs(`document.getElementById('cA').textContent.includes('Red')`));
 await click("green");
 await sleep(100);
 s = await state();
-check("mouse: combining opens the discovery card", s.phase === "modal");
+check("mouse: combining resolves in the cauldron, nothing to dismiss", s.phase === "play");
 check("mouse: Yellow discovered, 1 move", s.found.includes("yellow") && s.moves === 1);
-check("mouse: card shows name and quote",
-  await evalJs(`document.getElementById('mcard').textContent.includes('Yellow')`) &&
-  await evalJs(`document.getElementById('mcard').textContent.includes('not paint')`));
-check("discovery: first-ever discovery plays the merge animation",
-  await evalJs(`!!document.querySelector('#mcard .mstage')`));
-await shot("modal");
-await sleep(300);
-await key("Escape");
+check("cauldron: the well shows the result and the quote sits under it",
+  await evalJs(`document.getElementById('cR').textContent.includes('Yellow')`) &&
+  await evalJs(`document.getElementById('cq').textContent.includes('not paint')`));
+check("discovery: a first-EVER element takes the whole screen",
+  await evalJs(`document.getElementById('disc').classList.contains('on')`) &&
+  (await evalJs(`document.querySelectorAll('#disc .k').length`)) === 14 &&
+  await evalJs(`document.getElementById('disc').textContent.includes('Yellow')`));
+check("discovery: the rays step round the spectrum",
+  (await evalJs(`document.querySelector('#disc .k').style.getPropertyValue('--c')`)) === "hsl(0 95% 62%)" &&
+  (await evalJs(`[...document.querySelectorAll('#disc .k')][7].style.getPropertyValue('--c')`)) === "hsl(180 95% 62%)");
+check("lock: Red is still held after the combine", s.sel === 0 &&
+  await evalJs(`document.getElementById('cA').textContent.includes('Red')`));
+check("cauldron: the second element is marked on the board while it sits in slot B",
+  await evalJs(`document.getElementById('cB').textContent.includes('Green')`) &&
+  (await evalJs(`[...document.querySelectorAll('.tile.sel2')].map(t => t.dataset.id).join()`)) === "green");
+await shot("cauldron");
+// the second slot and the result clear themselves; the lock does not
+await sleep(2400);
+check("cauldron: the board mark clears with the slot",
+  !(await evalJs(`!!document.querySelector('.tile.sel2')`)));
+check("cauldron: B and the result empty themselves, the lock stays",
+  (await evalJs(`document.getElementById('cB').textContent`)) === "" &&
+  (await evalJs(`document.getElementById('cR').textContent`)) === "" &&
+  await evalJs(`document.getElementById('cA').textContent.includes('Red')`));
+await click("red");
 s = await state();
-check("keyboard: Escape dismisses the card", s.phase === "play");
+check("lock: picking the held element again releases it",
+  s.sel === -1 && !(await evalJs(`document.getElementById('cA').classList.contains('on')`)));
 
 // --- keyboard: cursor to Blue + Yellow -> White Light ---------------------
-await key("ArrowRight");            // cursor was on green(1) after the click
-await key("Enter");                 // select blue
+await key("ArrowRight");            // cursor is on red(0) after the release
+await key("ArrowRight");            // -> blue(2)
+await key("Enter");                 // lock blue
 s = await state();
 check("keyboard: arrows+Enter select an element", s.sel === 2 && s.cursor === 2);
 await key("ArrowRight");
@@ -96,23 +119,41 @@ await click("green");
 await click("yellow");
 s = await state();
 check("fail: no recipe still costs a move", s.moves === 3 && s.found.length === 5 && s.phase === "play");
-check("fail: toast says nothing happens",
-  await evalJs(`document.getElementById('toast').textContent.includes('nothing happens')`));
-check("fail: the two mismatched tiles shake",
-  await evalJs(`['green','yellow'].every(id =>
-    document.querySelector('[data-id=' + id + ']').classList.contains('bad'))`));
+check("fail: the cauldron says nothing happens",
+  await evalJs(`document.getElementById('cq').textContent.includes('nothing happens')`));
+check("fail: the cauldron shakes and the tiles do not",
+  await evalJs(`document.getElementById('cdrn').classList.contains('bad')`) &&
+  !(await evalJs(`!!document.querySelector('.tile.bad')`)));
+// green is still held, so one more pick is the whole rediscovery
 await click("red");
-await click("green");
 s = await state();
 check("dupe: rediscovery costs a move, adds nothing", s.moves === 4 && s.found.length === 5);
-check("dupe: toast names the known result",
-  await evalJs(`document.getElementById('toast').textContent.includes('already discovered')`));
-// yellow still carried .bad from the failed combo above — the pulse takes over
+check("dupe: a rediscovery gets no full-screen animation",
+  !(await evalJs(`document.getElementById('disc').classList.contains('on')`)));
+check("dupe: the cauldron names the known result",
+  await evalJs(`document.getElementById('cq').textContent.includes('already discovered')`));
 check("dupe: only the known result pulses",
-  (await evalJs(`[...document.querySelectorAll('.tile.hit')].map(t => t.dataset.id).join()`)) === "yellow" &&
-  !(await evalJs(`document.querySelector('[data-id=yellow]').classList.contains('bad')`)));
+  (await evalJs(`[...document.querySelectorAll('.tile.hit')].map(t => t.dataset.id).join()`)) === "yellow");
+// Red is the cyan secondary right now: tapping it takes over the lock from
+// Green, empties both transient slots, and spends no move
+check("lock: tapping the cyan secondary promotes it to the held element",
+  (await evalJs(`[...document.querySelectorAll('.tile.sel2')].map(t => t.dataset.id).join()`)) === "red");
+await click("red");
+s = await state();
+check("lock: the promoted element is held and the slots are empty",
+  s.sel === 0 && s.moves === 4 &&
+  await evalJs(`document.getElementById('cA').textContent.includes('Red')`) &&
+  (await evalJs(`document.getElementById('cB').textContent`)) === "" &&
+  (await evalJs(`document.getElementById('cR').textContent`)) === "" &&
+  !(await evalJs(`!!document.querySelector('.tile.sel2')`)));
 
 // --- encyclopedia: performed combinations only ----------------------------
+// green is still held, so the first Escape releases the lock rather than
+// reaching the menu — cancel first, leave second, exactly as Ⓑ behaves
+await key("Escape");
+s = await state();
+check("lock: Escape releases the held element before it opens the menu",
+  s.phase === "play" && s.sel === -1);
 await key("Escape");
 s = await state();
 check("keyboard: Escape opens the menu", s.phase === "menu");
@@ -153,7 +194,7 @@ await drag("red", "blue");
 await sleep(100);
 s = await state();
 check("drag: red onto blue forges Magenta",
-  s.found.includes("magenta") && s.moves === 5 && s.phase === "modal");
+  s.found.includes("magenta") && s.moves === 5 && s.phase === "play");
 await evalJs("CA.dismiss()");
 await drag("red", null);
 s = await state();
@@ -338,13 +379,14 @@ await shot("play");
 // The Prism route is no longer viable here: Prism needs a Diamond, which is the
 // deepest thing in the game, so Prism belongs to the endgame list below.
 // Night is Black + Sky now, and Black is the end of the wood chain, so the
-// route drags in Axe, Tree, Wood and Charcoal on its way to a Star.
+// route drags in Knife, Tree, Wood and Charcoal on its way to a Star - and Magic
+// spends that same Wood again.
 const QUEST = [
   ["red","yellow"],       // orange
-  ["red","orange"],       // fire
   ["blue","white"],       // air
-  ["fire","air"],         // sun
-  ["sun","air"],          // sky
+  ["red","air"],          // fire
+  ["air","blue"],         // sky
+  ["fire","sky"],         // sun
   ["green","blue"],       // cyan
   ["blue","cyan"],        // water
   ["sky","water"],        // cloud
@@ -359,18 +401,17 @@ const QUEST = [
   ["cloud","electricity"],// lightning
   ["lightning","water"],  // life
   ["earth","life"],       // animal
-  ["earth","water"],      // grass
-  ["earth","grass"],      // field
+  ["life","sun"],         // plant
+  ["earth","plant"],      // field
   ["animal","field"],     // horse
-  ["fire","metal"],       // axe
-  ["water","grass"],      // tree
-  ["axe","tree"],         // wood
+  ["fire","metal"],       // knife
+  ["water","plant"],      // tree
+  ["tree","knife"],       // wood
   ["wood","fire"],        // charcoal
   ["charcoal","stone"],   // black
   ["black","sky"],        // night
   ["night","white"],      // star
-  ["green","night"],      // aurora
-  ["star","aurora"],      // magic
+  ["wood","star"],        // magic
   ["horse","magic"],      // unicorn
 ];
 // everything the quest route does NOT need: the colors past Magenta (Violet
@@ -383,29 +424,44 @@ const EXTRA = [
   ["yellow","orange"],    // gold
   ["earth","sun"],        // sand
   ["sand","fire"],        // glass
+  ["plant","sand"],       // cactus
   ["night","sun"],        // moon
   ["lightning","rain"],   // storm
   ["air","storm"],        // tornado
   ["water","night"],      // ice
   ["cloud","ice"],        // snow
+  ["wood","charcoal"],    // pencil
+  ["earth","water"],      // clay
+  ["field","water"],      // park
+  ["stone","life"],       // egg
+  ["stone","animal"],     // lizard
+  ["egg","bird"],         // chick
+  ["clay","fire"],        // pottery
+  ["earth","lava"],       // volcano
   ["charcoal","lava"],    // diamond
   ["diamond","glass"],    // prism
   ["sun","pink"],         // sunset
-  ["grass","pink"],       // flower
+  ["plant","pink"],       // flower
   ["sun","flower"],       // sunflower
   ["air","animal"],       // bird
   ["bird","ice"],         // penguin
   ["animal","water"],     // fish
+  ["bird","water"],       // duck
   ["bird","night"],       // owl
+  ["horse","water"],      // hippo
   ["animal","moon"],      // wolf
   ["horse","fire"],       // bone
   ["wolf","bone"],        // dog
-  ["animal","grass"],     // cow
+  ["animal","plant"],     // cow
+  ["animal","tree"],      // squirrel
+  ["sun","tree"],         // fruit
   ["animal","flower"],    // bee
   ["bee","flower"],       // honey
   ["animal","honey"],     // bear
   ["bear","ice"],         // polar bear
   ["black","white"],      // grey
+  ["glass","magic"],      // crystal ball
+  ["wood","metal"],       // axe
   ["glass","metal"],      // mirror
   ["bird","fire"],        // phoenix
 ];
@@ -429,7 +485,7 @@ await evalJs(`[...document.querySelectorAll('#obtns button')].find(b => b.textCo
 s = await state();
 check("quest: Keep playing returns to the game", s.phase === "play" && !s.fullDone);
 check("quest: goal line switches to find-all",
-  await evalJs(`document.getElementById('goal').textContent.includes('all 69')`));
+  await evalJs(`document.getElementById('goal').textContent.includes('all 83')`));
 check("night: icon is a starry blue-to-black swatch, not an emoji",
   await evalJs(`!!document.querySelector('[data-id=night] .sw')
     && document.querySelector('[data-id=night] .sw').style.background.includes('gradient')`));
@@ -455,7 +511,7 @@ check("highscore: back to the game", s.phase === "play");
 await run(EXTRA);
 await sleep(100);
 s = await state();
-check("full: completion overlay after all 69", s.fullDone && s.phase === "overlay");
+check("full: completion overlay after all 83", s.fullDone && s.phase === "overlay");
 const fullMoves = s.moves;
 check("full: hidden best stored", (await best("bestFull")) === fullMoves);
 check("indigo: Newton's seventh band, between Blue and Violet",
@@ -481,20 +537,21 @@ check("reset: hidden best appears nowhere outside the completion screen",
   !(await evalJs(`document.body.innerText.includes('complete run')`)));
 
 // --- a perfect run must lower both bests ----------------------------------
-// The true minimum, 34 moves. The Rainbow half is still cheap (Sun + Rain, and
+// The true minimum, 33 moves. The Rainbow half is still cheap (Sun + Rain, and
 // the Prism routes stay a scenic detour). What dominates is everything else:
 // the Unicorn needs a Horse, which puts the whole life branch on the critical
-// path, and Magic needs a Star, which since Night became Black + Sky puts the
-// whole wood chain there too. Both run off one Earth/Lava/Stone/Metal spine,
-// and the Cloud does double duty for Rain and for Lightning.
+// path, and Magic needs Wood + Star, which puts the whole wood chain there
+// twice over — Wood itself, and Black at the end of it for the Night the Star
+// needs. Both run off one Earth/Lava/Stone/Metal spine, and the Cloud does
+// double duty for Rain and for Lightning.
 const PERFECT_QUEST = [
   ["red","green"],        // yellow
   ["red","yellow"],       // orange
-  ["red","orange"],       // fire
   ["blue","yellow"],      // white
   ["blue","white"],       // air
-  ["fire","air"],         // sun
-  ["sun","air"],          // sky
+  ["red","air"],          // fire
+  ["air","blue"],         // sky
+  ["fire","sky"],         // sun
   ["green","blue"],       // cyan
   ["blue","cyan"],        // water
   ["sky","water"],        // cloud
@@ -509,18 +566,17 @@ const PERFECT_QUEST = [
   ["cloud","electricity"],// lightning
   ["lightning","water"],  // life
   ["earth","life"],       // animal
-  ["earth","water"],      // grass
-  ["earth","grass"],      // field
+  ["life","sun"],         // plant
+  ["earth","plant"],      // field
   ["animal","field"],     // horse
-  ["fire","metal"],       // axe
-  ["water","grass"],      // tree
-  ["axe","tree"],         // wood
+  ["fire","metal"],       // knife
+  ["water","plant"],      // tree
+  ["tree","knife"],       // wood
   ["wood","fire"],        // charcoal
   ["charcoal","stone"],   // black
   ["black","sky"],        // night
   ["night","white"],      // star
-  ["green","night"],      // aurora
-  ["star","aurora"],      // magic
+  ["wood","star"],        // magic
   ["horse","magic"],      // unicorn
 ];
 const PERFECT_EXTRA = [
@@ -531,53 +587,68 @@ const PERFECT_EXTRA = [
   ["yellow","orange"],    // gold
   ["earth","air"],        // sand
   ["sand","fire"],        // glass
+  ["plant","sand"],       // cactus
   ["night","sun"],        // moon
   ["lightning","rain"],   // storm
   ["air","storm"],        // tornado
   ["water","night"],      // ice
   ["cloud","ice"],        // snow
+  ["wood","charcoal"],    // pencil
+  ["earth","water"],      // clay
+  ["field","water"],      // park
+  ["stone","life"],       // egg
+  ["stone","animal"],     // lizard
+  ["egg","bird"],         // chick
+  ["clay","fire"],        // pottery
+  ["earth","lava"],       // volcano
   ["charcoal","lava"],    // diamond
   ["diamond","glass"],    // prism
   ["sun","pink"],         // sunset
-  ["grass","pink"],       // flower
+  ["plant","pink"],       // flower
   ["flower","yellow"],    // sunflower
   ["air","animal"],       // bird
   ["bird","ice"],         // penguin
   ["animal","water"],     // fish
+  ["bird","water"],       // duck
   ["bird","night"],       // owl
+  ["horse","water"],      // hippo
   ["animal","moon"],      // wolf
   ["animal","fire"],      // bone
   ["wolf","bone"],        // dog
-  ["animal","grass"],     // cow
+  ["animal","plant"],     // cow
+  ["animal","tree"],      // squirrel
+  ["sun","tree"],         // fruit
   ["animal","flower"],    // bee
   ["bee","flower"],       // honey
   ["animal","honey"],     // bear
   ["bear","ice"],         // polar bear
   ["black","white"],      // grey
+  ["glass","magic"],      // crystal ball
+  ["wood","metal"],       // axe
   ["glass","metal"],      // mirror
   ["bird","fire"],        // phoenix
 ];
 await run(PERFECT_QUEST);
 await sleep(100);
 s = await state();
-check("perfect: quest done in 34 moves", s.questDone && s.moves === 34);
-check("perfect: quest best lowered to 34", (await best("bestQuest")) === 34);
+check("perfect: quest done in 33 moves", s.questDone && s.moves === 33);
+check("perfect: quest best lowered to 33", (await best("bestQuest")) === 33);
 check("perfect: overlay celebrates the new best",
   await evalJs(`document.getElementById('ocard').textContent.includes('NEW BEST')`));
 await evalJs(`[...document.querySelectorAll('#obtns button')].find(b => b.textContent === 'Keep playing').click()`);
 await run(PERFECT_EXTRA);
 s = await state();
-check("perfect: full clear in 66 moves", s.fullDone && s.moves === 66);
-check("perfect: hidden best lowered to 66", (await best("bestFull")) === 66);
+check("perfect: full clear in 80 moves", s.fullDone && s.moves === 80);
+check("perfect: hidden best lowered to 80", (await best("bestFull")) === 80);
 
 // --- a sloppier run must NOT overwrite them -------------------------------
 await evalJs("CA.reset()");
-// a wasted dupe, plus a Magenta the route no longer needs = 36 moves
+// a wasted dupe, plus a Magenta the route no longer needs = 35 moves
 await run([["red","green"], ["red","green"], ["blue","yellow"], ["red","blue"], ...QUEST]);
 await sleep(100);
 s = await state();
-check("sloppy: quest done in 36 moves", s.questDone && s.moves === 36);
-check("sloppy: best stays 34", (await best("bestQuest")) === 34);
+check("sloppy: quest done in 35 moves", s.questDone && s.moves === 35);
+check("sloppy: best stays 33", (await best("bestQuest")) === 33);
 
 // --- persistence: reload restores the run ---------------------------------
 await evalJs(`[...document.querySelectorAll('#obtns button')].find(b => b.textContent === 'Keep playing').click()`);
@@ -585,27 +656,42 @@ await send("Page.navigate", { url: "file:///" + page.replace(/\\/g, "/") });
 await sleep(900);
 s = await state();
 check("reload: run restored, back on the title",
-  s.moves === 36 && s.questDone && s.found.includes("rainbow") && s.phase === "menu");
+  s.moves === 35 && s.questDone && s.found.includes("rainbow") && s.phase === "menu");
 
 // --- alternate recipe: Sun + Rain is also a Rainbow -----------------------
 await evalJs("CA.reset()");
 await run([
-  ["red","green"], ["blue","yellow"], ["blue","white"], ["red","yellow"],
-  ["red","orange"], ["fire","air"], ["sun","air"], ["green","blue"],
+  ["red","green"], ["blue","yellow"], ["blue","white"], ["red","air"],
+  ["air","blue"], ["fire","sky"], ["green","blue"],
   ["blue","cyan"], ["sky","water"], ["cloud","water"], ["sun","rain"],
 ]);
 s = await state();
 check("alt: Sun+Rain forges the Rainbow, no Prism involved",
-  s.found.includes("rainbow") && !s.found.includes("prism") && s.moves === 12);
+  s.found.includes("rainbow") && !s.found.includes("prism") && s.moves === 11);
 check("alt: the intuitive pairs resolve too",
   (await evalJs(`JSON.stringify([CA.RECIPE['air+water'], CA.RECIPE['air+stone'],
-    CA.RECIPE['fire+ice'], CA.RECIPE['air+penguin'], CA.RECIPE['dog+wolf']])`)) ===
-  '["cloud","sand","water","bird","dog"]');
+    CA.RECIPE['fire+ice'], CA.RECIPE['air+penguin'], CA.RECIPE['dog+wolf'],
+    CA.RECIPE['charcoal+fire'], CA.RECIPE['air+fire']])`)) ===
+  '["cloud","sand","water","bird","dog","fire","fire"]');
 check("alt: Diamond cuts Glass into a Prism, the only route to one",
   (await evalJs(`CA.RECIPE['diamond+glass']`)) === "prism" &&
   (await evalJs(`CA.RECIPE['glass+white']`)) === undefined);
 check("alt: Prism + Sun is also a Rainbow",
   (await evalJs(`CA.RECIPE['prism+sun']`)) === "rainbow");
+check("alt: the Sky is blue Air now, and the Sun is lit from it",
+  (await evalJs(`CA.RECIPE['air+blue']`)) === "sky" &&
+  (await evalJs(`CA.RECIPE['fire+sky']`)) === "sun" &&
+  (await evalJs(`CA.RECIPE['air+sun']`)) === undefined);
+check("alt: Fire needs Air to catch, and Orange no longer lights it",
+  (await evalJs(`CA.RECIPE['air+red']`)) === "fire" &&
+  (await evalJs(`CA.RECIPE['orange+red']`)) === undefined);
+check("alt: the tool chain reversed - Fire + Metal is a Knife, and the Axe needs Wood",
+  (await evalJs(`CA.RECIPE['fire+metal']`)) === "knife" &&
+  (await evalJs(`CA.RECIPE['knife+tree']`)) === "wood" &&
+  (await evalJs(`CA.RECIPE['metal+wood']`)) === "axe");
+check("alt: a whole Tree burns to Charcoal, no Wood in between",
+  (await evalJs(`CA.RECIPE['fire+tree']`)) === "charcoal" &&
+  (await evalJs(`CA.RECIPE['fire+wood']`)) === "charcoal");
 // perform one, so the encyclopedia check below sees both Cloud routes
 await run([["water","air"]]);
 
@@ -623,8 +709,9 @@ check("menu: confirmed New game resets into play",
 // --- the codex: knowledge outlives runs -----------------------------------
 await evalJs(`CA.attempt('red','green')`);
 s = await state();
-check("rediscovery: known elements skip the merge animation",
-  s.phase === "modal" && !(await evalJs(`!!document.querySelector('#mcard .mstage')`)));
+check("rediscovery: a known element still lands in the well",
+  s.phase === "play" &&
+  await evalJs(`document.getElementById('cR').textContent.includes('Yellow')`));
 await evalJs("CA.dismiss()");
 await key("Escape");
 await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Encyclopedia').click()`);
@@ -634,6 +721,47 @@ check("encyclopedia: knowledge persists across runs",
 check("encyclopedia: an element lists every route actually performed",
   await evalJs(`document.getElementById('mlist').textContent.includes('Sky + Water')`) &&
   await evalJs(`document.getElementById('mlist').textContent.includes('Water + Air')`));
+
+// --- Unlock all / Reset everything ---------------------------------------
+// both are destructive, so both take two presses; the second must land within
+// 2.5s of the first
+const menuBtn = async (label) =>
+  evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent.startsWith('${label}')).click()`);
+await evalJs("CA.reset()");
+await key("Escape");
+s = await state();
+check("unlock: the menu is open on a fresh board", s.phase === "menu" && s.found.length === 3);
+await menuBtn("Unlock all");
+check("unlock: the first press only arms the button",
+  await evalJs(`!![...document.querySelectorAll('#menu button')].find(b => b.textContent.includes('Sure? (ends'))`) &&
+  (await state()).found.length === 3);
+await menuBtn("Sure? (ends");
+s = await state();
+check("unlock: the second press hands over every element",
+  s.found.length === 83 && s.phase === "play" && s.moves === 0);
+check("unlock: an unlocked run stops scoring, and says so",
+  await evalJs(`document.getElementById('goal').textContent.includes('does not score')`) &&
+  s.phase === "play" && !s.fullDone);
+check("unlock: no best was written from it",
+  (await best("bestFull")) === 80 && (await best("bestQuest")) === 33);
+await key("Escape");
+await menuBtn("Reset everything");
+check("wipe: the first press only arms the button",
+  await evalJs(`!![...document.querySelectorAll('#menu button')].find(b => b.textContent.includes('Sure? (scores'))`));
+await menuBtn("Sure? (scores");
+s = await state();
+check("wipe: back to three elements, and both bests are gone",
+  s.found.length === 3 && s.moves === 0 &&
+  (await best("bestQuest")) === 0 && (await best("bestFull")) === 0);
+check("wipe: Continue goes with the run it pointed at",
+  (await evalJs(`[...document.querySelectorAll('#menu button')].map(b => b.textContent).join()`)) ===
+  "New game,Highscore,Encyclopedia,Unlock all,Reset everything");
+check("wipe: it puts everything back without starting a game",
+  s.phase === "menu" &&
+  !(await evalJs(`document.getElementById('goal').textContent.includes('does not score')`)));
+await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Encyclopedia').click()`);
+check("wipe: the all-time codex is gone too, not just the run",
+  !(await evalJs(`document.getElementById('mlist').textContent.includes('Unicorn')`)));
 
 check("no uncaught exceptions", t.exceptions.length === 0);
 if (t.exceptions.length) console.log(t.exceptions.join("\n"));
