@@ -55,15 +55,23 @@ npm run audio-bench       # what a sample costs, against the callback budget
   removes and the id strings inside recipes were nearly free already.
   Measured, not reasoned about: pack the real chunk both ways before
   trading readability for bytes.
-- **The test hooks are named for the bundle, not for the reader.** `window.CA`
-  costs **105 B** — measured by building without it — because closure cannot
-  rename anything reachable from it and `closure-externs.js` pins the names.
-  58 B of that comes back for nothing: the members are one letter each, and
-  `CA.t()` answers with a POSITIONAL ARRAY rather than an object, since its
-  seven key names were pinned too. `check.mjs` puts the names back on at the
-  door, so the checks still read `s.found` and `s.moves`. The other 47 B
-  would mean shipping a bundle nobody tested, which is not a trade this
-  repo makes.
+- **The bundle ships no test hooks at all.** `window.CA` cost **105 B** —
+  closure cannot rename anything reachable from it, and `closure-externs.js`
+  pinned every name. It is gone, and `check.mjs` drives the page the way a
+  player does: `attempt(a, b)` releases the altar, clicks tile a, clicks
+  tile b and releases again, all in ONE round trip, because `selectAt` is
+  synchronous — so the suite is no slower than the hooks were. State is read
+  off the page; `questDone` and `fullDone` are not stored anywhere visible,
+  but `hud()` composes the goal line from them, so the line IS the state.
+  One thing has no DOM form: the recipe tree. Those 25 assertions now parse
+  `src/elements.ts` in node, which checks the tree as WRITTEN rather than as
+  SHIPPED — the one place in the file where a mangled build could still pass.
+  Taken knowingly, in exchange for the bytes.
+  Driving the board rather than the hooks caught two things the hooks had
+  been hiding: a run script that made a Chick from a Bird it had not
+  discovered yet (`CA.attempt` never checked you held the ingredients), and
+  a mobile-probe false positive where the discovery rays, clipped by an
+  `overflow: hidden` parent, were counted as page overflow.
 - **innerHTML instead of textContent is NOT worth it: 3 B.** Nine writes, two
   characters each, and roadroller predicts the longer word almost for free.
   It would also make the first element named "Salt & Pepper" render wrong,

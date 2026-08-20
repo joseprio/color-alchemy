@@ -1,8 +1,8 @@
-// Entry point: boots the game, wires inputs, runs the frame loop (gamepad
-// polling), and exposes the window.CA test hooks check.mjs drives.
+// Entry point: boots the game, wires inputs, and runs the frame loop (gamepad
+// polling). Nothing is exposed on window: check.mjs drives the real DOM, so
+// the bundle carries no test surface at all.
 import "./css";                     // the stylesheet, before anything renders
-import { ELEMENTS, RECIPE } from "./elements";
-import { boot, attempt, selectAt, unlock, reset, caState, phase } from "./game";
+import { boot, phase } from "./game";
 import { initKeyboard, pollPad } from "./input";
 import { wakeAudio, musicPlaying } from "./music";
 
@@ -26,7 +26,3 @@ const frame = (t: number): void => {
 };
 requestAnimationFrame(frame);
 
-(window as any).CA = {
-  E: ELEMENTS, R: RECIPE, a: attempt, s: selectAt,
-  d: unlock, r: reset, t: caState,
-};

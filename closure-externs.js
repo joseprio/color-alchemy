@@ -3,14 +3,16 @@
 // Closure ADVANCED renames every property it has not been told about. Anything
 // whose NAME has to survive the compile is pinned here — three boundaries:
 //
-//  1. window.CA, the test hooks check.mjs drives. Renaming these silently turns
-//     every check into a TypeError against the production bundle.
-//  2. the localStorage shapes. The run and the codex are JSON, so a renamed key
+//  1. the localStorage shapes. The run and the codex are JSON, so a renamed key
 //     is a save that no later build can read — and the rename is invisible until
 //     someone's run fails to come back.
-//  3. the ElementDef fields, which the balance tools in the scratchpad read off
-//     CA.ELEMENTS. These are all one or two characters already, so pinning them
+//  2. the ElementDef fields, read off the table by the balance tools in the
+//     scratchpad. These are one or two characters already, so pinning them
 //     costs nothing a rename would have won.
+//
+// There is no longer a third: the bundle exposes NOTHING on window. check.mjs
+// drives the page through clicks and reads the DOM, so there is no test surface
+// whose names have to survive.
 //
 // HTML ids need no entry: nothing here reads a bare id global (every lookup goes
 // through getElementById with a string literal), which is the hazard galaxy-raid's
@@ -36,17 +38,7 @@ var localStorage;
 // failing test. Add to this list, never trim it.
 var caDomNames = { gridTemplateColumns: 0, block: 0, passive: 0 };
 
-/** @const */
-var CA = {};
-/** @type {?} */ CA.E;
-/** @type {?} */ CA.R;
-/** @type {?} */ CA.a;
-/** @type {?} */ CA.s;
-/** @type {?} */ CA.d;
-/** @type {?} */ CA.r;
-/** @type {?} */ CA.t;
 
-// what CA.state() returns
 /** @const */
 var caState = {};
 /** @type {?} */ caState.found;

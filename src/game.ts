@@ -815,6 +815,3 @@ function showRestoredCompletion(): void {
 
 /* -------------------------------------------------------------- test hooks */
 // Consumed by check.mjs through window.CA (wired in index.ts).
-export function caState() {
-  return [[...found], moves, questDone, fullDone, sel, cursor, phase()];
-}

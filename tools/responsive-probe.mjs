@@ -31,10 +31,21 @@ const AUDIT = `(() => {
   const name = (el) => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') +
     (el.className && typeof el.className === 'string' && el.className ? '.' + el.className.split(' ')[0] : '');
   const over = [], small = [];
+  // a child of a clipping box cannot widen the page, however far its rect
+  // reaches — the discovery overlay's rays are 520px long inside an
+  // overflow:hidden container, and counting them was a false positive that
+  // came and went with the overlay's own 2.75s timer
+  const clipped = (el) => {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      const o = getComputedStyle(p);
+      if (o.overflow === 'hidden' || o.overflowX === 'hidden') return true;
+    }
+    return false;
+  };
   for (const el of document.querySelectorAll('body *')) {
     const r = el.getBoundingClientRect();
     if (r.width === 0 && r.height === 0) continue;
-    if (r.width > vw + 0.5 || r.right > vw + 0.5 || r.left < -0.5) {
+    if ((r.width > vw + 0.5 || r.right > vw + 0.5 || r.left < -0.5) && !clipped(el)) {
       over.push(name(el) + ' ' + Math.round(r.width) + 'px [' + Math.round(r.left) + '..' + Math.round(r.right) + ']');
     }
     if ((el.tagName === 'BUTTON' || el.classList.contains('tile')) && r.width > 0 && Math.min(r.width, r.height) < 44) {
@@ -83,20 +94,29 @@ for (const [label, width, height, mobile] of SIZES) {
 
   // board with a dozen elements found
   await t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
-  await t.evalJs(`CA.r();
+  // driven through the board, so every pair here has to be one a player could
+  // actually reach in this order — the old hook did not check that
+  await t.evalJs(`(() => {
+    const c = (id) => { const e = document.querySelector('[data-id=' + id + ']'); if (e) e.click(); };
+    const rel = () => {
+      const b = document.querySelector('.tile.sel2'); if (b) { b.click(); b.click(); }
+      const h = document.querySelector('.tile.sel'); if (h) h.click();
+    };
+    window.__mix = (a, b) => { rel(); c(a); c(b); rel(); };
+  })();
     [['red','green'],['red','blue'],['green','blue'],['blue','yellow'],['red','yellow'],
-     ['red','orange'],['blue','white'],['fire','air'],['sun','air'],['blue','cyan'],
-     ['green','orange'],['earth','fire']].forEach(([a,b]) => { CA.a(a,b); CA.d(); })`);
+     ['blue','white'],['red','air'],['air','blue'],['fire','sky'],['blue','cyan'],
+     ['green','orange'],['earth','fire']].forEach(([a,b]) => __mix(a,b))`);
   await t.sleep(200);
   states.board = JSON.parse(await t.evalJs(AUDIT));
   await shot("board");
 
   // a discovery card, left open
-  await t.evalJs(`CA.a('lava','water')`);
+  await t.evalJs(`__mix('lava','water')`);
   await t.sleep(300);
   states.card = JSON.parse(await t.evalJs(AUDIT));
   await shot("card");
-  await t.evalJs(`CA.d()`);
+
 
   // a hint toast: the only element in the page set to nowrap
   await t.evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }))`);

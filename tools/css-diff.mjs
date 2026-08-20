@@ -11,7 +11,18 @@ const t = await launch({ url: "dist/bundle.html" });
 await t.sleep(1200);
 
 // exercise a few states so more rules are live than the title screen alone
-await t.evalJs(`CA.r(); CA.a('red','green'); CA.d();
+// the bundle ships no test hooks, so the probe drives the board the way a
+// player does — enter the game, then click two tiles
+await t.evalJs(`[...document.querySelectorAll('#menu button')]
+  .find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
+await t.evalJs(`(() => {
+    const c = (id) => { const e = document.querySelector('[data-id=' + id + ']'); if (e) e.click(); };
+    const rel = () => {
+      const b = document.querySelector('.tile.sel2'); if (b) { b.click(); b.click(); }
+      const h = document.querySelector('.tile.sel'); if (h) h.click();
+    };
+    window.__mix = (a, b) => { rel(); c(a); c(b); rel(); };
+  })(); __mix('red','green');
   // that attempt was a first-ever discovery, so the full-screen overlay is up
   // and on a 2.75s timer to remove itself. Skip it: an element that deletes
   // ITSELF part way through a two-pass snapshot lands in one pass and not the

@@ -1,10 +1,11 @@
 // Color Alchemy headless checks, on the bundled CDP harness (cdp.mjs).
 // Run from this folder:  node check.mjs   (build first: npm run build)
-// Exercises the real input paths (mouse clicks, keyboard events, a stubbed
-// gamepad through the poll loop), then drives full runs through the CA test
-// hooks to verify the quest best, the hidden full-run best, and persistence.
+// Everything goes through the real input paths: mouse clicks on tiles, keyboard
+// events, a stubbed gamepad through the poll loop. The bundle exposes NOTHING
+// on window, so full runs are driven by clicking too — see attempt() below,
+// which lands a whole combination in one round trip.
 // Screenshots land next to this file as .shot-*.png for visual review.
-import { writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { launch, check } from "./cdp.mjs";
 
@@ -12,11 +13,83 @@ const page = fileURLToPath(new URL("./dist/bundle.html", import.meta.url));
 const t = await launch({ url: page });
 const { evalJs, send, sleep } = t;
 
-// CA.t() answers with a positional array — the seven key names cost real bytes
-// in the bundle, where here they cost nothing. Put them back on at the door.
-const SKEYS = ["found", "moves", "questDone", "fullDone", "sel", "cursor", "phase"];
-const state = () => evalJs("JSON.stringify(CA.t())").then(JSON.parse)
-  .then(a => Object.fromEntries(SKEYS.map((k, i) => [k, a[i]])));
+/* --------------------------------------------------------------- driving it
+   Nothing is exposed on window: the bundle ships no test hooks, so every helper
+   here goes through the surface a player touches — clicks on tiles, keys on
+   window, and whatever the HUD and the board actually say. The one thing with
+   no DOM form is the recipe tree, which is read out of src/elements.ts instead;
+   see RECIPE below for what that costs. */
+
+const tileClick = (id) =>
+  `document.querySelector('[data-id=${id}]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`;
+// Emptying the altar, the way a player would. The second slot has to go too:
+// left set, the next pick on that element would PROMOTE it rather than mix,
+// and cost no move. Clicking the cyan one promotes it (which clears both
+// transient slots) and clicking it again lets go, so two clicks leave nothing
+// held and nothing pending. A no-op when the altar is already empty.
+const RELEASE = `(() => {
+  const c = (e) => e && e.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  const b = document.querySelector('.tile.sel2');
+  if (b) { c(b); c(b); }
+  c(document.querySelector('.tile.sel'));
+})()`;
+const release = () => evalJs(RELEASE);
+
+// One combination, one round trip: release, pick a, pick b, release again so
+// the next pair starts clean. selectAt is synchronous, so all four land before
+// this resolves and the suite is no slower than the old hooks were.
+const attempt = (a, b) =>
+  evalJs(`(() => { ${RELEASE}; ${tileClick(a)}; ${tileClick(b)}; ${RELEASE}; })()`);
+
+// The state the checks assert on, read off the page. questDone and fullDone are
+// not written anywhere visible — but hud() composes the goal line FROM them, so
+// the line is the state. (A run that has been unlocked says neither, which is
+// right: it has not earned either.)
+const state = () => evalJs(`(() => {
+  const g = document.getElementById('goal').textContent;
+  const tiles = [...document.querySelectorAll('.tile')];
+  const at = (c) => tiles.findIndex((t) => t.classList.contains(c));
+  const full = g.includes('Complete');
+  return JSON.stringify({
+    found: tiles.map((t) => t.dataset.id),
+    moves: +document.getElementById('moves').textContent,
+    questDone: full || g.includes('Endgame'),
+    fullDone: full,
+    sel: at('sel'),
+    cursor: at('cur'),
+    phase: document.getElementById('overlay').classList.contains('show') ? 'overlay'
+         : document.getElementById('title').classList.contains('show') ? 'menu' : 'play',
+  });
+})()`).then(JSON.parse);
+
+// New game, without the menu dance: drop the saved run and reload. Same effect
+// the button has — the codex and both bests deliberately survive.
+const enterGame = () =>
+  evalJs(`[...document.querySelectorAll('#menu button')]
+    .find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
+const reset = async () => {
+  await evalJs(`localStorage.removeItem('colorAlchemy.run')`);
+  await send("Page.navigate", { url: "file:///" + page.replace(/\\/g, "/") });
+  await sleep(900);
+  await enterGame();
+};
+
+// The recipe tree, parsed from the table the bundle is built from. This is the
+// one assertion in the file that no longer looks at the shipped artifact: a
+// build that mangled the map would still pass these. Accepted knowingly, as
+// the price of shipping no hooks — everything else here is the real thing.
+const ELSRC = readFileSync(new URL("./src/elements.ts", import.meta.url), "utf8");
+const RECIPE = {};
+for (const chunk of ELSRC.split('\n  { id:\"').slice(1)) {
+  const id = chunk.slice(0, chunk.indexOf('\"'));
+  const r = chunk.match(/\br:\[([\s\S]*?)\]\s*\},/);
+  if (r) {
+    for (const pr of r[1].matchAll(/\["([a-z0-9]+)","([a-z0-9]+)"\]/g)) {
+      RECIPE[[pr[1], pr[2]].sort().join("+")] = id;
+    }
+  }
+}
+
 // best-score keys are scoped by a recipe-tree fingerprint — find them by prefix
 const best = (kind) =>
   evalJs(`+(localStorage.getItem(Object.keys(localStorage)
@@ -116,7 +189,7 @@ await key("Enter");                 // blue + yellow
 await sleep(100);
 s = await state();
 check("keyboard: Blue+Yellow forges White Light", s.found.includes("white") && s.moves === 2);
-await evalJs("CA.d()");
+await release();
 
 // --- failed and duplicate combos both count as moves ----------------------
 await click("green");
@@ -199,7 +272,7 @@ await sleep(100);
 s = await state();
 check("drag: red onto blue forges Magenta",
   s.found.includes("magenta") && s.moves === 5 && s.phase === "play");
-await evalJs("CA.d()");
+await release();
 await drag("red", null);
 s = await state();
 check("drag: dropping on nothing costs no move", s.moves === 5 && s.sel === -1);
@@ -299,20 +372,26 @@ check("hud: clicking it again brings the sound back",
 // plus: these regexes ride to the page inside a template literal, which eats a
 // lone backslash before the page ever sees it.
 const clearToast = () => evalJs(`document.getElementById('toast').textContent = ''`);
-const hintNamesAUsefulPair = () => evalJs(`(() => {
-  const m = document.getElementById('toast').textContent
-    .match(/^Hint: try (.+) [+] (.+) — costs a move$/);
-  if (!m) return false;
-  const id = n => (CA.E.find(e => e.n === n) || {}).id;
-  const a = id(m[1]), b = id(m[2]);
-  const made = CA.R[[a, b].sort().join('+')];
-  const found = CA.t()[0];   // positional: [found, moves, quest, full, sel, cursor, phase]
-  return !!made && found.includes(a) && found.includes(b) && !found.includes(made);
-})()`);
+// the page reports what it holds and what the toast named; whether that pair is
+// USEFUL is decided here, because the recipe tree lives on this side now
+const hintNamesAUsefulPair = async () => {
+  const r = JSON.parse(await evalJs(`(() => {
+    const m = document.getElementById('toast').textContent
+      .match(/^Hint: try (.+) [+] (.+) — costs a move$/);
+    if (!m) return "null";
+    const tiles = [...document.querySelectorAll('.tile')];
+    const id = n => (tiles.find(t => t.querySelector('.nm').textContent === n) || { dataset: {} }).dataset.id;
+    return JSON.stringify({ a: id(m[1]), b: id(m[2]), found: tiles.map(t => t.dataset.id) });
+  })()`));
+  if (!r) return false;
+  const made = RECIPE[[r.a, r.b].sort().join("+")];
+  return !!made && r.found.includes(r.a) && r.found.includes(r.b) && !r.found.includes(made);
+};
 // the ids the toast names, whichever tail it carries
 const hintedPair = () => evalJs(`(() => {
   const m = document.getElementById('toast').textContent.match(/^Hint: try (.+) [+] (.+) —/);
-  const id = n => (CA.E.find(e => e.n === n) || {}).id;
+  const id = n => ([...document.querySelectorAll('.tile')]
+    .find(t => t.querySelector('.nm').textContent === n) || { dataset: {} }).dataset.id;
   return JSON.stringify(m ? [id(m[1]), id(m[2])] : null);
 })()`).then(JSON.parse);
 // the two tiles the toast names are the two that pulse (one round trip: the
@@ -320,7 +399,8 @@ const hintedPair = () => evalJs(`(() => {
 const hintPulsesItsPair = () => evalJs(`(() => {
   const m = document.getElementById('toast').textContent.match(/^Hint: try (.+) [+] (.+) —/);
   if (!m) return false;
-  const id = n => (CA.E.find(e => e.n === n) || {}).id;
+  const id = n => ([...document.querySelectorAll('.tile')]
+    .find(t => t.querySelector('.nm').textContent === n) || { dataset: {} }).dataset.id;
   const lit = [...document.querySelectorAll('.tile.hit')].map(t => t.dataset.id).sort();
   return JSON.stringify(lit) === JSON.stringify([id(m[1]), id(m[2])].sort());
 })()`);
@@ -356,8 +436,8 @@ s = await state();
 check("hint: the HUD button repeats it too, still free",
   s.moves === m0 && JSON.stringify(await hintedPair()) === JSON.stringify(standing));
 // make it, and the hint retires: the next one is a different pair, at full price
-await evalJs(`CA.a('${standing[0]}','${standing[1]}')`);
-await evalJs("CA.d()");
+await attempt(standing[0], standing[1]);
+await release();
 m0 = (await state()).moves;
 await clearToast();
 await key("h");
@@ -439,7 +519,6 @@ const EXTRA = [
   ["field","water"],      // park
   ["stone","life"],       // egg
   ["stone","animal"],     // lizard
-  ["egg","bird"],         // chick
   ["clay","fire"],        // pottery
   ["earth","lava"],       // volcano
   ["charcoal","lava"],    // diamond
@@ -448,6 +527,7 @@ const EXTRA = [
   ["plant","pink"],       // flower
   ["sun","flower"],       // sunflower
   ["air","animal"],       // bird
+  ["egg","bird"],         // chick
   ["bird","ice"],         // penguin
   ["animal","water"],     // fish
   ["bird","water"],       // duck
@@ -471,8 +551,8 @@ const EXTRA = [
 ];
 const run = async (pairs) => {
   for (const [a, b] of pairs) {
-    await evalJs(`CA.a('${a}','${b}')`);
-    await evalJs("CA.d()");
+    await attempt(a, b);
+    await release();
   }
 };
 await run(QUEST);
@@ -494,10 +574,10 @@ check("night: icon is a starry blue-to-black swatch, not an emoji",
   await evalJs(`!!document.querySelector('[data-id=night] .sw')
     && document.querySelector('[data-id=night] .sw').style.background.includes('gradient')`));
 check("night: comes from Black and Sky now, and Violet no longer makes it",
-  (await evalJs(`CA.R['black+sky']`)) === "night" &&
-  (await evalJs(`CA.R['sky+violet']`)) === undefined);
+  RECIPE['black+sky'] === "night" &&
+  RECIPE['sky+violet'] === undefined);
 check("black: the one color no mixing of lights reaches, so it comes from the materials",
-  (await evalJs(`CA.R['charcoal+stone']`)) === "black" &&
+  RECIPE['charcoal+stone'] === "black" &&
   await evalJs(`!!document.querySelector('[data-id=black] .sw')`));
 
 // --- highscore screen: quest best visible, full best still hidden ---------
@@ -519,7 +599,7 @@ check("full: completion overlay after all 83", s.fullDone && s.phase === "overla
 const fullMoves = s.moves;
 check("full: hidden best stored", (await best("bestFull")) === fullMoves);
 check("indigo: Newton's seventh band, between Blue and Violet",
-  (await evalJs(`CA.R['blue+violet']`)) === "indigo" &&
+  RECIPE['blue+violet'] === "indigo" &&
   await evalJs(`!!document.querySelector('[data-id=indigo] .sw')`));
 check("prism: icon is an inline SVG, sized by the same .sw rules",
   await evalJs(`!!document.querySelector('[data-id=prism] svg.sw')`) &&
@@ -602,7 +682,6 @@ const PERFECT_EXTRA = [
   ["field","water"],      // park
   ["stone","life"],       // egg
   ["stone","animal"],     // lizard
-  ["egg","bird"],         // chick
   ["clay","fire"],        // pottery
   ["earth","lava"],       // volcano
   ["charcoal","lava"],    // diamond
@@ -611,6 +690,7 @@ const PERFECT_EXTRA = [
   ["plant","pink"],       // flower
   ["flower","yellow"],    // sunflower
   ["air","animal"],       // bird
+  ["egg","bird"],         // chick
   ["bird","ice"],         // penguin
   ["animal","water"],     // fish
   ["bird","water"],       // duck
@@ -646,7 +726,7 @@ check("perfect: full clear in 80 moves", s.fullDone && s.moves === 80);
 check("perfect: hidden best lowered to 80", (await best("bestFull")) === 80);
 
 // --- a sloppier run must NOT overwrite them -------------------------------
-await evalJs("CA.r()");
+await reset();
 // a wasted dupe, plus a Magenta the route no longer needs = 35 moves
 await run([["red","green"], ["red","green"], ["blue","yellow"], ["red","blue"], ...QUEST]);
 await sleep(100);
@@ -663,7 +743,7 @@ check("reload: run restored, back on the title",
   s.moves === 35 && s.questDone && s.found.includes("rainbow") && s.phase === "menu");
 
 // --- alternate recipe: Sun + Rain is also a Rainbow -----------------------
-await evalJs("CA.r()");
+await reset();
 await run([
   ["red","green"], ["blue","yellow"], ["blue","white"], ["red","air"],
   ["air","blue"], ["fire","sky"], ["green","blue"],
@@ -673,35 +753,35 @@ s = await state();
 check("alt: Sun+Rain forges the Rainbow, no Prism involved",
   s.found.includes("rainbow") && !s.found.includes("prism") && s.moves === 11);
 check("alt: the intuitive pairs resolve too",
-  (await evalJs(`JSON.stringify([CA.R['air+water'], CA.R['air+stone'],
-    CA.R['fire+ice'], CA.R['air+penguin'], CA.R['dog+wolf'],
-    CA.R['charcoal+fire'], CA.R['air+fire']])`)) ===
+  JSON.stringify(['air+water', 'air+stone', 'fire+ice', 'air+penguin',
+    'dog+wolf', 'charcoal+fire', 'air+fire'].map((k) => RECIPE[k])) ===
   '["cloud","sand","water","bird","dog","fire","fire"]');
 check("alt: Diamond cuts Glass into a Prism, the only route to one",
-  (await evalJs(`CA.R['diamond+glass']`)) === "prism" &&
-  (await evalJs(`CA.R['glass+white']`)) === undefined);
+  RECIPE['diamond+glass'] === "prism" &&
+  RECIPE['glass+white'] === undefined);
 check("alt: Prism + Sun is also a Rainbow",
-  (await evalJs(`CA.R['prism+sun']`)) === "rainbow");
+  RECIPE['prism+sun'] === "rainbow");
 check("alt: the Sky is blue Air now, and the Sun is lit from it",
-  (await evalJs(`CA.R['air+blue']`)) === "sky" &&
-  (await evalJs(`CA.R['fire+sky']`)) === "sun" &&
-  (await evalJs(`CA.R['air+sun']`)) === undefined);
+  RECIPE['air+blue'] === "sky" &&
+  RECIPE['fire+sky'] === "sun" &&
+  RECIPE['air+sun'] === undefined);
 check("alt: Fire needs Air to catch, and Orange no longer lights it",
-  (await evalJs(`CA.R['air+red']`)) === "fire" &&
-  (await evalJs(`CA.R['orange+red']`)) === undefined);
+  RECIPE['air+red'] === "fire" &&
+  RECIPE['orange+red'] === undefined);
 check("alt: the tool chain reversed - Fire + Metal is a Knife, and the Axe needs Wood",
-  (await evalJs(`CA.R['fire+metal']`)) === "knife" &&
-  (await evalJs(`CA.R['knife+tree']`)) === "wood" &&
-  (await evalJs(`CA.R['metal+wood']`)) === "axe");
+  RECIPE['fire+metal'] === "knife" &&
+  RECIPE['knife+tree'] === "wood" &&
+  RECIPE['metal+wood'] === "axe");
 check("alt: a whole Tree burns to Charcoal, no Wood in between",
-  (await evalJs(`CA.R['fire+tree']`)) === "charcoal" &&
-  (await evalJs(`CA.R['fire+wood']`)) === "charcoal");
+  RECIPE['fire+tree'] === "charcoal" &&
+  RECIPE['fire+wood'] === "charcoal");
 // perform one, so the encyclopedia check below sees both Cloud routes
 await run([["water","air"]]);
 
 // --- title menu: New game arms first, then resets -------------------------
-// (the title is still open here: the reload landed on it and the alt run was
-// driven through CA, which never touches the menu)
+// the alt run left us in the game, so open the menu the way a player does. A
+// run is in progress, so Continue is offered and New game sits behind it.
+await key("Escape");
 await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'New game').click()`);
 check("menu: New game asks for confirmation",
   await evalJs(`[...document.querySelectorAll('#menu button')][1].textContent.includes('Sure')`));
@@ -711,12 +791,15 @@ check("menu: confirmed New game resets into play",
   s.phase === "play" && s.moves === 0 && s.found.length === 3);
 
 // --- the codex: knowledge outlives runs -----------------------------------
-await evalJs(`CA.a('red','green')`);
+// two plain clicks, not attempt(): the trailing release would promote the cyan
+// element, and promoting empties the cauldron this check is about to read
+await click("red");
+await click("green");
 s = await state();
 check("rediscovery: a known element still lands in the well",
   s.phase === "play" &&
   await evalJs(`document.getElementById('cR').textContent.includes('Yellow')`));
-await evalJs("CA.d()");
+await release();
 await key("Escape");
 await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Encyclopedia').click()`);
 check("encyclopedia: knowledge persists across runs",
@@ -731,7 +814,7 @@ check("encyclopedia: an element lists every route actually performed",
 // 2.5s of the first
 const menuBtn = async (label) =>
   evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent.startsWith('${label}')).click()`);
-await evalJs("CA.r()");
+await reset();
 await key("Escape");
 s = await state();
 check("unlock: the menu is open on a fresh board", s.phase === "menu" && s.found.length === 3);
