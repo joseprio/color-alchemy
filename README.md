@@ -83,7 +83,7 @@ npm run audio-bench       # what a sample costs, against the callback budget
   would be shadowed by one silently, in the packed build only. Terser's mangler
   reserves every free name it sees, so its own two-letter locals (`ae`, `ce`, …)
   steer clear.
-- **Every CSS class is one letter.** Case matters, so there are 52 and 46 are
+- **Every CSS class is one letter.** Case matters, so there are 52 and 47 are
   used: **-127 B**. The names carried the meaning, so `src/style.css` opens with
   the legend that replaces them, and it is the one place to look when a selector
   stops making sense.

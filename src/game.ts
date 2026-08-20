@@ -555,6 +555,7 @@ function finishFull(questHtml: string): void {
 // title floats over the bare background (body.M hides the game UI), and
 // Highscore / Encyclopedia swap the button column for the #mp subscreen.
 let mCur = 0;
+let panel = false;         // the subscreen is up, and #ti.j says so
 let armIdx = -1;           // menu button awaiting its confirming second press
 let armLabel = "";         // ...and the label to put back when it disarms
 let armTimer = 0;
@@ -670,27 +671,27 @@ function openPanel(head: string, listHtml: string): void {
   mh.textContent = head;
   ml.innerHTML = listHtml;
   ml.scrollTop = 0;
-  mu.hidden = true;
-  mp.hidden = false;
+  panel = true;
+  ti.classList.add("j");
 }
 function closePanel(): void {
-  mp.hidden = true;
-  mu.hidden = false;
+  panel = false;
+  ti.classList.remove("j");
 }
 export function menuMove(d: number): void {
-  if (!mp.hidden) { ml.scrollTop += d * 60; return; }
+  if (panel) { ml.scrollTop += d * 60; return; }
   disarm();
   mCur = (mCur + d + menuButtons().length) % menuButtons().length;
   mPaint();
   SFX.select();
 }
 export function menuGo(): void {
-  if (!mp.hidden) { closePanel(); return; }
+  if (panel) { closePanel(); return; }
   const b = menuButtons()[mCur];
   if (b) b.click(); // through click, so the New game arming flow is identical
 }
 export function menuBack(): void {
-  if (!mp.hidden) { closePanel(); return; }
+  if (panel) { closePanel(); return; }
   if (armIdx >= 0) { disarm(); return; }
   continueGame();
 }

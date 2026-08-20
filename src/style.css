@@ -7,7 +7,7 @@
    the game code and check.mjs.
 
    Every id is two letters and every class is ONE — case matters, so 52 are
-   available and 46 are used. Nothing here can carry its meaning in its name
+   available and 47 are used. Nothing here can carry its meaning in its name
    any more, so the legend lives here:
      t  tile           s  color swatch    i  slot emoji     o  tile icon box
      n  tile name      l  cauldron slot   W  result well    q  the + and =
@@ -18,6 +18,7 @@
      v  veil           A  card            B  big icon       T  tag line
      L  card line      S  a best          N  a new best     F  focused button
      R  armed button   C  title screen    M  on <body>: the title is up
+     j  on #ti: the subscreen is up, so the button column steps aside
      H  highscore row  O  note under it   J  codex row      I  codex icon
      X  codex recipes  Q  codex quote
    and inside #ds, the discovery layer: a and b are the two ingredients, r the
@@ -321,7 +322,6 @@ body.M #dk { display: none; }
   color: #8fb4d8; font-size: min(6.9vw, 40px); line-height: 1.1; margin: 6px 0 30px;
 }
 #mu { display: flex; flex-direction: column; gap: 10px; width: 250px; }
-#mu[hidden] { display: none; }
 #mu button, #mb {
   background: #101528cc; color: #cfe3ff; border: 1px solid #33436e; border-radius: 10px;
   font: inherit; font-family: Arial, Helvetica, sans-serif; font-size: 16px;
@@ -329,8 +329,11 @@ body.M #dk { display: none; }
 }
 #mu button.F, #mb.F { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
 #mu button.R { border-color: #a04040; color: #ff8080; }
-#mp { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(92vw, 460px); }
-#mp[hidden] { display: none; }
+#mp { display: none; flex-direction: column; align-items: center; gap: 10px; width: min(92vw, 460px); }
+/* Highscore and Encyclopedia swap the button column for the panel. They are
+   never both up, so ONE class on the screen drives both. */
+#ti.j #mu { display: none; }
+#ti.j #mp { display: flex; }
 #mh { color: #ffd75e; letter-spacing: .3em; font-size: 13px; }
 #ml {
   width: 100%; max-height: 46vh; overflow-y: auto; text-align: left;
