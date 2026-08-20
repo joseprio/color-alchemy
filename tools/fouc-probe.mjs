@@ -1,7 +1,7 @@
 // Does the packed page ever paint before the stylesheet lands?
 //
 // The CSS ships inside the roadroller payload (src/css.ts fills the empty
-// <style id=sty>), so the sheet is applied by a script at the end of <body>
+// <style id=st>), so the sheet is applied by a script at the end of <body>
 // rather than by a <style> in <head> — and the decode takes a few hundred
 // milliseconds. If the browser painted before that, the player would see one
 // unstyled frame. npm test cannot see a FOUC, which is why this exists;
@@ -26,7 +26,7 @@ await t.send("Page.addScriptToEvaluateOnNewDocument", {
   source: `
     window.__css = 0;
     new MutationObserver(() => {
-      const s = document.getElementById('sty');
+      const s = document.getElementById('st');
       if (!window.__css && s && s.textContent.length) window.__css = performance.now();
     }).observe(document, { childList: true, subtree: true, characterData: true });
   `,

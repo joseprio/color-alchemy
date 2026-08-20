@@ -2,7 +2,7 @@
 // roadroller-packed payload instead of the HTML's deflate stream — galaxy-raid
 // OPTIMIZATIONS.md #18 (the move itself) and #71 (this spelling of it).
 //
-// The target is the EMPTY <style id=sty> in src/index.html. Filling an element
+// The target is the EMPTY <style id=st> in src/index.html. Filling an element
 // that is ALREADY in the document applies the sheet synchronously, before first
 // paint, so there is no unstyled frame; creating the <style> here instead
 // measured worse for galaxy-raid (#18) and would reintroduce that risk.
@@ -14,6 +14,6 @@
 // postbuild.mjs applies to anything left in the template.
 declare const __MARKUP__: string;
 
-(document.getElementById("sty") as HTMLElement).innerHTML = __MARKUP__;
+st.innerHTML = __MARKUP__;
 
 export {};

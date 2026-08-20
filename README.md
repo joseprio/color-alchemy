@@ -10,7 +10,7 @@ primaries.
 ```
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
-npm test                  # 110 headless checks against dist/bundle.html
+npm test                  # 111 headless checks against dist/bundle.html
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fouc-check        # is the sheet in place before the first paint?
@@ -32,7 +32,7 @@ npm run audio-bench       # what a sample costs, against the callback budget
 - **The CSS is not in the HTML.** `src/style.css` is the readable source of
   truth; the rollup config runs it through **cssnano** (`postcss.config.js`,
   preset `advanced`) at config load and injects the minified text into
-  `src/css.ts`, which assigns it to the empty `<style id=sty>` in the template.
+  `src/css.ts`, which assigns it to the empty `<style id=st>` in the template.
   That puts the stylesheet inside the roadroller-packed payload instead of the
   page's deflate stream, which is galaxy-raid's OPTIMIZATIONS.md #18 (the move)
   and #71 (filling a `<style>` that is already in the document, rather than
@@ -72,6 +72,21 @@ npm run audio-bench       # what a sample costs, against the callback budget
   discovered yet (`CA.attempt` never checked you held the ingredients), and
   a mobile-probe false positive where the discovery rays, clipped by an
   `overflow: hidden` parent, were counted as page overflow.
+- **The elements are read as globals, and the ids are two letters.** An element
+  with `id=gl` is already `window.gl`, so `getElementById` — and the `$` helper
+  that wrapped 50 calls to it — buys nothing: **-100 B** for deleting both.
+  The names have to survive the whole tail, so they are pinned in
+  `closure-externs.js` (without an entry, closure ADVANCED fails the build on
+  the undeclared variable — the loud failure) and declared in `src/dom.d.ts`
+  for `tsc`. TWO letters, never one: roadroller's decoder leaks a handful of
+  single-letter globals of its own — the build logs them — and a one-letter id
+  would be shadowed by one silently, in the packed build only. Terser's mangler
+  reserves every free name it sees, so its own two-letter locals (`ae`, `ce`, …)
+  steer clear.
+- **Every CSS class is one letter.** Case matters, so there are 52 and 46 are
+  used: **-127 B**. The names carried the meaning, so `src/style.css` opens with
+  the legend that replaces them, and it is the one place to look when a selector
+  stops making sense.
 - **innerHTML instead of textContent is NOT worth it: 3 B.** Nine writes, two
   characters each, and roadroller predicts the longer word almost for free.
   It would also make the first element named "Salt & Pepper" render wrong,
@@ -124,10 +139,11 @@ npm run audio-bench       # what a sample costs, against the callback budget
 ## Source layout
 
 ```
-src/index.html    template: markup only — no CSS, no JS (ids are the contract
-                  with the game code and check.mjs)
+src/index.html    template: markup only — no CSS, no JS (the two-letter ids
+                  are the contract with the game code and check.mjs)
+src/dom.d.ts      those ids, declared as the globals the game reads them as
 src/style.css     the page stylesheet, minified into the payload at build time
-src/css.ts        fills <style id=sty> with it, imported first from index.ts
+src/css.ts        fills <style id=st> with it, imported first from index.ts
 src/music.ts      the background track: the floatbeat engine, and the node
                   that plays it
 src/sfx.ts        WebAudio synth for the interface sounds, and the shared
@@ -136,7 +152,7 @@ src/elements.ts   the element tree: names, quotes, icons, recipes
 src/game.ts       state, grid, the cauldron, combining, goal overlays,
                   scoring and persistence
 src/input.ts      keyboard listener + gamepad polling
-src/index.ts      entry: boot, gamepad frame loop, window.CA test hooks
+src/index.ts      entry: boot, gamepad frame loop
 
 experiments/astralblur.js   the original floatbeat, kept as the reference the
                             port is checked against

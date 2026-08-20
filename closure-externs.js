@@ -9,20 +9,27 @@
 //  2. the ElementDef fields, read off the table by the balance tools in the
 //     scratchpad. These are one or two characters already, so pinning them
 //     costs nothing a rename would have won.
+//  3. the HTML ids. The game reads its elements as bare globals — `gl` is the
+//     #gl div, through named access on window — so every one of those names has
+//     to survive both the compile and the mangle. Without an entry here closure
+//     ADVANCED sees an undeclared variable and fails the build, which is the
+//     good failure; the bad one would be a rename to something the document has
+//     no element for. src/dom.d.ts is the TypeScript side of the same list, and
+//     src/index.html holds the ids themselves. Two letters each, so roadroller's
+//     single-letter decoder globals cannot shadow one.
 //
-// There is no longer a third: the bundle exposes NOTHING on window. check.mjs
-// drives the page through clicks and reads the DOM, so there is no test surface
-// whose names have to survive.
-//
-// HTML ids need no entry: nothing here reads a bare id global (every lookup goes
-// through getElementById with a string literal), which is the hazard galaxy-raid's
-// externs exist to hold off.
+// What is NOT here: a test surface. The bundle exposes nothing on window —
+// check.mjs drives the page through clicks and reads the DOM.
 
 // Bare browser globals. The compiler the plugin pins (20210808) still declares
 // these only as window properties, so every bare reference is an undeclared
 // variable to it — the build fails loudly on each one, which is how this list
 // was assembled.
 var localStorage;
+
+// the id globals (see 3 above); #ob exists only while the overlay is open
+var gl, hd, mv, ct, bq, ht, sn, mn, dk, cd, ca, cb, cr, cq, gd;
+var ti, tw, tl, tb, mu, mp, mh, ml, mb, ds, to, ov, oc, ob, st;
 
 // DOM property names this compiler's externs are too old to know. Renaming
 // these does NOT fail the build, it just produces something that runs:

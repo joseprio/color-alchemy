@@ -63,7 +63,6 @@ let clearTimer = 0;
 let cursor = 0;                     // keyboard/gamepad focus index
 let padMode = false;                // show the focus ring only once kb/pad is used
 
-const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
 const tiles: HTMLElement[] = [];    // DOM nodes parallel to `order`
 
 const rkey = (a: string, b: string): string => [a, b].sort().join("+");
@@ -78,11 +77,11 @@ function saveCodex(): void {
 
 /* -------------------------------------------------------------------- HUD */
 function hud(): void {
-  $("moves").textContent = String(moves);
-  $("count").textContent = found.size + " / " + ELEMENTS.length;
-  const bq = store.get(K_QUEST);
-  $("bestq").textContent = bq ? "Best quest: " + bq : "";
-  $("goal").innerHTML = cheated
+  mv.textContent = String(moves);
+  ct.textContent = found.size + " / " + ELEMENTS.length;
+  const q = store.get(K_QUEST);
+  bq.textContent = q ? "Best quest: " + q : "";
+  gl.innerHTML = cheated
     ? "Unlocked &mdash; this run does not score"
     : fullDone
     ? "Complete. \u{1F451}"
@@ -96,9 +95,8 @@ let toastTimer = 0;
 // so the label can never disagree with the state. Called at boot too, since the
 // preference outlives the run.
 function paintSound(): void {
-  const b = $("snd");
-  (b.firstChild as Text).textContent = muted ? "Muted" : "Sound";
-  b.classList.toggle("off", muted);
+  (sn.firstChild as Text).textContent = muted ? "Muted" : "Sound";
+  sn.classList.toggle("Y", muted);
 }
 
 export function muteToggle(): void {
@@ -107,24 +105,23 @@ export function muteToggle(): void {
 }
 
 export function toast(msg: string): void {
-  const t = $("toast");
-  t.textContent = msg;
-  t.classList.add("show");
+  to.textContent = msg;
+  to.classList.add("w");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 1900);
+  toastTimer = setTimeout(() => to.classList.remove("w"), 1900);
 }
 
 /* -------------------------------------------------------------------- grid */
 function iconHtml(el: ElementDef): string {
-  // an SVG icon rides on .sw too, so every size rule the swatches have applies
+  // an SVG icon rides on .s too, so every size rule the swatches have applies
   if (el.s) {
-    return '<svg class="sw" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' +
+    return '<svg class="s" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' +
            el.s + "</svg>";
   }
   if (el.c || el.bg) {
     // bg (a full CSS background stack) overrides the flat color; the plain
     // color always supplies the glow, since "gradient…55" is not a color
-    return '<div class="sw" style="background:' + (el.bg || el.c) +
+    return '<div class="s" style="background:' + (el.bg || el.c) +
            ";--g:" + (el.c || "#8a5cf0") + '55"></div>';
   }
   return el.e || "";
@@ -132,9 +129,9 @@ function iconHtml(el: ElementDef): string {
 function addTile(id: string): void {
   const el = BY_ID[id];
   const d = document.createElement("div");
-  d.className = "tile";
+  d.className = "t";
   d.dataset.id = id;
-  d.innerHTML = '<div class="ico">' + iconHtml(el) + '</div><div class="nm">' + el.n + "</div>";
+  d.innerHTML = '<div class="o">' + iconHtml(el) + '</div><div class="n">' + el.n + "</div>";
   const i = order.length;
   d.addEventListener("click", () => {
     if (performance.now() < clickGuard) return; // that click ended a drag
@@ -145,8 +142,8 @@ function addTile(id: string): void {
   // a reaction class clears itself; the arrival pop ends here too, and marks
   // the tile settled so no later class change replays it
   d.addEventListener("animationend", () => {
-    d.classList.remove("bad", "hit");
-    d.classList.add("settled");
+    d.classList.remove("x", "h");
+    d.classList.add("z");
   });
   d.addEventListener("pointerdown", e => startPress(e, i));
   d.addEventListener("pointermove", onPressMove);
@@ -154,32 +151,32 @@ function addTile(id: string): void {
   d.addEventListener("pointercancel", cancelPress);
   order.push(id);
   tiles.push(d);
-  $("grid").appendChild(d);
+  gd.appendChild(d);
 }
 // One-shot tile reactions: "bad" shakes the pair that produced nothing, "hit"
 // pulses the element a known combination just remade. Dropping both classes
 // and forcing a reflow re-arms the CSS animation, so repeating the same combo
 // reacts every time instead of only the first — and the two never overlap.
-function flash(cls: "bad" | "hit", ...ids: string[]): void {
+function flash(cls: "x" | "h", ...ids: string[]): void {
   for (const id of ids) {
     const t = tiles[order.indexOf(id)];
     if (!t) continue;
-    t.classList.remove("bad", "hit");
+    t.classList.remove("x", "h");
     void t.offsetWidth;
     t.classList.add(cls);
   }
 }
 function renderFocus(): void {
   tiles.forEach((t, i) => {
-    t.classList.toggle("sel", i === sel);
+    t.classList.toggle("e", i === sel);
     // the second element stays marked on the board for exactly as long as it
     // is sitting in the cauldron's second slot
-    t.classList.toggle("sel2", order[i] === slotB);
-    t.classList.toggle("cur", padMode && i === cursor);
+    t.classList.toggle("E", order[i] === slotB);
+    t.classList.toggle("u", padMode && i === cursor);
   });
 }
 function gridCols(): number {
-  return Math.max(1, getComputedStyle($("grid")).gridTemplateColumns.split(" ").length);
+  return Math.max(1, getComputedStyle(gd).gridTemplateColumns.split(" ").length);
 }
 export function moveCursor(dx: number, dy: number): void {
   const n = tiles.length, c = gridCols();
@@ -228,16 +225,16 @@ function lift(): void {
   sel = -1;                 // a pending click-selection mid-drag would confuse; clear silently
   renderFocus();
   const src = tiles[pressIdx];
-  src.classList.add("dragsrc");
+  src.classList.add("d");
   ghost = src.cloneNode(true) as HTMLElement;
-  ghost.classList.add("ghost");
+  ghost.classList.add("G");
   document.body.appendChild(ghost);
   moveGhost();
   SFX.select();
 }
 function tileAt(x: number, y: number): HTMLElement | null {
   const el = document.elementFromPoint(x, y);
-  return el ? (el.closest(".tile") as HTMLElement | null) : null;
+  return el ? (el.closest(".t") as HTMLElement | null) : null;
 }
 function moveGhost(): void {
   if (!ghost) return;
@@ -246,9 +243,9 @@ function moveGhost(): void {
   const t = tileAt(lastX, lastY);
   const next = t && t !== tiles[pressIdx] && t !== ghost ? t : null;
   if (dropEl !== next) {
-    if (dropEl) dropEl.classList.remove("drop");
+    if (dropEl) dropEl.classList.remove("p");
     dropEl = next;
-    if (dropEl) dropEl.classList.add("drop");
+    if (dropEl) dropEl.classList.add("p");
   }
 }
 function onPressMove(e: PointerEvent): void {
@@ -280,8 +277,8 @@ function onPressUp(e: PointerEvent): void {
 }
 function cancelPress(): void {
   clearTimeout(pressTimer);
-  if (pressIdx >= 0 && tiles[pressIdx]) tiles[pressIdx].classList.remove("dragsrc");
-  if (dropEl) { dropEl.classList.remove("drop"); dropEl = null; }
+  if (pressIdx >= 0 && tiles[pressIdx]) tiles[pressIdx].classList.remove("d");
+  if (dropEl) { dropEl.classList.remove("p"); dropEl = null; }
   if (ghost) { ghost.remove(); ghost = null; }
   pressIdx = -1;
   dragging = false;
@@ -290,26 +287,26 @@ function cancelPress(): void {
 /* --------------------------------------------------------------- gameplay */
 export type Phase = "overlay" | "menu" | "play";
 export function phase(): Phase {
-  return $("overlay").classList.contains("show") ? "overlay"
-       : $("title").classList.contains("show") ? "menu" : "play";
+  return ov.classList.contains("w") ? "overlay"
+       : ti.classList.contains("w") ? "menu" : "play";
 }
 /* ---------------------------------------------------------------- cauldron */
-// The altar is the whole discovery UI now: a result lands in #cR instead of
+// The altar is the whole discovery UI now: a result lands in #cr instead of
 // behind a veil, so nothing has to be dismissed before the next attempt.
-function fill(box: string, id: string | null): void {
+function fill(box: HTMLElement, id: string | null): void {
   const el = id ? BY_ID[id] : null;
-  $(box).innerHTML = el
-    ? (el.c || el.bg || el.s ? iconHtml(el) : '<span class="ic">' + el.e + "</span>") +
+  box.innerHTML = el
+    ? (el.c || el.bg || el.s ? iconHtml(el) : '<span class="i">' + el.e + "</span>") +
       "<span>" + el.n + "</span>"
     : "";
 }
 function paintCauldron(): void {
   // a locked element wins; otherwise show whatever the last attempt used, so a
   // drag fills the altar too instead of leaving A empty beside a full B
-  fill("cA", sel >= 0 ? order[sel] : slotA);
-  fill("cB", slotB);
-  fill("cR", slotR);
-  $("cA").classList.toggle("on", sel >= 0);
+  fill(ca, sel >= 0 ? order[sel] : slotA);
+  fill(cb, slotB);
+  fill(cr, slotR);
+  ca.classList.toggle("y", sel >= 0);
   renderFocus();   // the board mirrors both slots, so they change together
 }
 // B and the result are transient: they clear a beat after the attempt so the
@@ -317,7 +314,7 @@ function paintCauldron(): void {
 function clearSlots(): void {
   clearTimeout(clearTimer);
   slotA = slotB = slotR = null;
-  $("cq").innerHTML = "";
+  cq.innerHTML = "";
 }
 function sweep(ms: number): void {
   clearTimeout(clearTimer);
@@ -329,8 +326,8 @@ function sweep(ms: number): void {
 let discTimer = 0;
 export function closeDisc(): void {
   clearTimeout(discTimer);
-  $("disc").classList.remove("on");
-  $("disc").innerHTML = "";
+  ds.classList.remove("y");
+  ds.innerHTML = "";
 }
 // Only ever for an element never discovered in ANY previous run — the codex is
 // what decides that. Rediscoveries and repeats stay in the cauldron.
@@ -342,13 +339,13 @@ function openDisc(id: string, aId: string, bId: string): void {
       (1.05 + i * 0.012) + 's"></span>';
   }
   const el = BY_ID[id];
-  $("disc").innerHTML = k + '<span class="f"></span>' +
+  ds.innerHTML = k + '<span class="f"></span>' +
     '<span class="m"><span class="g a">' + iconHtml(BY_ID[aId]) + "</span></span>" +
     '<span class="m"><span class="g b">' + iconHtml(BY_ID[bId]) + "</span></span>" +
     '<span class="m"><span class="g r">' + iconHtml(el) + "</span></span>" +
     '<span class="c"><b>' + el.n + "</b><i>“" + el.q + "”</i></span>";
-  void $("disc").offsetWidth;   // re-arm the fade when one discovery follows another
-  $("disc").classList.add("on");
+  void ds.offsetWidth;   // re-arm the fade when one discovery follows another
+  ds.classList.add("y");
   discTimer = setTimeout(closeDisc, 2750);
 }
 
@@ -398,27 +395,26 @@ export function attempt(aId: string, bId: string): void {
     addTile(res);
     if (!codexF.includes(res)) { codexF.push(res); saveCodex(); openDisc(res, aId, bId); }
     const el = BY_ID[res];
-    $("cq").innerHTML = "<b>" + el.n + "</b> &mdash; &ldquo;" + el.q + "&rdquo;";
+    cq.innerHTML = "<b>" + el.n + "</b> &mdash; &ldquo;" + el.q + "&rdquo;";
     SFX.discover();
     sweep(2200);
   } else if (res) {
-    $("cq").innerHTML = "<b>" + N(res) + "</b> <i>&mdash; already discovered</i>";
-    flash("hit", res); // point at the element you already own
+    cq.innerHTML = "<b>" + N(res) + "</b> <i>&mdash; already discovered</i>";
+    flash("h", res); // point at the element you already own
     SFX.dupe();
     sweep(1500);
   } else {
-    $("cq").innerHTML = "<i>nothing happens</i>";
+    cq.innerHTML = "<i>nothing happens</i>";
     SFX.fail();
     sweep(1100);
   }
   paintCauldron();
   checkMilestones();
   // re-arm both one-shots: the same pair tried twice has to react twice
-  const alt = $("cdrn"), well = $("cR");
-  alt.classList.remove("bad");
-  well.classList.remove("pop");
-  void alt.offsetWidth;
-  (res ? well : alt).classList.add(res ? "pop" : "bad");
+  cd.classList.remove("x");
+  cr.classList.remove("P");
+  void cd.offsetWidth;
+  (res ? cr : cd).classList.add(res ? "P" : "x");
   hud();
   save();
 }
@@ -443,7 +439,7 @@ export function attempt(aId: string, bId: string): void {
 let lastHint: [string, string] | null = null;
 function showHint([a, b]: [string, string], tail: string): void {
   toast("Hint: try " + N(a) + " + " + N(b) + tail);
-  flash("hit", a, b); // the same pulse a known combination gets: look here
+  flash("h", a, b); // the same pulse a known combination gets: look here
   SFX.hint();
 }
 export function hint(): void {
@@ -478,22 +474,21 @@ type OverlayButton = [string, () => void];
 let obFns: (() => void)[] = [];
 let obCur = 0;
 function openOverlay(html: string, buttons: OverlayButton[]): void {
-  $("ocard").innerHTML = html + '<div id="obtns"></div>';
-  const box = $("obtns");
+  oc.innerHTML = html + '<div id="ob"></div>';
   obFns = [];
   obCur = 0;
   buttons.forEach(([label, fn]) => {
     const b = document.createElement("button");
     b.textContent = label;
     b.addEventListener("click", fn);
-    box.appendChild(b);
+    ob.appendChild(b);
     obFns.push(fn);
   });
   obPaint();
-  $("overlay").classList.add("show");
+  ov.classList.add("w");
 }
 function obPaint(): void {
-  [...$("obtns").children].forEach((b, i) => b.classList.toggle("obfocus", i === obCur));
+  [...ob.children].forEach((b, i) => b.classList.toggle("F", i === obCur));
 }
 export function obMove(d: number): void {
   obCur = (obCur + d + obFns.length) % obFns.length;
@@ -503,8 +498,8 @@ export function obGo(): void {
   if (obFns[obCur]) obFns[obCur]();
 }
 function closeOverlay(): void {
-  $("overlay").classList.remove("show");
-  $("ocard").innerHTML = ""; // the hidden best must not linger in the DOM
+  ov.classList.remove("w");
+  oc.innerHTML = ""; // the hidden best must not linger in the DOM
 }
 
 // Compare-and-store; returns the HTML line describing the result.
@@ -512,10 +507,10 @@ function bestLine(key: string, val: number): string {
   const prev = +(store.get(key) || 0);
   if (!prev || val < prev) {
     store.set(key, val);
-    return '<div class="line newbest">★ NEW BEST ★</div>' +
-           (prev ? '<div class="line best">previous best: ' + prev + "</div>" : "");
+    return '<div class="L N">★ NEW BEST ★</div>' +
+           (prev ? '<div class="L S">previous best: ' + prev + "</div>" : "");
   }
-  return '<div class="line best">best: ' + prev + "</div>";
+  return '<div class="L S">best: ' + prev + "</div>";
 }
 function checkMilestones(): void {
   if (cheated) return;   // nothing an unlocked board reaches is earned
@@ -527,10 +522,10 @@ function checkMilestones(): void {
     if (found.size === ELEMENTS.length) return finishFull(q); // unicorn was the last element
     SFX.fanfare();
     openOverlay(
-      '<div class="big">\u{1F308}\u{1F984}</div>' +
-      '<div class="tag">QUEST COMPLETE</div>' +
+      '<div class="B">\u{1F308}\u{1F984}</div>' +
+      '<div class="T">QUEST COMPLETE</div>' +
       "<h2>Rainbow &amp; Unicorn</h2>" +
-      '<div class="line">forged in <b>' + moves + "</b> moves</div>" + q,
+      '<div class="L">forged in <b>' + moves + "</b> moves</div>" + q,
       [["Keep playing", () => { closeOverlay(); hud(); }],
        ["New game", () => { closeOverlay(); reset(); }]],
     );
@@ -546,19 +541,19 @@ function finishFull(questHtml: string): void {
   hud();
   SFX.grand();
   openOverlay(
-    '<div class="big">\u{1F451}</div>' +
-    '<div class="tag">GRAND ALCHEMIST</div>' +
+    '<div class="B">\u{1F451}</div>' +
+    '<div class="T">GRAND ALCHEMIST</div>' +
     "<h2>All " + ELEMENTS.length + " elements</h2>" +
-    (questHtml ? '<div class="line">quest also completed — in <b>' + moves + "</b> moves</div>" : "") +
-    '<div class="line">complete run: <b>' + moves + "</b> moves</div>" + f,
+    (questHtml ? '<div class="L">quest also completed — in <b>' + moves + "</b> moves</div>" : "") +
+    '<div class="L">complete run: <b>' + moves + "</b> moves</div>" + f,
     [["New game", () => { closeOverlay(); reset(); }]],
   );
 }
 
 /* ------------------------------------------------------- title screen menu */
 // Boot lands here; Escape / Start / the HUD "Menu" button reopen it. The
-// title floats over the bare background (body.menu hides the game UI), and
-// Highscore / Encyclopedia swap the button column for the #mpanel subscreen.
+// title floats over the bare background (body.M hides the game UI), and
+// Highscore / Encyclopedia swap the button column for the #mp subscreen.
 let mCur = 0;
 let armIdx = -1;           // menu button awaiting its confirming second press
 let armLabel = "";         // ...and the label to put back when it disarms
@@ -568,14 +563,14 @@ let armTimer = 0;
 const inRun = (): boolean => moves > 0 || found.size > STARTERS.length;
 
 function menuButtons(): HTMLElement[] {
-  return [...$("menu").querySelectorAll("button")] as HTMLElement[];
+  return [...mu.querySelectorAll("button")] as HTMLElement[];
 }
 function mPaint(): void {
-  menuButtons().forEach((b, i) => b.classList.toggle("obfocus", i === mCur));
+  menuButtons().forEach((b, i) => b.classList.toggle("F", i === mCur));
 }
 function disarm(): void {
   const b = armIdx >= 0 ? menuButtons()[armIdx] : null;
-  if (b) { b.textContent = armLabel; b.classList.remove("armed"); }
+  if (b) { b.textContent = armLabel; b.classList.remove("R"); }
   armIdx = -1;
   clearTimeout(armTimer);
 }
@@ -588,7 +583,7 @@ function armed(i: number, warn: string): boolean {
   const b = menuButtons()[i];
   armLabel = b.textContent as string;
   b.textContent = warn;
-  b.classList.add("armed");
+  b.classList.add("R");
   armTimer = setTimeout(disarm, 2500);
   return false;
 }
@@ -641,8 +636,7 @@ const MENU: [string, (i: number) => void][] = [
 // Rebuilt rather than toggled, because which buttons exist depends on state:
 // Reset everything calls this too, so Continue leaves with the run it pointed at.
 function paintMenu(): void {
-  const box = $("menu");
-  box.innerHTML = "";
+  mu.innerHTML = "";
   let n = 0;
   MENU.forEach(([label, fn], i) => {
     if (!i && !inRun()) return;
@@ -651,7 +645,7 @@ function paintMenu(): void {
     b.textContent = label;
     b.addEventListener("click", () => fn(j));
     b.addEventListener("pointerenter", () => { mCur = j; mPaint(); });
-    box.appendChild(b);
+    mu.appendChild(b);
   });
   mCur = 0;
   armIdx = -1;
@@ -663,51 +657,51 @@ export function openMenu(): void {
   clearSel();
   paintMenu();
   closePanel();
-  $("title").classList.add("show");
-  document.body.classList.add("menu");
+  ti.classList.add("w");
+  document.body.classList.add("M");
 }
 function closeMenu(): void {
   disarm();
   closePanel();
-  $("title").classList.remove("show");
-  document.body.classList.remove("menu");
+  ti.classList.remove("w");
+  document.body.classList.remove("M");
 }
 function openPanel(head: string, listHtml: string): void {
-  $("mhead").textContent = head;
-  $("mlist").innerHTML = listHtml;
-  $("mlist").scrollTop = 0;
-  $("menu").hidden = true;
-  $("mpanel").hidden = false;
+  mh.textContent = head;
+  ml.innerHTML = listHtml;
+  ml.scrollTop = 0;
+  mu.hidden = true;
+  mp.hidden = false;
 }
 function closePanel(): void {
-  $("mpanel").hidden = true;
-  $("menu").hidden = false;
+  mp.hidden = true;
+  mu.hidden = false;
 }
 export function menuMove(d: number): void {
-  if (!$("mpanel").hidden) { $("mlist").scrollTop += d * 60; return; }
+  if (!mp.hidden) { ml.scrollTop += d * 60; return; }
   disarm();
   mCur = (mCur + d + menuButtons().length) % menuButtons().length;
   mPaint();
   SFX.select();
 }
 export function menuGo(): void {
-  if (!$("mpanel").hidden) { closePanel(); return; }
+  if (!mp.hidden) { closePanel(); return; }
   const b = menuButtons()[mCur];
   if (b) b.click(); // through click, so the New game arming flow is identical
 }
 export function menuBack(): void {
-  if (!$("mpanel").hidden) { closePanel(); return; }
+  if (!mp.hidden) { closePanel(); return; }
   if (armIdx >= 0) { disarm(); return; }
   continueGame();
 }
 function highscoreHtml(): string {
   const q = store.get(K_QUEST), f = store.get(K_FULL);
   return (
-    '<div class="hsrow"><span>Quest — Rainbow &amp; Unicorn</span><b>' +
+    '<div class="H"><span>Quest — Rainbow &amp; Unicorn</span><b>' +
     (q ? q + " moves" : "—") + "</b></div>" +
-    '<div class="hsrow"><span>Complete run — all ' + ELEMENTS.length + " elements</span><b>" +
+    '<div class="H"><span>Complete run — all ' + ELEMENTS.length + " elements</span><b>" +
     (f ? f + " moves" : "???") + "</b></div>" +
-    (f ? "" : '<div class="hsnote">the complete-run best reveals itself only to a Grand Alchemist</div>')
+    (f ? "" : '<div class="O">the complete-run best reveals itself only to a Grand Alchemist</div>')
   );
 }
 function encycloHtml(): string {
@@ -721,13 +715,13 @@ function encycloHtml(): string {
       ? known.map(p => N(p[0]) + " + " + N(p[1])).join(" &nbsp;&middot;&nbsp; ")
       : el.r ? "?" : "primordial";
     return (
-      '<div class="erow"><span class="eico">' + iconHtml(el) + "</span><span>" +
-      "<b>" + el.n + '</b><i class="erec">' + rec + "</i>" +
-      '<div class="equote">' + el.q + "</div></span></div>"
+      '<div class="J"><span class="I">' + iconHtml(el) + "</span><span>" +
+      "<b>" + el.n + '</b><i class="X">' + rec + "</i>" +
+      '<div class="Q">' + el.q + "</div></span></div>"
     );
   }).join("");
   return rows +
-    '<div class="hsnote">' + codexF.length + " / " + ELEMENTS.length + " elements &middot; " +
+    '<div class="O">' + codexF.length + " / " + ELEMENTS.length + " elements &middot; " +
     codexK.size + " / " + Object.keys(RECIPE).length + " combinations</div>";
 }
 
@@ -740,7 +734,7 @@ export function reset(): void {
   found = new Set(); // the codex deliberately survives — New game wipes the board, not the knowledge
   order.length = 0;
   tiles.length = 0;
-  $("grid").innerHTML = "";
+  gd.innerHTML = "";
   moves = 0;
   questDone = fullDone = cheated = false;
   sel = -1;
@@ -755,13 +749,13 @@ export function reset(): void {
 
 /* -------------------------------------------------------------------- boot */
 export function boot(): void {
-  $("mnu").addEventListener("click", openMenu);
-  $("snd").addEventListener("click", muteToggle);
+  mn.addEventListener("click", openMenu);
+  sn.addEventListener("click", muteToggle);
   paintSound();
-  $("hnt").addEventListener("click", hint);
-  $("mback").addEventListener("click", menuBack);
-  $("cA").addEventListener("click", unlock);   // the X empties the locked slot
-  $("disc").addEventListener("pointerdown", closeDisc);   // a tap anywhere skips it
+  ht.addEventListener("click", hint);
+  mb.addEventListener("click", menuBack);
+  ca.addEventListener("click", unlock);   // the X empties the locked slot
+  ds.addEventListener("pointerdown", closeDisc);   // a tap anywhere skips it
   // non-passive so an active drag can stop a pan from starting; until the
   // long-press lifts the tile, touch scrolling behaves normally
   window.addEventListener("touchmove", e => { if (dragging) e.preventDefault(); }, { passive: false });
@@ -804,14 +798,12 @@ export function boot(): void {
 // A run that completed the game returns to its completion screen on Continue.
 function showRestoredCompletion(): void {
   openOverlay(
-    '<div class="big">\u{1F451}</div>' +
-    '<div class="tag">GRAND ALCHEMIST</div>' +
+    '<div class="B">\u{1F451}</div>' +
+    '<div class="T">GRAND ALCHEMIST</div>' +
     "<h2>All " + ELEMENTS.length + " elements</h2>" +
-    '<div class="line">complete run: <b>' + moves + "</b> moves</div>" +
-    '<div class="line best">best: ' + (+(store.get(K_FULL) || 0) || moves) + "</div>",
+    '<div class="L">complete run: <b>' + moves + "</b> moves</div>" +
+    '<div class="L S">best: ' + (+(store.get(K_FULL) || 0) || moves) + "</div>",
     [["New game", () => { closeOverlay(); reset(); }]],
   );
 }
 
-/* -------------------------------------------------------------- test hooks */
-// Consumed by check.mjs through window.CA (wired in index.ts).

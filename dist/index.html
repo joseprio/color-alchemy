@@ -3,71 +3,76 @@
      modules and the build injects the bundle before </body> (dev: a script
      src reference in dist/index.html; production: inlined into the
      single-file dist/bundle.html by postbuild.mjs).
-     The <style id=sty> is EMPTY on purpose and must stay in the document:
+     The <style id=st> is EMPTY on purpose and must stay in the document:
      src/css.ts fills it with src/style.css, minified, so the stylesheet
      travels inside the packed payload rather than in this file.
-     Element ids (goal/hud/moves/count/bestq/hnt/mnu/grid/toast/disc/dock/cdrn/cA/cB/
-     cR/cq/overlay/ocard/title/ttlwrap/ttl/tsub/menu/mpanel/mhead/mlist/mback/
-     snd) are the
-     contract between this template, the game code, and check.mjs — rename in
-     all three or not at all. -->
+     Every id here is TWO letters, and the game reads them as bare globals:
+     an element with id=gl is `gl` in the code (named access on window), so
+     there is no getElementById anywhere. One letter would not do — roadroller's
+     decoder leaks single-letter globals that would shadow it in the packed
+     build only. The names (gl/hd/mv/ct/bq/ht/sn/mn/gd/to/ds/dk/cd/ca/cb/cr/cq/
+     ov/oc/ti/tw/tl/tb/mu/mp/mh/ml/mb/st, plus ob built by openOverlay) are the
+     contract between this template, src/dom.d.ts, closure-externs.js, the game
+     code and check.mjs — rename in all of them or not at all.
+     The classes are single letters for the same reason; what each one means is
+     in the legend at the top of src/style.css. -->
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Color Alchemy</title>
-<style id="sty"></style>
+<style id="st"></style>
 </head>
 <body>
 <header>
   <h1>COLOR ALCHEMY</h1>
-  <div id="goal"></div>
+  <div id="gl"></div>
 </header>
-<div id="hud">
-  <span>Moves: <b id="moves">0</b></span>
-  <span>Elements: <b id="count"></b></span>
-  <span id="bestq"></span>
-  <button id="hnt">Hint<i>H / &#9422;</i></button>
-  <button id="snd">Sound<i>M / &#9421;</i></button>
-  <button id="mnu">Menu<i>Esc / &#9399;</i></button>
+<div id="hd">
+  <span>Moves: <b id="mv">0</b></span>
+  <span>Elements: <b id="ct"></b></span>
+  <span id="bq"></span>
+  <button id="ht">Hint<i>H / &#9422;</i></button>
+  <button id="sn">Sound<i>M / &#9421;</i></button>
+  <button id="mn">Menu<i>Esc / &#9399;</i></button>
 </div>
-<!-- The cauldron. #cA is the LOCKED slot: the first element you pick lands
+<!-- The cauldron. #ca is the LOCKED slot: the first element you pick lands
      here and stays through every combine, so trying Fire against ten things
      is ten taps, not twenty. Clicking it (the X is the affordance) empties it,
-     as does picking the same grid tile again. #cB and #cR clear themselves a
+     as does picking the same grid tile again. #cb and #cr clear themselves a
      beat after each attempt; a pair that makes nothing shakes the cauldron
      rather than the two tiles. -->
-<div id="dock">
-<div id="cdrn">
-  <div class="cslot" id="cA"></div>
-  <span class="cop">+</span>
-  <div class="cslot" id="cB"></div>
-  <span class="cop">=</span>
-  <div class="cwell" id="cR"></div>
+<div id="dk">
+<div id="cd">
+  <div class="l" id="ca"></div>
+  <span class="q">+</span>
+  <div class="l" id="cb"></div>
+  <span class="q">=</span>
+  <div class="W" id="cr"></div>
 </div>
 <div id="cq"></div>
 </div>
-<div id="grid"></div>
+<div id="gd"></div>
 <footer>tap one to hold, another to mix &middot; the held one stays &mdash; tap it or the X to drop it, the cyan one to swap &middot; arrows or d-pad + Enter/&#9398; &middot; Esc/&#9399; drops &middot; H/&#9422; hints, costs a move &middot; M/&#9421; mutes</footer>
-<div id="title" class="tscreen">
-  <!-- #ttlwrap is shrink-to-fit, so COLOR sets the measure and #tsub spreads
+<div id="ti" class="C">
+  <!-- #tw is shrink-to-fit, so COLOR sets the measure and #tb spreads
        its letters across exactly that width. One span per letter is what makes
        the spread possible; AlchemY keeps an initial and a terminal capital so
        small-caps leaves A and Y full height. -->
-  <div id="ttlwrap">
-    <div id="ttl">COLOR</div>
-    <div id="tsub"><span>A</span><span>l</span><span>c</span><span>h</span><span>e</span><span>m</span><span>Y</span></div>
+  <div id="tw">
+    <div id="tl">COLOR</div>
+    <div id="tb"><span>A</span><span>l</span><span>c</span><span>h</span><span>e</span><span>m</span><span>Y</span></div>
   </div>
-  <div id="menu"></div>
-  <div id="mpanel" hidden>
-    <div id="mhead"></div>
-    <div id="mlist"></div>
-    <button id="mback">Back</button>
+  <div id="mu"></div>
+  <div id="mp" hidden>
+    <div id="mh"></div>
+    <div id="ml"></div>
+    <button id="mb">Back</button>
   </div>
 </div>
-<div id="disc"></div>
-<div id="toast"></div>
-<div id="overlay" class="veil"><div class="card" id="ocard"></div></div>
+<div id="ds"></div>
+<div id="to"></div>
+<div id="ov" class="v"><div class="A" id="oc"></div></div>
 <script src="bundle.js"></script>
 </body>
 </html>

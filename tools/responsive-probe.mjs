@@ -48,11 +48,11 @@ const AUDIT = `(() => {
     if ((r.width > vw + 0.5 || r.right > vw + 0.5 || r.left < -0.5) && !clipped(el)) {
       over.push(name(el) + ' ' + Math.round(r.width) + 'px [' + Math.round(r.left) + '..' + Math.round(r.right) + ']');
     }
-    if ((el.tagName === 'BUTTON' || el.classList.contains('tile')) && r.width > 0 && Math.min(r.width, r.height) < 44) {
+    if ((el.tagName === 'BUTTON' || el.classList.contains('t')) && r.width > 0 && Math.min(r.width, r.height) < 44) {
       small.push(name(el) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
     }
   }
-  const grid = document.getElementById('grid');
+  const grid = document.getElementById('gd');
   return JSON.stringify({
     vw,
     overflowX: document.documentElement.scrollWidth > vw + 0.5,
@@ -83,7 +83,7 @@ for (const [label, width, height, mobile] of SIZES) {
 
   states.title = JSON.parse(await t.evalJs(AUDIT));
   const lock = JSON.parse(await t.evalJs(`(() => {
-    const t = document.getElementById('ttl'), s = document.getElementById('tsub'), k = s.children;
+    const t = document.getElementById('tl'), s = document.getElementById('tb'), k = s.children;
     return JSON.stringify({
       title: Math.round(t.getBoundingClientRect().width),
       sub: Math.round(k[k.length-1].getBoundingClientRect().right - k[0].getBoundingClientRect().left),
@@ -93,14 +93,14 @@ for (const [label, width, height, mobile] of SIZES) {
   await shot("title");
 
   // board with a dozen elements found
-  await t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
+  await t.evalJs(`[...document.querySelectorAll('#mu button')].find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
   // driven through the board, so every pair here has to be one a player could
   // actually reach in this order — the old hook did not check that
   await t.evalJs(`(() => {
     const c = (id) => { const e = document.querySelector('[data-id=' + id + ']'); if (e) e.click(); };
     const rel = () => {
-      const b = document.querySelector('.tile.sel2'); if (b) { b.click(); b.click(); }
-      const h = document.querySelector('.tile.sel'); if (h) h.click();
+      const b = document.querySelector('.t.E'); if (b) { b.click(); b.click(); }
+      const h = document.querySelector('.t.e'); if (h) h.click();
     };
     window.__mix = (a, b) => { rel(); c(a); c(b); rel(); };
   })();
@@ -122,13 +122,13 @@ for (const [label, width, height, mobile] of SIZES) {
   await t.evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }))`);
   await t.sleep(200);
   states.toast = JSON.parse(await t.evalJs(AUDIT));
-  const toastText = await t.evalJs(`document.getElementById('toast').textContent`);
+  const toastText = await t.evalJs(`document.getElementById('to').textContent`);
   await shot("toast");
 
   // the encyclopedia, the widest panel there is
   await t.evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
   await t.sleep(150);
-  await t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Encyclopedia').click()`);
+  await t.evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Encyclopedia').click()`);
   await t.sleep(250);
   states.codex = JSON.parse(await t.evalJs(AUDIT));
   await shot("codex");

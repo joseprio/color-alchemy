@@ -127,11 +127,12 @@ const RR_MODULE = createRequire(import.meta.url).resolve("roadroller");
 const RR_IS_FORK = !RR_MODULE.includes("node_modules");
 const chunkHash = (s) => createHash("sha256").update(s, "utf8").digest("hex").slice(0, 12);
 
-// The decoder leaks a handful of single-letter globals. That is only a hazard
-// for a game that reads HTML ids as bare globals (galaxy-raid does, and guards
-// it); here every lookup is getElementById("literal"), so the letters cannot
-// shadow anything. This still reports them, because it is the first thing to
-// suspect if a packed build misbehaves while dist/bundle.js runs fine.
+// The decoder leaks a handful of single-letter globals, and this game DOES read
+// its HTML ids as bare globals (galaxy-raid's hazard exactly). The guard is in
+// the ids themselves: every one is two letters, so a one-letter decoder var
+// cannot shadow one. They are logged anyway — if that list ever grows a
+// two-character name, this is the first thing to suspect when a packed build
+// misbehaves while dist/bundle.js runs fine.
 const roadroller = {
   name: "roadroller",
   async renderChunk(data) {

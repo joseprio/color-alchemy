@@ -13,13 +13,13 @@ await t.sleep(1200);
 // exercise a few states so more rules are live than the title screen alone
 // the bundle ships no test hooks, so the probe drives the board the way a
 // player does — enter the game, then click two tiles
-await t.evalJs(`[...document.querySelectorAll('#menu button')]
+await t.evalJs(`[...document.querySelectorAll('#mu button')]
   .find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
 await t.evalJs(`(() => {
     const c = (id) => { const e = document.querySelector('[data-id=' + id + ']'); if (e) e.click(); };
     const rel = () => {
-      const b = document.querySelector('.tile.sel2'); if (b) { b.click(); b.click(); }
-      const h = document.querySelector('.tile.sel'); if (h) h.click();
+      const b = document.querySelector('.t.E'); if (b) { b.click(); b.click(); }
+      const h = document.querySelector('.t.e'); if (h) h.click();
     };
     window.__mix = (a, b) => { rel(); c(a); c(b); rel(); };
   })(); __mix('red','green');
@@ -27,11 +27,11 @@ await t.evalJs(`(() => {
   // and on a 2.75s timer to remove itself. Skip it: an element that deletes
   // ITSELF part way through a two-pass snapshot lands in one pass and not the
   // other, and every element after it then compares against its neighbour.
-  document.getElementById('disc').dispatchEvent(new PointerEvent('pointerdown'));
-  document.getElementById('toast').className = 'show';
-  document.querySelectorAll('.tile')[0].className = 'tile sel cur';
-  document.querySelectorAll('.tile')[1].className = 'tile hit drop';`);
-// let every transition and animation settle: #toast fades over .2s, so an
+  document.getElementById('ds').dispatchEvent(new PointerEvent('pointerdown'));
+  document.getElementById('to').className = 'w';
+  document.querySelectorAll('.t')[0].className = 't e u';
+  document.querySelectorAll('.t')[1].className = 't h p';`);
+// let every transition and animation settle: #to fades over .2s, so an
 // immediate snapshot reads a value mid-transition and reports a false diff
 await t.sleep(1500);
 
@@ -47,7 +47,7 @@ const SNAP = `(() => {
 })()`;
 
 const minified = JSON.parse(await t.evalJs(SNAP));
-await t.evalJs(`document.getElementById('sty').innerHTML = ${JSON.stringify(raw)}`);
+await t.evalJs(`document.getElementById('st').innerHTML = ${JSON.stringify(raw)}`);
 await t.sleep(1500);
 const rawSnap = JSON.parse(await t.evalJs(SNAP));
 

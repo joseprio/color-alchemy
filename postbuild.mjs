@@ -57,8 +57,8 @@ html = await minify(html, {
   useShortDoctype: true,
   minifyCSS: (text) => (text.trim() ? execSync("npx postcss", { input: text }).toString() : ""),
 });
-if (!html.includes("<style id=sty>") && !html.includes('<style id="sty">')) {
-  throw new Error("postbuild: the empty <style id=sty> src/css.ts fills is gone from the page");
+if (!html.includes("<style id=st>") && !html.includes('<style id="st">')) {
+  throw new Error("postbuild: the empty <style id=st> src/css.ts fills is gone from the page");
 }
 
 writeFileSync(BUNDLE_FILE, html);

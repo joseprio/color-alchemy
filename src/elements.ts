@@ -4,7 +4,7 @@
 // Night layers percentage-sized star dots over a blue-to-black gradient so it scales
 // from the 18px encyclopedia icon to the 56px discovery card), e = emoji icon,
 // s = inline SVG body drawn on a 0 0 32 32 viewBox (for an icon no emoji and no
-// gradient stack can express — it renders as an <svg class="sw">, so it picks up
+// gradient stack can express — it renders as an <svg class="s">, so it picks up
 // every size rule the square swatches use, and c still supplies the glow),
 // r = recipes (unordered pairs of ids); several recipes may make one element
 // (Bone has eleven routes — a four-legged creature and fire, or a predator and

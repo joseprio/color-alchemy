@@ -29,9 +29,9 @@ const tileClick = (id) =>
 // held and nothing pending. A no-op when the altar is already empty.
 const RELEASE = `(() => {
   const c = (e) => e && e.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  const b = document.querySelector('.tile.sel2');
+  const b = document.querySelector('.t.E');
   if (b) { c(b); c(b); }
-  c(document.querySelector('.tile.sel'));
+  c(document.querySelector('.t.e'));
 })()`;
 const release = () => evalJs(RELEASE);
 
@@ -46,26 +46,26 @@ const attempt = (a, b) =>
 // the line is the state. (A run that has been unlocked says neither, which is
 // right: it has not earned either.)
 const state = () => evalJs(`(() => {
-  const g = document.getElementById('goal').textContent;
-  const tiles = [...document.querySelectorAll('.tile')];
+  const g = document.getElementById('gl').textContent;
+  const tiles = [...document.querySelectorAll('.t')];
   const at = (c) => tiles.findIndex((t) => t.classList.contains(c));
   const full = g.includes('Complete');
   return JSON.stringify({
     found: tiles.map((t) => t.dataset.id),
-    moves: +document.getElementById('moves').textContent,
+    moves: +document.getElementById('mv').textContent,
     questDone: full || g.includes('Endgame'),
     fullDone: full,
-    sel: at('sel'),
-    cursor: at('cur'),
-    phase: document.getElementById('overlay').classList.contains('show') ? 'overlay'
-         : document.getElementById('title').classList.contains('show') ? 'menu' : 'play',
+    sel: at('e'),
+    cursor: at('u'),
+    phase: document.getElementById('ov').classList.contains('w') ? 'overlay'
+         : document.getElementById('ti').classList.contains('w') ? 'menu' : 'play',
   });
 })()`).then(JSON.parse);
 
 // New game, without the menu dance: drop the saved run and reload. Same effect
 // the button has — the codex and both bests deliberately survive.
 const enterGame = () =>
-  evalJs(`[...document.querySelectorAll('#menu button')]
+  evalJs(`[...document.querySelectorAll('#mu button')]
     .find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
 const reset = async () => {
   await evalJs(`localStorage.removeItem('colorAlchemy.run')`);
@@ -111,19 +111,19 @@ await sleep(700);
 let s = await state();
 check("boot: 3 starter elements", s.found.length === 3 && s.moves === 0);
 check("boot: goal line names Rainbow and Unicorn",
-  await evalJs(`document.getElementById('goal').textContent.includes('Rainbow')`));
+  await evalJs(`document.getElementById('gl').textContent.includes('Rainbow')`));
 
 // --- title screen ---------------------------------------------------------
 check("boot: title screen shows COLOR / AlchemY, locked to one width",
   s.phase === "menu" &&
-  await evalJs(`document.getElementById('ttl').textContent === 'COLOR'
-    && document.getElementById('tsub').textContent === 'AlchemY'
-    && document.getElementById('tsub').children.length === 7`));
-// The two words are one lockup: #ttlwrap is shrink-to-fit so COLOR sets the
-// measure, and #tsub's letters spread across it. Measured rather than assumed —
+  await evalJs(`document.getElementById('tl').textContent === 'COLOR'
+    && document.getElementById('tb').textContent === 'AlchemY'
+    && document.getElementById('tb').children.length === 7`));
+// The two words are one lockup: #tw is shrink-to-fit so COLOR sets the
+// measure, and #tb's letters spread across it. Measured rather than assumed —
 // a font change or a stray width would part them silently.
 check("boot: COLOR and AlchemY come out the same width", await evalJs(`(() => {
-  const t = document.getElementById('ttl'), s = document.getElementById('tsub');
+  const t = document.getElementById('tl'), s = document.getElementById('tb');
   const track = parseFloat(getComputedStyle(t).letterSpacing) || 0;
   const a = t.getBoundingClientRect().width - track;
   const k = s.children;
@@ -131,10 +131,10 @@ check("boot: COLOR and AlchemY come out the same width", await evalJs(`(() => {
   return Math.abs(a - b) / a < 0.02;
 })()`));
 check("boot: a fresh boot offers no Continue, having nothing to continue",
-  (await evalJs(`[...document.querySelectorAll('#menu button')].map(b => b.textContent).join()`)) ===
+  (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`)) ===
   "New game,Highscore,Encyclopedia,Unlock all,Reset everything");
 await shot("title");
-await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'New game').click()`);
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'New game').click()`);
 s = await state();
 check("menu: New game enters the game", s.phase === "play");
 
@@ -142,41 +142,41 @@ check("menu: New game enters the game", s.phase === "play");
 await click("red");
 s = await state();
 check("lock: the first pick locks into the cauldron",
-  s.sel === 0 && await evalJs(`document.getElementById('cA').classList.contains('on')`) &&
-  await evalJs(`document.getElementById('cA').textContent.includes('Red')`));
+  s.sel === 0 && await evalJs(`document.getElementById('ca').classList.contains('y')`) &&
+  await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
 await click("green");
 await sleep(100);
 s = await state();
 check("mouse: combining resolves in the cauldron, nothing to dismiss", s.phase === "play");
 check("mouse: Yellow discovered, 1 move", s.found.includes("yellow") && s.moves === 1);
 check("cauldron: the well shows the result and the quote sits under it",
-  await evalJs(`document.getElementById('cR').textContent.includes('Yellow')`) &&
+  await evalJs(`document.getElementById('cr').textContent.includes('Yellow')`) &&
   await evalJs(`document.getElementById('cq').textContent.includes('not paint')`));
 check("discovery: a first-EVER element takes the whole screen",
-  await evalJs(`document.getElementById('disc').classList.contains('on')`) &&
-  (await evalJs(`document.querySelectorAll('#disc .k').length`)) === 14 &&
-  await evalJs(`document.getElementById('disc').textContent.includes('Yellow')`));
+  await evalJs(`document.getElementById('ds').classList.contains('y')`) &&
+  (await evalJs(`document.querySelectorAll('#ds .k').length`)) === 14 &&
+  await evalJs(`document.getElementById('ds').textContent.includes('Yellow')`));
 check("discovery: the rays step round the spectrum",
-  (await evalJs(`document.querySelector('#disc .k').style.getPropertyValue('--c')`)) === "hsl(0 95% 62%)" &&
-  (await evalJs(`[...document.querySelectorAll('#disc .k')][7].style.getPropertyValue('--c')`)) === "hsl(180 95% 62%)");
+  (await evalJs(`document.querySelector('#ds .k').style.getPropertyValue('--c')`)) === "hsl(0 95% 62%)" &&
+  (await evalJs(`[...document.querySelectorAll('#ds .k')][7].style.getPropertyValue('--c')`)) === "hsl(180 95% 62%)");
 check("lock: Red is still held after the combine", s.sel === 0 &&
-  await evalJs(`document.getElementById('cA').textContent.includes('Red')`));
+  await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
 check("cauldron: the second element is marked on the board while it sits in slot B",
-  await evalJs(`document.getElementById('cB').textContent.includes('Green')`) &&
-  (await evalJs(`[...document.querySelectorAll('.tile.sel2')].map(t => t.dataset.id).join()`)) === "green");
+  await evalJs(`document.getElementById('cb').textContent.includes('Green')`) &&
+  (await evalJs(`[...document.querySelectorAll('.t.E')].map(t => t.dataset.id).join()`)) === "green");
 await shot("cauldron");
 // the second slot and the result clear themselves; the lock does not
 await sleep(2400);
 check("cauldron: the board mark clears with the slot",
-  !(await evalJs(`!!document.querySelector('.tile.sel2')`)));
+  !(await evalJs(`!!document.querySelector('.t.E')`)));
 check("cauldron: B and the result empty themselves, the lock stays",
-  (await evalJs(`document.getElementById('cB').textContent`)) === "" &&
-  (await evalJs(`document.getElementById('cR').textContent`)) === "" &&
-  await evalJs(`document.getElementById('cA').textContent.includes('Red')`));
+  (await evalJs(`document.getElementById('cb').textContent`)) === "" &&
+  (await evalJs(`document.getElementById('cr').textContent`)) === "" &&
+  await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
 await click("red");
 s = await state();
 check("lock: picking the held element again releases it",
-  s.sel === -1 && !(await evalJs(`document.getElementById('cA').classList.contains('on')`)));
+  s.sel === -1 && !(await evalJs(`document.getElementById('ca').classList.contains('y')`)));
 
 // --- keyboard: cursor to Blue + Yellow -> White Light ---------------------
 await key("ArrowRight");            // cursor is on red(0) after the release
@@ -199,30 +199,30 @@ check("fail: no recipe still costs a move", s.moves === 3 && s.found.length === 
 check("fail: the cauldron says nothing happens",
   await evalJs(`document.getElementById('cq').textContent.includes('nothing happens')`));
 check("fail: the cauldron shakes and the tiles do not",
-  await evalJs(`document.getElementById('cdrn').classList.contains('bad')`) &&
-  !(await evalJs(`!!document.querySelector('.tile.bad')`)));
+  await evalJs(`document.getElementById('cd').classList.contains('x')`) &&
+  !(await evalJs(`!!document.querySelector('.t.x')`)));
 // green is still held, so one more pick is the whole rediscovery
 await click("red");
 s = await state();
 check("dupe: rediscovery costs a move, adds nothing", s.moves === 4 && s.found.length === 5);
 check("dupe: a rediscovery gets no full-screen animation",
-  !(await evalJs(`document.getElementById('disc').classList.contains('on')`)));
+  !(await evalJs(`document.getElementById('ds').classList.contains('y')`)));
 check("dupe: the cauldron names the known result",
   await evalJs(`document.getElementById('cq').textContent.includes('already discovered')`));
 check("dupe: only the known result pulses",
-  (await evalJs(`[...document.querySelectorAll('.tile.hit')].map(t => t.dataset.id).join()`)) === "yellow");
+  (await evalJs(`[...document.querySelectorAll('.t.h')].map(t => t.dataset.id).join()`)) === "yellow");
 // Red is the cyan secondary right now: tapping it takes over the lock from
 // Green, empties both transient slots, and spends no move
 check("lock: tapping the cyan secondary promotes it to the held element",
-  (await evalJs(`[...document.querySelectorAll('.tile.sel2')].map(t => t.dataset.id).join()`)) === "red");
+  (await evalJs(`[...document.querySelectorAll('.t.E')].map(t => t.dataset.id).join()`)) === "red");
 await click("red");
 s = await state();
 check("lock: the promoted element is held and the slots are empty",
   s.sel === 0 && s.moves === 4 &&
-  await evalJs(`document.getElementById('cA').textContent.includes('Red')`) &&
-  (await evalJs(`document.getElementById('cB').textContent`)) === "" &&
-  (await evalJs(`document.getElementById('cR').textContent`)) === "" &&
-  !(await evalJs(`!!document.querySelector('.tile.sel2')`)));
+  await evalJs(`document.getElementById('ca').textContent.includes('Red')`) &&
+  (await evalJs(`document.getElementById('cb').textContent`)) === "" &&
+  (await evalJs(`document.getElementById('cr').textContent`)) === "" &&
+  !(await evalJs(`!!document.querySelector('.t.E')`)));
 
 // --- encyclopedia: performed combinations only ----------------------------
 // green is still held, so the first Escape releases the lock rather than
@@ -234,14 +234,14 @@ check("lock: Escape releases the held element before it opens the menu",
 await key("Escape");
 s = await state();
 check("keyboard: Escape opens the menu", s.phase === "menu");
-await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Encyclopedia').click()`);
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Encyclopedia').click()`);
 check("encyclopedia: lists discovered combinations",
-  await evalJs(`document.getElementById('mlist').textContent.includes('Red + Green')`) &&
-  await evalJs(`document.getElementById('mlist').textContent.includes('White Light')`));
+  await evalJs(`document.getElementById('ml').textContent.includes('Red + Green')`) &&
+  await evalJs(`document.getElementById('ml').textContent.includes('White Light')`));
 check("encyclopedia: undiscovered elements stay hidden",
-  !(await evalJs(`document.getElementById('mlist').textContent.includes('Unicorn')`)));
+  !(await evalJs(`document.getElementById('ml').textContent.includes('Unicorn')`)));
 check("encyclopedia: unperformed alternate recipes stay unspoiled",
-  !(await evalJs(`document.getElementById('mlist').textContent.includes('Red + Cyan')`)));
+  !(await evalJs(`document.getElementById('ml').textContent.includes('Red + Cyan')`)));
 await key("Escape");   // close the panel
 await key("Escape");   // back to the game
 s = await state();
@@ -309,7 +309,7 @@ await sleep(80);
 s = await state();
 check("gamepad: B with nothing selected opens the menu", s.phase === "menu");
 check("hud: the Menu button names both shortcuts",
-  (await evalJs(`document.getElementById('mnu').textContent`)) === "MenuEsc / Ⓑ");
+  (await evalJs(`document.getElementById('mn').textContent`)) === "MenuEsc / Ⓑ");
 await evalJs("__pad.buttons[1].pressed = true");    // B closes it again
 await sleep(120);
 await evalJs("__pad.buttons[1].pressed = false");
@@ -335,7 +335,7 @@ check("gamepad: B closes the menu", s.phase === "play");
 // went, cost no move, and are remembered.
 const muteKey = () =>
   evalJs(`localStorage.getItem('colorAlchemy.mute')`);
-const toastText = () => evalJs(`document.getElementById('toast').textContent`);
+const toastText = () => evalJs(`document.getElementById('to').textContent`);
 let mv = (await state()).moves;
 await key("m");
 s = await state();
@@ -349,16 +349,16 @@ await sleep(80);
 check("mute: pad Ⓧ turns the sound back on",
   (await toastText()) === "Sound on" && (await muteKey()) === "0");
 check("hud: the Sound button names both shortcuts",
-  (await evalJs(`document.getElementById('snd').textContent`)) === "SoundM / Ⓧ");
-const sndLabel = () => evalJs(`document.getElementById('snd').firstChild.textContent`);
+  (await evalJs(`document.getElementById('sn').textContent`)) === "SoundM / Ⓧ");
+const sndLabel = () => evalJs(`document.getElementById('sn').firstChild.textContent`);
 // click() above finds TILES by data-id; the HUD buttons go by element id
 const clickBtn = (id) => evalJs(`document.getElementById('${id}').click()`);
-await clickBtn("snd");
+await clickBtn("sn");
 check("hud: the Sound button mutes, and its label follows",
   (await toastText()) === "Sound off" && (await sndLabel()) === "Muted" &&
   (await muteKey()) === "1" &&
-  await evalJs(`document.getElementById('snd').classList.contains('off')`));
-await clickBtn("snd");
+  await evalJs(`document.getElementById('sn').classList.contains('Y')`));
+await clickBtn("sn");
 check("hud: clicking it again brings the sound back",
   (await toastText()) === "Sound on" && (await sndLabel()) === "Sound" &&
   (await muteKey()) === "0");
@@ -371,16 +371,16 @@ check("hud: clicking it again brings the sound back",
 // (the pick is random among every productive pair). [+] rather than an escaped
 // plus: these regexes ride to the page inside a template literal, which eats a
 // lone backslash before the page ever sees it.
-const clearToast = () => evalJs(`document.getElementById('toast').textContent = ''`);
+const clearToast = () => evalJs(`document.getElementById('to').textContent = ''`);
 // the page reports what it holds and what the toast named; whether that pair is
 // USEFUL is decided here, because the recipe tree lives on this side now
 const hintNamesAUsefulPair = async () => {
   const r = JSON.parse(await evalJs(`(() => {
-    const m = document.getElementById('toast').textContent
+    const m = document.getElementById('to').textContent
       .match(/^Hint: try (.+) [+] (.+) — costs a move$/);
     if (!m) return "null";
-    const tiles = [...document.querySelectorAll('.tile')];
-    const id = n => (tiles.find(t => t.querySelector('.nm').textContent === n) || { dataset: {} }).dataset.id;
+    const tiles = [...document.querySelectorAll('.t')];
+    const id = n => (tiles.find(t => t.querySelector('.n').textContent === n) || { dataset: {} }).dataset.id;
     return JSON.stringify({ a: id(m[1]), b: id(m[2]), found: tiles.map(t => t.dataset.id) });
   })()`));
   if (!r) return false;
@@ -389,24 +389,24 @@ const hintNamesAUsefulPair = async () => {
 };
 // the ids the toast names, whichever tail it carries
 const hintedPair = () => evalJs(`(() => {
-  const m = document.getElementById('toast').textContent.match(/^Hint: try (.+) [+] (.+) —/);
-  const id = n => ([...document.querySelectorAll('.tile')]
-    .find(t => t.querySelector('.nm').textContent === n) || { dataset: {} }).dataset.id;
+  const m = document.getElementById('to').textContent.match(/^Hint: try (.+) [+] (.+) —/);
+  const id = n => ([...document.querySelectorAll('.t')]
+    .find(t => t.querySelector('.n').textContent === n) || { dataset: {} }).dataset.id;
   return JSON.stringify(m ? [id(m[1]), id(m[2])] : null);
 })()`).then(JSON.parse);
 // the two tiles the toast names are the two that pulse (one round trip: the
 // pulse is a .5s animation that clears itself)
 const hintPulsesItsPair = () => evalJs(`(() => {
-  const m = document.getElementById('toast').textContent.match(/^Hint: try (.+) [+] (.+) —/);
+  const m = document.getElementById('to').textContent.match(/^Hint: try (.+) [+] (.+) —/);
   if (!m) return false;
-  const id = n => ([...document.querySelectorAll('.tile')]
-    .find(t => t.querySelector('.nm').textContent === n) || { dataset: {} }).dataset.id;
-  const lit = [...document.querySelectorAll('.tile.hit')].map(t => t.dataset.id).sort();
+  const id = n => ([...document.querySelectorAll('.t')]
+    .find(t => t.querySelector('.n').textContent === n) || { dataset: {} }).dataset.id;
+  const lit = [...document.querySelectorAll('.t.h')].map(t => t.dataset.id).sort();
   return JSON.stringify(lit) === JSON.stringify([id(m[1]), id(m[2])].sort());
 })()`);
 
 check("hud: the Hint button names both shortcuts",
-  (await evalJs(`document.getElementById('hnt').textContent`)) === "HintH / Ⓨ");
+  (await evalJs(`document.getElementById('ht').textContent`)) === "HintH / Ⓨ");
 let m0 = (await state()).moves;
 await key("h");
 s = await state();
@@ -428,10 +428,10 @@ s = await state();
 check("hint: Y repeats the standing hint, and charges nothing",
   s.moves === m0 &&
   JSON.stringify(await hintedPair()) === JSON.stringify(standing) &&
-  await evalJs(`document.getElementById('toast').textContent.endsWith('already paid for')`));
+  await evalJs(`document.getElementById('to').textContent.endsWith('already paid for')`));
 check("hint: the repeat highlights the same pair again", repeatPulses);
 await clearToast();
-await evalJs(`document.getElementById('hnt').click()`);
+await evalJs(`document.getElementById('ht').click()`);
 s = await state();
 check("hint: the HUD button repeats it too, still free",
   s.moves === m0 && JSON.stringify(await hintedPair()) === JSON.stringify(standing));
@@ -452,7 +452,7 @@ await key("h");
 s = await state();
 check("hint: no hint outside play, and no move spent",
   s.phase === "menu" && s.moves === m0 &&
-  !(await evalJs(`document.getElementById('toast').textContent.startsWith('Hint')`)));
+  !(await evalJs(`document.getElementById('to').textContent.startsWith('Hint')`)));
 await key("Escape");                                // back to the game
 s = await state();
 check("hint: menu backs out to the game", s.phase === "play");
@@ -563,31 +563,31 @@ check("quest: overlay opens with Rainbow+Unicorn found", s.questDone && s.phase 
 const questMoves = s.moves;
 check("quest: best stored on first completion", (await best("bestQuest")) === questMoves);
 check("quest: overlay reports the move count",
-  await evalJs(`document.getElementById('ocard').textContent.includes('QUEST COMPLETE')`) &&
-  await evalJs(`document.getElementById('ocard').textContent.includes('${questMoves}')`));
+  await evalJs(`document.getElementById('oc').textContent.includes('QUEST COMPLETE')`) &&
+  await evalJs(`document.getElementById('oc').textContent.includes('${questMoves}')`));
 await shot("quest");
-await evalJs(`[...document.querySelectorAll('#obtns button')].find(b => b.textContent === 'Keep playing').click()`);
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
 s = await state();
 check("quest: Keep playing returns to the game", s.phase === "play" && !s.fullDone);
 check("quest: goal line switches to find-all",
-  await evalJs(`document.getElementById('goal').textContent.includes('all 84')`));
+  await evalJs(`document.getElementById('gl').textContent.includes('all 84')`));
 check("night: icon is a starry blue-to-black swatch, not an emoji",
-  await evalJs(`!!document.querySelector('[data-id=night] .sw')
-    && document.querySelector('[data-id=night] .sw').style.background.includes('gradient')`));
+  await evalJs(`!!document.querySelector('[data-id=night] .s')
+    && document.querySelector('[data-id=night] .s').style.background.includes('gradient')`));
 check("night: comes from Black and Sky now, and Violet no longer makes it",
   RECIPE['black+sky'] === "night" &&
   RECIPE['sky+violet'] === undefined);
 check("black: the one color no mixing of lights reaches, so it comes from the materials",
   RECIPE['charcoal+stone'] === "black" &&
-  await evalJs(`!!document.querySelector('[data-id=black] .sw')`));
+  await evalJs(`!!document.querySelector('[data-id=black] .s')`));
 
 // --- highscore screen: quest best visible, full best still hidden ---------
 await key("Escape");
-await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Highscore').click()`);
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Highscore').click()`);
 check("highscore: shows the quest best",
-  await evalJs(`document.getElementById('mlist').textContent.includes('${questMoves} moves')`));
+  await evalJs(`document.getElementById('ml').textContent.includes('${questMoves} moves')`));
 check("highscore: the complete-run best stays hidden",
-  await evalJs(`document.getElementById('mlist').textContent.includes('???')`));
+  await evalJs(`document.getElementById('ml').textContent.includes('???')`));
 await key("Escape");
 await key("Escape");
 s = await state();
@@ -601,21 +601,21 @@ const fullMoves = s.moves;
 check("full: hidden best stored", (await best("bestFull")) === fullMoves);
 check("indigo: Newton's seventh band, between Blue and Violet",
   RECIPE['blue+violet'] === "indigo" &&
-  await evalJs(`!!document.querySelector('[data-id=indigo] .sw')`));
-check("prism: icon is an inline SVG, sized by the same .sw rules",
-  await evalJs(`!!document.querySelector('[data-id=prism] svg.sw')`) &&
-  (await evalJs(`getComputedStyle(document.querySelector('[data-id=prism] svg.sw')).width`)) === "32px");
+  await evalJs(`!!document.querySelector('[data-id=indigo] .s')`));
+check("prism: icon is an inline SVG, sized by the same .s rules",
+  await evalJs(`!!document.querySelector('[data-id=prism] svg.s')`) &&
+  (await evalJs(`getComputedStyle(document.querySelector('[data-id=prism] svg.s')).width`)) === "32px");
 check("full: overlay shows the hidden best",
-  await evalJs(`document.getElementById('ocard').textContent.includes('GRAND ALCHEMIST')`) &&
-  await evalJs(`document.getElementById('ocard').textContent.includes('complete run')`));
+  await evalJs(`document.getElementById('oc').textContent.includes('GRAND ALCHEMIST')`) &&
+  await evalJs(`document.getElementById('oc').textContent.includes('complete run')`));
 await shot("complete");
 
 // --- new game keeps bests, hides the hidden one ---------------------------
-await evalJs(`[...document.querySelectorAll('#obtns button')].find(b => b.textContent === 'New game').click()`);
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'New game').click()`);
 s = await state();
 check("reset: back to 3 elements, 0 moves", s.found.length === 3 && s.moves === 0 && !s.questDone);
 check("reset: quest best survives in the HUD",
-  await evalJs(`document.getElementById('bestq').textContent.includes('${questMoves}')`));
+  await evalJs(`document.getElementById('bq').textContent.includes('${questMoves}')`));
 // innerText, not textContent: the page's own <script> source mentions the
 // string, and textContent would read it; innerText sees only rendered text.
 check("reset: hidden best appears nowhere outside the completion screen",
@@ -720,8 +720,8 @@ s = await state();
 check("perfect: quest done in 33 moves", s.questDone && s.moves === 33);
 check("perfect: quest best lowered to 33", (await best("bestQuest")) === 33);
 check("perfect: overlay celebrates the new best",
-  await evalJs(`document.getElementById('ocard').textContent.includes('NEW BEST')`));
-await evalJs(`[...document.querySelectorAll('#obtns button')].find(b => b.textContent === 'Keep playing').click()`);
+  await evalJs(`document.getElementById('oc').textContent.includes('NEW BEST')`));
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
 await run(PERFECT_EXTRA);
 s = await state();
 check("perfect: full clear in 81 moves", s.fullDone && s.moves === 81);
@@ -737,7 +737,7 @@ check("sloppy: quest done in 35 moves", s.questDone && s.moves === 35);
 check("sloppy: best stays 33", (await best("bestQuest")) === 33);
 
 // --- persistence: reload restores the run ---------------------------------
-await evalJs(`[...document.querySelectorAll('#obtns button')].find(b => b.textContent === 'Keep playing').click()`);
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
 await send("Page.navigate", { url: "file:///" + page.replace(/\\/g, "/") });
 await sleep(900);
 s = await state();
@@ -784,10 +784,10 @@ await run([["water","air"]]);
 // the alt run left us in the game, so open the menu the way a player does. A
 // run is in progress, so Continue is offered and New game sits behind it.
 await key("Escape");
-await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'New game').click()`);
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'New game').click()`);
 check("menu: New game asks for confirmation",
-  await evalJs(`[...document.querySelectorAll('#menu button')][1].textContent.includes('Sure')`));
-await evalJs(`[...document.querySelectorAll('#menu button')][1].click()`);
+  await evalJs(`[...document.querySelectorAll('#mu button')][1].textContent.includes('Sure')`));
+await evalJs(`[...document.querySelectorAll('#mu button')][1].click()`);
 s = await state();
 check("menu: confirmed New game resets into play",
   s.phase === "play" && s.moves === 0 && s.found.length === 3);
@@ -800,57 +800,57 @@ await click("green");
 s = await state();
 check("rediscovery: a known element still lands in the well",
   s.phase === "play" &&
-  await evalJs(`document.getElementById('cR').textContent.includes('Yellow')`));
+  await evalJs(`document.getElementById('cr').textContent.includes('Yellow')`));
 await release();
 await key("Escape");
-await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Encyclopedia').click()`);
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Encyclopedia').click()`);
 check("encyclopedia: knowledge persists across runs",
-  await evalJs(`document.getElementById('mlist').textContent.includes('Unicorn')`) &&
-  await evalJs(`document.getElementById('mlist').textContent.includes('Glass')`));
+  await evalJs(`document.getElementById('ml').textContent.includes('Unicorn')`) &&
+  await evalJs(`document.getElementById('ml').textContent.includes('Glass')`));
 check("encyclopedia: an element lists every route actually performed",
-  await evalJs(`document.getElementById('mlist').textContent.includes('Sky + Water')`) &&
-  await evalJs(`document.getElementById('mlist').textContent.includes('Water + Air')`));
+  await evalJs(`document.getElementById('ml').textContent.includes('Sky + Water')`) &&
+  await evalJs(`document.getElementById('ml').textContent.includes('Water + Air')`));
 
 // --- Unlock all / Reset everything ---------------------------------------
 // both are destructive, so both take two presses; the second must land within
 // 2.5s of the first
 const menuBtn = async (label) =>
-  evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent.startsWith('${label}')).click()`);
+  evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent.startsWith('${label}')).click()`);
 await reset();
 await key("Escape");
 s = await state();
 check("unlock: the menu is open on a fresh board", s.phase === "menu" && s.found.length === 3);
 await menuBtn("Unlock all");
 check("unlock: the first press only arms the button",
-  await evalJs(`!![...document.querySelectorAll('#menu button')].find(b => b.textContent.includes('Sure? (ends'))`) &&
+  await evalJs(`!![...document.querySelectorAll('#mu button')].find(b => b.textContent.includes('Sure? (ends'))`) &&
   (await state()).found.length === 3);
 await menuBtn("Sure? (ends");
 s = await state();
 check("unlock: the second press hands over every element",
   s.found.length === 84 && s.phase === "play" && s.moves === 0);
 check("unlock: an unlocked run stops scoring, and says so",
-  await evalJs(`document.getElementById('goal').textContent.includes('does not score')`) &&
+  await evalJs(`document.getElementById('gl').textContent.includes('does not score')`) &&
   s.phase === "play" && !s.fullDone);
 check("unlock: no best was written from it",
   (await best("bestFull")) === 81 && (await best("bestQuest")) === 33);
 await key("Escape");
 await menuBtn("Reset everything");
 check("wipe: the first press only arms the button",
-  await evalJs(`!![...document.querySelectorAll('#menu button')].find(b => b.textContent.includes('Sure? (scores'))`));
+  await evalJs(`!![...document.querySelectorAll('#mu button')].find(b => b.textContent.includes('Sure? (scores'))`));
 await menuBtn("Sure? (scores");
 s = await state();
 check("wipe: back to three elements, and both bests are gone",
   s.found.length === 3 && s.moves === 0 &&
   (await best("bestQuest")) === 0 && (await best("bestFull")) === 0);
 check("wipe: Continue goes with the run it pointed at",
-  (await evalJs(`[...document.querySelectorAll('#menu button')].map(b => b.textContent).join()`)) ===
+  (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`)) ===
   "New game,Highscore,Encyclopedia,Unlock all,Reset everything");
 check("wipe: it puts everything back without starting a game",
   s.phase === "menu" &&
-  !(await evalJs(`document.getElementById('goal').textContent.includes('does not score')`)));
-await evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Encyclopedia').click()`);
+  !(await evalJs(`document.getElementById('gl').textContent.includes('does not score')`)));
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Encyclopedia').click()`);
 check("wipe: the all-time codex is gone too, not just the run",
-  !(await evalJs(`document.getElementById('mlist').textContent.includes('Unicorn')`)));
+  !(await evalJs(`document.getElementById('ml').textContent.includes('Unicorn')`)));
 
 check("no uncaught exceptions", t.exceptions.length === 0);
 if (t.exceptions.length) console.log(t.exceptions.join("\n"));
