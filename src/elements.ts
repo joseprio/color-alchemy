@@ -139,7 +139,7 @@ export const ELEMENTS = ([
     r:[["cloud","electricity"]] },
   { id:"storm", e:"\u{26C8}️", q:"The weather, done negotiating.",
     r:[["lightning","rain"]] },
-  { id:"tornado", e:"\u{1F32A}️", q:"Air, finally focused.",
+  { id:"tornado", e:"\u{1F32A}️", q:"We're not in Kansas anymore.",
     r:[["air","storm"]] },
   { id:"life", e:"\u{1F9EC}", q:"One spark in the right puddle, and here we all are.",
     r:[["lightning","water"]] },
