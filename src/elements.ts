@@ -153,7 +153,7 @@ export const ELEMENTS = ([
     r:[["animal","field"]] },
   { id:"hippo", e:"\u{1F99B}", q:"River horse, and it means that literally.",
     r:[["horse","water"]] },
-  { id:"wolf", e:"\u{1F43A}", q:"The animal that answered the moon.",
+  { id:"wolf", e:"\u{1F43A}", q:"If you live with wolves, you must learn to howl.",
     r:[["animal","moon"]] },
   { id:"bone", e:"\u{1F9B4}", q:"What the fire could not talk out of leaving.",
     r:[["animal","fire"],["wolf","fire"],["horse","fire"],["unicorn","fire"],
