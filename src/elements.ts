@@ -193,7 +193,7 @@ export const ELEMENTS = ([
     r:[["green","water"]] },
   { id:"electricity", e:"⚡", q:"A slow argument between a metal and an acid.",
     r:[["acid","metal"]] },
-  { id:"ice", e:"\u{1F9CA}", q:"Water, holding its breath.",
+  { id:"ice", e:"\u{1F9CA}", q:"Fire burns, but ice preserves.",
     r:[["water","night"]] },
   { id:"snow", e:"\u{1F328}️", q:"Rain that stopped to arrange itself.",
     r:[["cloud","ice"]] },
