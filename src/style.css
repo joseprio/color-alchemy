@@ -18,7 +18,7 @@
      v  veil           A  card            B  big icon       T  tag line
      L  card line      S  a best          N  a new best     F  focused button
      R  armed button   C  title screen    M  on <body>: the title is up
-     j  on #ti: the subscreen is up, so the button column steps aside
+     j  on #mu: it is holding a subscreen, not the button column
      H  highscore row  O  note under it   J  codex row      I  codex icon
      X  codex recipes  Q  codex quote
    and inside #ds, the discovery layer: a and b are the two ingredients, r the
@@ -322,18 +322,15 @@ body.M #dk { display: none; }
   color: #8fb4d8; font-size: min(6.9vw, 40px); line-height: 1.1; margin: 6px 0 30px;
 }
 #mu { display: flex; flex-direction: column; gap: 10px; width: 250px; }
-#mu button, #mb {
+#mu button {
   background: #101528cc; color: #cfe3ff; border: 1px solid #33436e; border-radius: 10px;
   font: inherit; font-family: Arial, Helvetica, sans-serif; font-size: 16px;
   letter-spacing: .04em; padding: 10px 16px; cursor: pointer;
 }
-#mu button.F, #mb.F { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
+#mu button.F { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
 #mu button.R { border-color: #a04040; color: #ff8080; }
-#mp { display: none; flex-direction: column; align-items: center; gap: 10px; width: min(92vw, 460px); }
-/* Highscore and Encyclopedia swap the button column for the panel. They are
-   never both up, so ONE class on the screen drives both. */
-#ti.j #mu { display: none; }
-#ti.j #mp { display: flex; }
+/* the same column, wearing the subscreen's geometry */
+#mu.j { align-items: center; width: min(92vw, 460px); }
 #mh { color: #ffd75e; letter-spacing: .3em; font-size: 13px; }
 #ml {
   width: 100%; max-height: 46vh; overflow-y: auto; text-align: left;

@@ -10,7 +10,7 @@ primaries.
 ```
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
-npm test                  # 111 headless checks against dist/bundle.html
+npm test                  # 112 headless checks against dist/bundle.html
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fouc-check        # is the sheet in place before the first paint?

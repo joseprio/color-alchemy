@@ -553,7 +553,7 @@ function finishFull(questHtml: string): void {
 /* ------------------------------------------------------- title screen menu */
 // Boot lands here; Escape / Start / the HUD "Menu" button reopen it. The
 // title floats over the bare background (body.M hides the game UI), and
-// Highscore / Encyclopedia swap the button column for the #mp subscreen.
+// Highscore / Encyclopedia write their subscreen into #mu, over the column.
 let mCur = 0;
 let panel = false;         // the subscreen is up, and #ti.j says so
 let armIdx = -1;           // menu button awaiting its confirming second press
@@ -656,8 +656,7 @@ export function openMenu(): void {
   if (phase() !== "play") return;
   cancelPress();
   clearSel();
-  paintMenu();
-  closePanel();
+  closePanel();          // paints the column
   ti.classList.add("w");
   document.body.classList.add("M");
 }
@@ -668,15 +667,18 @@ function closeMenu(): void {
   document.body.classList.remove("M");
 }
 function openPanel(head: string, listHtml: string): void {
-  mh.textContent = head;
-  ml.innerHTML = listHtml;
-  ml.scrollTop = 0;
+  mu.innerHTML = '<div id="mh">' + head + '</div><div id="ml">' + listHtml +
+    '</div><button id="mb">Back</button>';
+  mb.onclick = menuBack;   // the button is rebuilt with the panel, so is this
   panel = true;
-  ti.classList.add("j");
+  mu.classList.add("j");
 }
+// Putting the column back IS closing the panel, so this paints rather than
+// unhides: the two share the one container.
 function closePanel(): void {
   panel = false;
-  ti.classList.remove("j");
+  mu.classList.remove("j");
+  paintMenu();
 }
 export function menuMove(d: number): void {
   if (panel) { ml.scrollTop += d * 60; return; }
@@ -754,7 +756,6 @@ export function boot(): void {
   sn.addEventListener("click", muteToggle);
   paintSound();
   ht.addEventListener("click", hint);
-  mb.addEventListener("click", menuBack);
   ca.addEventListener("click", unlock);   // the X empties the locked slot
   ds.addEventListener("pointerdown", closeDisc);   // a tap anywhere skips it
   // non-passive so an active drag can stop a pan from starting; until the

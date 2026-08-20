@@ -32,11 +32,10 @@ declare const ti: HTMLElement;   // title screen
 declare const tw: HTMLElement;   // title lockup wrapper
 declare const tl: HTMLElement;   // COLOR
 declare const tb: HTMLElement;   // AlchemY
-declare const mu: HTMLElement;   // menu button column
-declare const mp: HTMLElement;   // menu subscreen panel
-declare const mh: HTMLElement;   // subscreen heading
-declare const ml: HTMLElement;   // subscreen list
-declare const mb: HTMLElement;   // subscreen Back button
+declare const mu: HTMLElement;   // the button column, or the subscreen in it
+declare const mh: HTMLElement;   // subscreen heading   \
+declare const ml: HTMLElement;   // subscreen list       > written by openPanel
+declare const mb: HTMLButtonElement; // subscreen Back  /
 declare const ds: HTMLElement;   // first-discovery full-screen layer
 declare const to: HTMLElement;   // toast
 declare const ov: HTMLElement;   // overlay veil

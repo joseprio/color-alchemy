@@ -29,7 +29,7 @@ var localStorage;
 
 // the id globals (see 3 above); #ob exists only while the overlay is open
 var gl, hd, mv, ct, bq, ht, sn, mn, dk, cd, ca, cb, cr, cq, gd;
-var ti, tw, tl, tb, mu, mp, mh, ml, mb, ds, to, ov, oc, ob, st;
+var ti, tw, tl, tb, mu, mh, ml, mb, ds, to, ov, oc, ob, st;
 
 // DOM property names this compiler's externs are too old to know. Renaming
 // these does NOT fail the build, it just produces something that runs:

@@ -588,6 +588,14 @@ check("highscore: shows the quest best",
   await evalJs(`document.getElementById('ml').textContent.includes('${questMoves} moves')`));
 check("highscore: the complete-run best stays hidden",
   await evalJs(`document.getElementById('ml').textContent.includes('???')`));
+// Back shares its container with the button column, so it is rebuilt — and
+// re-wired — every time a subscreen opens. Clicking it is the only thing that
+// proves the wiring came back with it.
+await evalJs(`document.getElementById('mb').click()`);
+check("highscore: Back puts the button column back",
+  (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`))
+    .includes("Highscore") &&
+  !(await evalJs(`!!document.getElementById('ml')`)));
 await key("Escape");
 await key("Escape");
 s = await state();
