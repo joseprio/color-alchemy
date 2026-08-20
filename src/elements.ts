@@ -17,7 +17,7 @@
 // is a fanned fire and nothing more, and Axe + Tree makes the Wood the Axe
 // itself was cut from — it is flavor for a pair players try, never a cheaper
 // route.
-// n is OPTIONAL in the table below: for 80 of the 83 it is just the id with a
+// n is OPTIONAL in the table below: for 81 of the 84 it is just the id with a
 // capital, and writing it out again is the one field roadroller genuinely pays
 // for — a near-miss repeat of a string it has already seen costs real bits,
 // where an exact repeat (an id inside a recipe) costs almost none. Omitting the
@@ -82,7 +82,7 @@ export const ELEMENTS = ([
     r:[["earth","water"]] },
   { id:"pottery", e:"\u{1F3FA}", q:"Clay that met a fire and kept the shape.",
     r:[["clay","fire"]] },
-  { id:"lava", c:"#ff5a1f", q:"The ground, briefly reconsidering.",
+  { id:"lava", c:"#ff5a1f", q:"Lava flows not out of anger, but out of necessity.",
     bg:"radial-gradient(circle at 27% 32%, #ffe08a 0 3.5%, transparent 7%)," +
        "radial-gradient(circle at 72% 62%, #ffc04dcc 0 4%, transparent 8%)," +
        "linear-gradient(108deg, #2b0e07 0 14%, transparent 14% 27%, #1f0905 27% 35%," +
@@ -91,12 +91,7 @@ export const ELEMENTS = ([
     r:[["earth","fire"]] },
   { id:"volcano", e:"\u{1F30B}", q:"A mountain that kept the receipt.",
     r:[["lava","earth"]] },
-  { id:"stone", c:"#9aa4ad", q:"Cooled, hardened, and in no hurry.",
-    bg:"radial-gradient(circle at 30% 32%, #6f7880 0 5%, transparent 9%)," +
-       "radial-gradient(circle at 66% 58%, #c8d0d8aa 0 4%, transparent 8%)," +
-       "radial-gradient(circle at 78% 26%, #5c646c 0 3.5%, transparent 7%)," +
-       "radial-gradient(circle at 40% 76%, #b6c0c8aa 0 3.5%, transparent 7%)," +
-       "linear-gradient(160deg, #aab4bd 0%, #8b959d 55%, #626a72 100%)",
+  { id:"stone", e:"\u{1FAA8}", q:"Every stone holds a statue; the sculptor merely reveals it.",
     r:[["lava","water"]] },
   { id:"metal", c:"#c3ced9", q:"Stone, refined until it rings.",
     bg:"linear-gradient(120deg, transparent 0 30%, #ffffffaa 30% 38%, transparent 38% 62%," +
@@ -182,6 +177,8 @@ export const ELEMENTS = ([
     r:[["animal","water"]] },
   { id:"owl", e:"\u{1F989}", q:"The night, keeping an eye on things.",
     r:[["bird","night"]] },
+  { id:"flamingo", e:"\u{1F9A9}", q:"Be a flamingo in a flock of pigeons.",
+    r:[["bird","pink"]] },
   { id:"phoenix", e:"\u{1F426}\u{200D}\u{1F525}", q:"From the ashes, a fire shall be woken",
     r:[["bird","fire"]] },
   { id:"bee", e:"\u{1F41D}", q:"The flower's travel agent.",

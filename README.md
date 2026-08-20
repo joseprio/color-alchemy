@@ -42,7 +42,7 @@ npm run audio-bench       # what a sample costs, against the callback budget
   → **9651 bytes, 72.50% of the budget.**
   `src/style.css` is read ONCE, at config load: after editing it during
   `npm start`, restart the watcher.
-- **The element table omits the names it can derive.** For 80 of the 83, `n`
+- **The element table omits the names it can derive.** For 81 of the 84, `n`
   is just the id with a capital, so the table leaves it out and
   `src/elements.ts` fills it in; only White Light, Polar Bear and Crystal
   Ball are written out. Worth **-162 B** end to end, and it is the one field
@@ -231,7 +231,7 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 - **The quest:** forge the 🌈 **Rainbow** (White Light + Prism, or Sun + Rain)
   and the 🦄 **Unicorn**. When you hold both, your move count is compared with
   the stored best and kept if lower. You can then keep playing.
-- **The endgame:** discover all 83 elements. The total move count of a full
+- **The endgame:** discover all 84 elements. The total move count of a full
   clear is the *hidden highscore* — it is only ever compared and shown on the
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
@@ -511,6 +511,7 @@ cheaper path.
 | Duck | Bird + Water |
 | Fish | Animal + Water |
 | Owl | Bird + Night |
+| Flamingo | Bird + Pink |
 | Phoenix | Bird + Fire |
 | Bee | Animal + Flower |
 | Honey | Bee + Flower |
