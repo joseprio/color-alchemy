@@ -42,6 +42,19 @@ npm run audio-bench       # what a sample costs, against the callback budget
   → **9651 bytes, 72.50% of the budget.**
   `src/style.css` is read ONCE, at config load: after editing it during
   `npm start`, restart the watcher.
+- **The element table omits the names it can derive.** For 80 of the 83, `n`
+  is just the id with a capital, so the table leaves it out and
+  `src/elements.ts` fills it in; only White Light, Polar Bear and Crystal
+  Ball are written out. Worth **-162 B** end to end, and it is the one field
+  that pays: a NEAR-miss repeat ("sunflower" then "Sunflower") costs
+  roadroller real bits, where an exact repeat costs it almost none.
+  That is also why the obvious bigger idea does NOT work. Re-encoding the
+  whole table as a delimited string with recipes as base-36 indexes saves
+  **3714 B of raw source** and only **241 B packed** — worse than deriving
+  the names alone, because the parser costs more than the structure it
+  removes and the id strings inside recipes were nearly free already.
+  Measured, not reasoned about: pack the real chunk both ways before
+  trading readability for bytes.
 - Two risks come with that, and both have a probe rather than an assumption
   behind them. `npm run fouc-check` times the moment the sheet lands against the
   browser's own first-paint entry (the sheet is applied by a script at the end of
