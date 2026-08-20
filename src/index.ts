@@ -27,11 +27,6 @@ const frame = (t: number): void => {
 requestAnimationFrame(frame);
 
 (window as any).CA = {
-  ELEMENTS,
-  RECIPE,
-  attempt,
-  selectAt,
-  dismiss: unlock,   // kept under the old name: the harness calls it between attempts
-  reset,
-  state: caState,
+  E: ELEMENTS, R: RECIPE, a: attempt, s: selectAt,
+  d: unlock, r: reset, t: caState,
 };

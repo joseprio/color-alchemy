@@ -83,20 +83,20 @@ for (const [label, width, height, mobile] of SIZES) {
 
   // board with a dozen elements found
   await t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
-  await t.evalJs(`CA.reset();
+  await t.evalJs(`CA.r();
     [['red','green'],['red','blue'],['green','blue'],['blue','yellow'],['red','yellow'],
      ['red','orange'],['blue','white'],['fire','air'],['sun','air'],['blue','cyan'],
-     ['green','orange'],['earth','fire']].forEach(([a,b]) => { CA.attempt(a,b); CA.dismiss(); })`);
+     ['green','orange'],['earth','fire']].forEach(([a,b]) => { CA.a(a,b); CA.d(); })`);
   await t.sleep(200);
   states.board = JSON.parse(await t.evalJs(AUDIT));
   await shot("board");
 
   // a discovery card, left open
-  await t.evalJs(`CA.attempt('lava','water')`);
+  await t.evalJs(`CA.a('lava','water')`);
   await t.sleep(300);
   states.card = JSON.parse(await t.evalJs(AUDIT));
   await shot("card");
-  await t.evalJs(`CA.dismiss()`);
+  await t.evalJs(`CA.d()`);
 
   // a hint toast: the only element in the page set to nowrap
   await t.evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }))`);

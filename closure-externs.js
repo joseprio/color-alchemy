@@ -21,7 +21,6 @@
 // variable to it — the build fails loudly on each one, which is how this list
 // was assembled.
 var localStorage;
-var webkitAudioContext;
 
 // DOM property names this compiler's externs are too old to know. Renaming
 // these does NOT fail the build, it just produces something that runs:
@@ -39,13 +38,13 @@ var caDomNames = { gridTemplateColumns: 0, block: 0, passive: 0 };
 
 /** @const */
 var CA = {};
-/** @type {?} */ CA.ELEMENTS;
-/** @type {?} */ CA.RECIPE;
-/** @type {?} */ CA.attempt;
-/** @type {?} */ CA.selectAt;
-/** @type {?} */ CA.dismiss;
-/** @type {?} */ CA.reset;
-/** @type {?} */ CA.state;
+/** @type {?} */ CA.E;
+/** @type {?} */ CA.R;
+/** @type {?} */ CA.a;
+/** @type {?} */ CA.s;
+/** @type {?} */ CA.d;
+/** @type {?} */ CA.r;
+/** @type {?} */ CA.t;
 
 // what CA.state() returns
 /** @const */

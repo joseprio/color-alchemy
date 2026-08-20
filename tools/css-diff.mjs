@@ -11,7 +11,12 @@ const t = await launch({ url: "dist/bundle.html" });
 await t.sleep(1200);
 
 // exercise a few states so more rules are live than the title screen alone
-await t.evalJs(`CA.reset(); CA.attempt('red','green'); CA.dismiss();
+await t.evalJs(`CA.r(); CA.a('red','green'); CA.d();
+  // that attempt was a first-ever discovery, so the full-screen overlay is up
+  // and on a 2.75s timer to remove itself. Skip it: an element that deletes
+  // ITSELF part way through a two-pass snapshot lands in one pass and not the
+  // other, and every element after it then compares against its neighbour.
+  document.getElementById('disc').dispatchEvent(new PointerEvent('pointerdown'));
   document.getElementById('toast').className = 'show';
   document.querySelectorAll('.tile')[0].className = 'tile sel cur';
   document.querySelectorAll('.tile')[1].className = 'tile hit drop';`);

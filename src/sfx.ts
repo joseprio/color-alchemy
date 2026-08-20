@@ -17,7 +17,11 @@ export function setMuted(v: boolean): void {
 }
 
 export function ac(): AudioContext {
-  if (!AC) AC = new (window.AudioContext || (window as any).webkitAudioContext)();
+  // No webkitAudioContext fallback: unprefixed AudioContext landed in Safari
+  // 14.1, the same release that shipped flexbox gap — and the HUD, the
+  // cauldron and the overlay buttons are all flex rows with a gap, so a
+  // browser old enough to need the prefix cannot lay this game out anyway.
+  if (!AC) AC = new AudioContext();
   if (AC.state === "suspended") AC.resume();
   return AC;
 }

@@ -55,6 +55,19 @@ npm run audio-bench       # what a sample costs, against the callback budget
   removes and the id strings inside recipes were nearly free already.
   Measured, not reasoned about: pack the real chunk both ways before
   trading readability for bytes.
+- **The test hooks are named for the bundle, not for the reader.** `window.CA`
+  costs **105 B** — measured by building without it — because closure cannot
+  rename anything reachable from it and `closure-externs.js` pins the names.
+  58 B of that comes back for nothing: the members are one letter each, and
+  `CA.t()` answers with a POSITIONAL ARRAY rather than an object, since its
+  seven key names were pinned too. `check.mjs` puts the names back on at the
+  door, so the checks still read `s.found` and `s.moves`. The other 47 B
+  would mean shipping a bundle nobody tested, which is not a trade this
+  repo makes.
+- **innerHTML instead of textContent is NOT worth it: 3 B.** Nine writes, two
+  characters each, and roadroller predicts the longer word almost for free.
+  It would also make the first element named "Salt & Pepper" render wrong,
+  silently. Measured and rejected.
 - **No `const { sin, cos, ... } = Math`.** Destructuring Math into short
   locals is the classic size-golf move and it is **38 B WORSE** here.
   `Math.` is a five-character string repeated 37 times, which roadroller
