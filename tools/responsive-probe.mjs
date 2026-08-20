@@ -82,7 +82,7 @@ for (const [label, width, height, mobile] of SIZES) {
   await shot("title");
 
   // board with a dozen elements found
-  await t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Continue').click()`);
+  await t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
   await t.evalJs(`CA.reset();
     [['red','green'],['red','blue'],['green','blue'],['blue','yellow'],['red','yellow'],
      ['red','orange'],['blue','white'],['fire','air'],['sun','air'],['blue','cyan'],

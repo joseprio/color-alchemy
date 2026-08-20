@@ -69,7 +69,7 @@ console.log(`title screen, ${1.8}s after a gesture: ${onTitle} buffer(s) schedul
   (onTitle === 0 ? "  — silent, as intended" : "  — SHOULD BE SILENT"));
 
 const enterGame = () =>
-  t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => b.textContent === 'Continue').click()`);
+  t.evalJs(`[...document.querySelectorAll('#menu button')].find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
 await enterGame();
 await t.sleep(9000);
 const inGame = await count();

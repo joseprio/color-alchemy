@@ -63,7 +63,6 @@ const P = [
 ];
 
 const BASEFREQ = 453;          // the pitch every note ratio multiplies
-const { sin, cos, tan, min, max, floor, round, random, PI } = Math;
 const lerp = (a: number, b: number, x: number): number => x * b + (1 - x) * a;
 
 /* ------------------------------------------------------------- the generator */
@@ -87,8 +86,8 @@ export function sampler(SR: number): () => Float64Array {
       else if (v < 0) v += 2;
       return v - 1;
     }
-    if (kind == 2) return sin(2 * PI * x + 0.5 * (sin(4 * PI * x + m) + m));
-    return sin(2 * PI * x + m);
+    if (kind == 2) return Math.sin(2 * Math.PI * x + 0.5 * (Math.sin(4 * Math.PI * x + m) + m));
+    return Math.sin(2 * Math.PI * x + m);
   };
 
   // --- envelope: [value, stage, held, active, attack, decay, sustain, release]
@@ -99,13 +98,13 @@ export function sampler(SR: number): () => Float64Array {
     const out = e[0], top = e[5] ? 1 : e[6];
     if (!e[2] && e[1] != 3) e[1] = 3;
     if (!e[1]) {
-      e[0] = min(e[0] + 1 / SR / e[4], top);
+      e[0] = Math.min(e[0] + 1 / SR / e[4], top);
       if (e[0] == top) e[1] = e[5] ? 1 : 2;
     } else if (e[1] == 1) {
-      e[0] = max(e[0] - 1 / SR / e[5], e[6]);
+      e[0] = Math.max(e[0] - 1 / SR / e[5], e[6]);
       if (e[0] == e[6]) e[1] = e[6] ? 2 : 3;
     } else if (e[1] == 3) {
-      e[0] = max(e[0] - 1 / SR / e[7], 0);
+      e[0] = Math.max(e[0] - 1 / SR / e[7], 0);
       if (!e[0]) e[3] = 0;
     }
     return out;
@@ -113,7 +112,7 @@ export function sampler(SR: number): () => Float64Array {
 
   // --- LFO: smoothstep-interpolated random, bipolar. [freq, depth, phase, from, to]
   const lfo = (l: number[]): number => {
-    if (l[2] >= 1) { l[2] -= 1; l[3] = l[4]; l[4] = 2 * random() - 1; }
+    if (l[2] >= 1) { l[2] -= 1; l[3] = l[4]; l[4] = 2 * Math.random() - 1; }
     const p = l[2], c = 3 * p * p - 2 * p * p * p;
     l[2] += l[0] / SR;
     return (l[3] * (1 - c) + l[4] * c) * l[1];
@@ -138,16 +137,16 @@ export function sampler(SR: number): () => Float64Array {
   // Each effect is [kind, ...state]: 0 gain, 1 low-pass, 2 multi-tap delay,
   // 3 diffuser. Kinds 2 and 3 run 8 internal channels.
   const CH = 8;
-  const buf = (len: number): Float64Array => new Float64Array(max(1, round(len)));
+  const buf = (len: number): Float64Array => new Float64Array(Math.max(1, Math.round(len)));
 
   const gain = (db: number): any[] => [0, 2 ** (db / 6)];
 
   // The collapsed filter (see the header): per section, one state that both
   // channels run through, K the pole and G the gain.
   const lpf = (cut: number, order: number): any[] => {
-    const a = tan((PI * min(cut, 10300)) / SR), a2 = a * a, co: number[] = [];
+    const a = Math.tan((Math.PI * Math.min(cut, 10300)) / SR), a2 = a * a, co: number[] = [];
     for (let i = 0; i < order; i++) {
-      const r = sin((PI * (2 * i + 1)) / (4 * order)), s = a2 + 2 * a * r + 1;
+      const r = Math.sin((Math.PI * (2 * i + 1)) / (4 * order)), s = a2 + 2 * a * r + 1;
       co.push((2 * (1 - a2)) / s + (4 * a * r) / s - 1, (4 * a2) / s);
     }
     return [1, co, new Float64Array(order)];
@@ -165,13 +164,13 @@ export function sampler(SR: number): () => Float64Array {
   // its density.
   const diff = (maxdur: number): any[] => {
     const n = (maxdur / 1e3) * SR, bufs: Float64Array[] = [];
-    for (let c = 0; c < CH; c++) bufs.push(buf(floor((n * c) / CH + (n / CH) * random()) + 1));
+    for (let c = 0; c < CH; c++) bufs.push(buf(Math.floor((n * c) / CH + (n / CH) * Math.random()) + 1));
     return [3, bufs, 0, 0, 0, 0, 0, 0, 0, new Int32Array(CH)];
   };
 
   // [2, buffers, write index, feedback, mix, mod depth, per-channel angle step,
   //  cos/sin state, one-sample rotation, per-buffer pointers]. The read position
-  //  wobbles as cos(k·idx) per channel, which cost 16 Math.cos calls a sample —
+  //  wobbles as Math.cos(k·idx) per channel, which cost 16 Math.cos calls a sample —
   //  23% of the whole engine, measured. It is the same value stepped forward
   //  instead: rotating (cos, sin) by a fixed angle is four multiplies, and
   //  re-anchoring on Math.cos every 1024 samples keeps the drift at the noise
@@ -180,11 +179,11 @@ export function sampler(SR: number): () => Float64Array {
     const bufs: Float64Array[] = [], k = new Float64Array(CH);
     const cs = new Float64Array(2 * CH), ks = new Float64Array(2 * CH);
     for (let c = 0; c < CH; c++) {
-      bufs.push(buf(min((time / 1e3) * SR * 2 ** (c / CH), 1e6)));
-      k[c] = (modf * 2 * PI) / SR / 2 ** (c / CH);
-      cs[2 * c] = 1;                              // cos(0), sin(0) at idx 0
-      ks[2 * c] = cos(k[c]);                      // the one-sample rotation
-      ks[2 * c + 1] = sin(k[c]);
+      bufs.push(buf(Math.min((time / 1e3) * SR * 2 ** (c / CH), 1e6)));
+      k[c] = (modf * 2 * Math.PI) / SR / 2 ** (c / CH);
+      cs[2 * c] = 1;                              // Math.cos(0), Math.sin(0) at idx 0
+      ks[2 * c] = Math.cos(k[c]);                      // the one-sample rotation
+      ks[2 * c + 1] = Math.sin(k[c]);
     }
     return [2, bufs, 0, fdbk, mix, (SR / 960) * mod, k, cs, ks, new Int32Array(CH)];
   };
@@ -246,18 +245,18 @@ export function sampler(SR: number): () => Float64Array {
     const k: Float64Array = f[6], cs: Float64Array = f[7], ks: Float64Array = f[8];
     const anchor = (idx & 1023) == 0;
     for (let i = 0; i < CH; i++) {
-      if (anchor) { cs[2 * i] = cos(k[i] * idx); cs[2 * i + 1] = sin(k[i] * idx); }
+      if (anchor) { cs[2 * i] = Math.cos(k[i] * idx); cs[2 * i + 1] = Math.sin(k[i] * idx); }
       const b = bufs[i], L = b.length;
       // The read runs AHEAD of the write by the wobble, never by more than the
       // shortest buffer (43 samples against 96 at the shipped settings), so one
       // conditional subtract wraps it — no modulo, and the integer part and the
       // fraction come off the offset rather than off idx + offset, which is also
       // steadier once idx is in the tens of millions.
-      // max(0, …) is not cosmetic: the rotation can leave cs a few 1e-16 ABOVE
+      // Math.max(0, …) is not cosmetic: the rotation can leave cs a few 1e-16 ABOVE
       // 1, where Math.cos never could, and then the offset goes negative, the
       // read index lands on -1, and a Float64Array returns undefined — silent
       // NaN through the whole mix. It bit at 0.5s in.
-      const d = max(0, f[5] * (1 - cs[2 * i])), di = floor(d);
+      const d = Math.max(0, f[5] * (1 - cs[2 * i])), di = Math.floor(d);
       let p = ptr[i] + di;
       if (p >= L) p -= L;
       let q = p + 1;
@@ -402,7 +401,7 @@ let inGame = false;                // the board is up, rather than the title scr
 function pump(): void {
   if (!next || !bus) return;
   try {
-    const c = ac(), N = round(CHUNK * SONG_SR);
+    const c = ac(), N = Math.round(CHUNK * SONG_SR);
     // behind the clock means the queue ran dry — a long stall, or the tab was
     // frozen. Start again from now rather than scheduling into the past.
     if (at < c.currentTime) at = c.currentTime + 0.1;

@@ -55,6 +55,12 @@ npm run audio-bench       # what a sample costs, against the callback budget
   removes and the id strings inside recipes were nearly free already.
   Measured, not reasoned about: pack the real chunk both ways before
   trading readability for bytes.
+- **No `const { sin, cos, ... } = Math`.** Destructuring Math into short
+  locals is the classic size-golf move and it is **38 B WORSE** here.
+  `Math.` is a five-character string repeated 37 times, which roadroller
+  predicts almost for free, where the destructuring pattern is a one-off
+  it has to spell out in full. Same lesson as the element table: repetition
+  is cheap, novelty is not.
 - Two risks come with that, and both have a probe rather than an assumption
   behind them. `npm run fouc-check` times the moment the sheet lands against the
   browser's own first-paint entry (the sheet is applied by a script at the end of
