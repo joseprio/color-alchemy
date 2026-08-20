@@ -89,7 +89,7 @@ export const ELEMENTS = ([
        "transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%)," +
        "linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)",
     r:[["earth","fire"]] },
-  { id:"volcano", e:"\u{1F30B}", q:"A mountain that kept the receipt.",
+  { id:"volcano", e:"\u{1F30B}", q:"Mountain with a temper.",
     r:[["lava","earth"]] },
   { id:"stone", e:"\u{1FAA8}", q:"Every stone holds a statue; the sculptor merely reveals it.",
     r:[["lava","water"]] },
