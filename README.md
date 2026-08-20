@@ -91,6 +91,29 @@ npm run audio-bench       # what a sample costs, against the callback budget
   characters each, and roadroller predicts the longer word almost for free.
   It would also make the first element named "Salt & Pepper" render wrong,
   silently. Measured and rejected.
+- **Event handlers are properties, not listeners: -6 B.** Every listener in the
+  game is the only one on its target for that event, so `addEventListener("click",
+  fn)` is `onclick = fn`. The trap is closure: the pinned 2021 compiler knows
+  `onclick` and `onkeydown` but not `onpointer*` or `onanimationend`, and it
+  silently RENAMES an unquoted assignment to those — a bundle that boots and
+  quietly cannot drag. Written quoted (`d["onpointerdown"] = …`) they survive,
+  and terser folds them to dot form downstream. Straight from galaxy-raid's
+  OPTIMIZATIONS.md #53, which found the same trap.
+- **The gamepad lookup lost its try/catch and its loop: -19 B.** One
+  `.find(g => g && g.connected)` over `getGamepads()` replaces a try, a
+  feature-tested temporary and a for-with-break. The feature test itself stays:
+  `getGamepads` is `[SecureContext]`, so it is undefined when `npm run phone`
+  serves the page over plain http to a device, and calling it would throw out of
+  the rAF loop — killing the loop, not just the pad. `?.()` says that in fewer
+  bytes and cannot be used: the closure plugin re-parses closure's output with an
+  acorn-walk too old to visit a ChainExpression, and the build dies in that parse.
+- **Measured and rejected in the input path.** `e.keyCode` numbers instead of
+  `e.key` strings is **-12 B** and was not taken: it trades a live API for a
+  deprecated one and adds a second key/number contract, since check.mjs's
+  synthetic events would have to carry `keyCode` too — a sync hazard for 0.1% of
+  the budget, with 800 B of headroom in hand. Deleting the `initKeyboard()`
+  wrapper now that it holds one assignment is **+2 B**: closure already inlined
+  it, and the import-for-side-effect shape costs more than the call did.
 - **No `const { sin, cos, ... } = Math`.** Destructuring Math into short
   locals is the classic size-golf move and it is **38 B WORSE** here.
   `Math.` is a five-character string repeated 37 times, which roadroller

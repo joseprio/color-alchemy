@@ -31,6 +31,15 @@ var localStorage;
 var gl, hd, mv, ct, bq, ht, sn, mn, dk, cd, ca, cb, cr, cq, gd;
 var ti, tw, tl, tb, mu, mh, ml, mb, ds, to, ov, oc, ob, st;
 
+// Handler PROPERTIES are the other half of this problem, and they are fixed at
+// the call site rather than here: this compiler knows onclick and onkeydown but
+// NOT onpointer*/onanimationend, and it renames an unquoted assignment to them
+// into something the browser never fires — a build that boots and quietly does
+// not drag. Written quoted (d["onpointerdown"] = ...) they survive, and terser
+// folds them back to dot form for free. Pinning them here instead would mean
+// declaring them on Element.prototype, which is more externs for the same
+// result. galaxy-raid OPTIMIZATIONS.md #53 hit this first.
+
 // DOM property names this compiler's externs are too old to know. Renaming
 // these does NOT fail the build, it just produces something that runs:
 //   gridTemplateColumns  read off getComputedStyle to count grid columns —

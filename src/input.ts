@@ -12,7 +12,7 @@ import {
 
 /* --------------------------------------------------------------- keyboard */
 export function initKeyboard(): void {
-  window.addEventListener("keydown", e => {
+  window.onkeydown = e => {
     const k = e.key;
     if (!e.repeat && k === "m") { muteToggle(); e.preventDefault(); return; }
     const p = phase();
@@ -44,7 +44,7 @@ export function initKeyboard(): void {
     else if (k === "Escape") { if (!clearSel()) openMenu(); } // Esc: cancel, else pause
     else return;
     e.preventDefault();
-  });
+  };
 }
 
 /* ---------------------------------------------------------------- gamepad */
@@ -65,13 +65,14 @@ let prevA = false, prevB = false, prevX = false, prevY = false, prevStart = fals
 const dirHeld: Partial<Record<Dir, { since: number; last: number }>> = {};
 
 export function pollPad(now: number): void {
-  let pad: Gamepad | null = null;
-  try {
-    const gps = navigator.getGamepads ? navigator.getGamepads() : [];
-    for (const g of gps) if (g && g.connected) { pad = g; break; }
-  } catch {}
-  if (!pad) return;
-  const p0 = pad; // const-bind: let-narrowing does not survive into closures
+  // The feature test stays — getGamepads is [SecureContext], so it is undefined
+  // when the phone probe serves the page over plain http, and calling it would
+  // throw out of the rAF loop that polls this, killing the loop and not just
+  // the pad. (?. would say it in fewer bytes, but the closure plugin re-parses
+  // closure's output with an acorn too old to walk a ChainExpression.)
+  const p0 = (navigator.getGamepads ? navigator.getGamepads() : [])
+    .find(g => g && g.connected);
+  if (!p0) return;
   const bt = (i: number): boolean => !!(p0.buttons[i] && p0.buttons[i].pressed);
   const ax = (i: number): number => (p0.axes && p0.axes[i]) || 0;
   const dirs: Record<Dir, boolean> = {

@@ -133,22 +133,22 @@ function addTile(id: string): void {
   d.dataset.id = id;
   d.innerHTML = '<div class="o">' + iconHtml(el) + '</div><div class="n">' + el.n + "</div>";
   const i = order.length;
-  d.addEventListener("click", () => {
+  d.onclick = () => {
     if (performance.now() < clickGuard) return; // that click ended a drag
     padMode = false;
     renderFocus();
     selectAt(i);
-  });
+  };
   // a reaction class clears itself; the arrival pop ends here too, and marks
   // the tile settled so no later class change replays it
-  d.addEventListener("animationend", () => {
+  d["onanimationend"] = () => {
     d.classList.remove("x", "h");
     d.classList.add("z");
-  });
-  d.addEventListener("pointerdown", e => startPress(e, i));
-  d.addEventListener("pointermove", onPressMove);
-  d.addEventListener("pointerup", onPressUp);
-  d.addEventListener("pointercancel", cancelPress);
+  };
+  d["onpointerdown"] = e => startPress(e, i);
+  d["onpointermove"] = onPressMove;
+  d["onpointerup"] = onPressUp;
+  d["onpointercancel"] = cancelPress;
   order.push(id);
   tiles.push(d);
   gd.appendChild(d);
@@ -480,7 +480,7 @@ function openOverlay(html: string, buttons: OverlayButton[]): void {
   buttons.forEach(([label, fn]) => {
     const b = document.createElement("button");
     b.textContent = label;
-    b.addEventListener("click", fn);
+    b.onclick = fn;
     ob.appendChild(b);
     obFns.push(fn);
   });
@@ -644,8 +644,8 @@ function paintMenu(): void {
     const j = n++;
     const b = document.createElement("button");
     b.textContent = label;
-    b.addEventListener("click", () => fn(j));
-    b.addEventListener("pointerenter", () => { mCur = j; mPaint(); });
+    b.onclick = () => fn(j);
+    b["onpointerenter"] = () => { mCur = j; mPaint(); };
     mu.appendChild(b);
   });
   mCur = 0;
@@ -752,12 +752,12 @@ export function reset(): void {
 
 /* -------------------------------------------------------------------- boot */
 export function boot(): void {
-  mn.addEventListener("click", openMenu);
-  sn.addEventListener("click", muteToggle);
+  mn.onclick = openMenu;
+  sn.onclick = muteToggle;
   paintSound();
-  ht.addEventListener("click", hint);
-  ca.addEventListener("click", unlock);   // the X empties the locked slot
-  ds.addEventListener("pointerdown", closeDisc);   // a tap anywhere skips it
+  ht.onclick = hint;
+  ca.onclick = unlock;                  // the X empties the locked slot
+  ds["onpointerdown"] = closeDisc;      // a tap anywhere skips it
   // non-passive so an active drag can stop a pan from starting; until the
   // long-press lifts the tile, touch scrolling behaves normally
   window.addEventListener("touchmove", e => { if (dragging) e.preventDefault(); }, { passive: false });
