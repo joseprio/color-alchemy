@@ -35,7 +35,7 @@ body {
     radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
 }
 
-header { margin: 14px 0 0; text-align: center; }
+h { margin: 14px 0 0; text-align: center; }
 h1 {
   margin: 0; font-size: 26px; letter-spacing: .18em; font-weight: 700;
   background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff);
@@ -179,7 +179,7 @@ h1 {
    not margin: a trailing margin — and body's own padding, body being height:100%
    with overflowing content — is clipped from the scrollable overflow. Padding
    inside the last element is real box height, so it survives. */
-footer {
+f {
   margin: 4px 0 18px; color: #55708e; font-size: 11px;
   text-align: center; padding: 0 12px calc(var(--dock) + 8px);
 }
@@ -288,7 +288,7 @@ footer {
   flex-direction: column; align-items: center; justify-content: center; gap: 8px;
 }
 .C.w { display: flex; }
-body.M header, body.M #hd, body.M #gd, body.M footer,
+body.M h, body.M #hd, body.M #gd, body.M f,
 body.M #dk { display: none; }
 /* The title lockup: shrink-to-fit, so its width is COLOR's width and #tb
    below spreads AlchemY across the same measure. Nothing here is tuned per
