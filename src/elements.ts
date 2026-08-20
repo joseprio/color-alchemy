@@ -165,7 +165,7 @@ export const ELEMENTS = ([
     r:[["animal","plant"]] },
   { id:"squirrel", e:"\u{1F43F}\u{FE0F}", q:"Buries more than it will ever dig up.",
     r:[["animal","tree"]] },
-  { id:"bird", e:"\u{1F426}", q:"The animal that gave up on the ground.",
+  { id:"bird", e:"\u{1F426}", q:"To have faith is to have wings.",
     r:[["air","animal"],["air","penguin"]] },
   { id:"chick", e:"\u{1F425}", q:"The egg, arguing its way out.",
     r:[["egg","bird"]] },
