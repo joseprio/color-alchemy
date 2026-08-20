@@ -1,0 +1,628 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — cauldron variations. Open it in a browser; nothing to build.
+     Click a card — or press its number — for the full-size view, arrows to move
+     between options, C to hide the notes, Esc back.
+
+     WHAT CHANGED FROM THE FIRST ROUND. The cauldron won, so this round is five
+     cauldrons rather than five different boards. Two things drive the set:
+
+       LOCKING. Every variation except the baseline answers the same question —
+       once you are holding Fire, how do you try Fire against ten other things
+       without re-picking Fire ten times? Each one answers it differently, and
+       they are not mutually exclusive: 2 and 4 are the same padlock in two
+       modes, and 3 is 2 with the tile grid swapped for a list.
+
+       TILES AND LISTS, NOT CHIPS. The pill chips are gone. The board is a tile
+       grid — the same shape that ships today, at 72px instead of 92px so more
+       than two rows fit under the altar — and where a proposal wants a lot of
+       elements legible at once it uses a list of rows instead.
+
+     The old board is still here as option 6, unchanged, for scale.
+
+     FOUR RULES EVERY PROPOSAL BELOW OBEYS.
+
+       1. THE 13KB BUDGET IS THE REAL CONSTRAINT. dist/bundle.html is 12001 B of
+          13312 — about 1.3KB spare, and that is before roadroller is re-fitted.
+          Each card carries an honest estimate of what it would add, compressed,
+          and the estimates are the first thing to argue with.
+
+       2. NOTHING NEW IS FETCHED. No webfont, no icon set, no image. Every icon
+          below is one the game already draws — an emoji, a CSS swatch, or
+          Prism's inline SVG — read straight out of src/elements.ts, all 77 of
+          them, so the density claims are measured rather than asserted.
+
+       3. EVERY INPUT SURVIVES. Mouse, touch, keyboard and gamepad reach every
+          control, locking included: each card names the key and the pad button
+          it would take. check.mjs drives all four and would have to keep
+          passing.
+
+       4. IT WORKS AT 320px. The repo ships mobile shots from 320 to 844, so
+          each card states what the layout does when the screen is narrow.
+
+     ONE THING TO KNOW BEFORE READING THE COSTS. The game already stores every
+     route you have actually performed — that is what the encyclopedia lists —
+     so a tick against a pair you have made is nearly free. It does NOT store
+     pairs you tried that made nothing, and option 3 wants exactly that. New
+     persistent state, and the card says so.
+
+     The mockups are real HTML and CSS, not pictures, but they are not wired to
+     the game: the padlocks and filters do just enough to show the idea. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — cauldron variations</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    background-attachment: fixed;
+    padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 88ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 18px; }
+  kbd {
+    background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+    padding: 1px 6px; color: #7f9fc0; font: inherit; font-size: 12px;
+  }
+
+  /* --- the budget strip: the number every proposal is measured against ----- */
+  .budget {
+    border: 1px solid #223052; border-radius: 10px; background: #0a0f1e88;
+    padding: 12px 16px; margin: 0 0 26px; max-width: 88ch;
+  }
+  .budget .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .budget .cap { color: #55708e; font-size: 12px; letter-spacing: .1em; }
+  .budget .num { color: #fff; }
+  .budget .num b { color: #ffd75e; }
+  .bar {
+    height: 10px; border-radius: 5px; background: #131a30; margin: 9px 0 6px;
+    overflow: hidden; border: 1px solid #223052;
+  }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, #34d158, #ffdc32 78%, #ff6b6b); }
+  .budget .note { color: #55708e; font-size: 12px; }
+
+  /* --- the grid of proposals ---------------------------------------------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 22px; }
+  .card {
+    border: 1px solid #223052; border-radius: 12px; background: #0c112288;
+    overflow: hidden; cursor: pointer; transition: border-color .12s, transform .12s;
+  }
+  .card:hover { border-color: #3d5584; transform: translateY(-2px); }
+  .card h2 {
+    margin: 0; padding: 10px 14px; font-size: 13px; letter-spacing: .16em;
+    color: #fff; border-bottom: 1px solid #223052; font-weight: 700;
+    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+  }
+  .card h2 em { font-style: normal; color: #55708e; letter-spacing: 0; font-size: 12px; }
+  .frame { width: 100%; aspect-ratio: 900 / 600; overflow: hidden; position: relative; background: #05060f; }
+  .frame > .stage { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  .cardnote { padding: 11px 14px 13px; color: #8fb4d8; font-size: 12.5px; }
+  .cardnote .thesis { color: #cfe3ff; margin: 0 0 7px; }
+  .cardnote dl { margin: 0; display: grid; grid-template-columns: 7.5em 1fr; gap: 3px 10px; }
+  .cardnote dt { color: #55708e; }
+  .cardnote dd { margin: 0; }
+  .cost { color: #ffd75e; }
+  .cost.ok { color: #7dff9a; }
+
+  /* --- the full-size view -------------------------------------------------- */
+  #full {
+    position: fixed; inset: 0; z-index: 20; background: #04060cfb; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px;
+  }
+  #full.show { display: flex; }
+  #fullHead { display: flex; gap: 16px; align-items: baseline; width: min(1500px, 96vw, calc((100vh - 270px) * 1.5)); }
+  #fullName { color: #fff; letter-spacing: .14em; font-weight: 700; }
+  #fullOf { color: #55708e; margin-left: auto; }
+  #fullWrap {
+    width: min(1500px, 96vw, calc((100vh - 270px) * 1.5)); aspect-ratio: 900 / 600;
+    position: relative; overflow: hidden; border: 1px solid #223052; border-radius: 12px;
+  }
+  #fullWrap > .stage { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  #fullNote { width: min(1500px, 96vw, calc((100vh - 270px) * 1.5)); color: #8fb4d8; font-size: 13px; }
+  #fullNote dl { margin: 8px 0 0; display: grid; grid-template-columns: 8em 1fr; gap: 4px 12px; }
+  #fullNote dt { color: #55708e; }
+  #fullNote dd { margin: 0; }
+  #full.bare #fullNote, #full.bare #fullHead { display: none; }
+
+  /* ======================================================================== */
+  /*  MOCKUPS. Every stage is laid out at exactly 900x600 and scaled to fit.   */
+  /*  The palette is the game's own, so a proposal reads as this game and not  */
+  /*  as a different one wearing its elements.                                 */
+  /* ======================================================================== */
+  .stage {
+    width: 900px; height: 600px; overflow: hidden; position: relative;
+    background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .stage .sw { width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 0 10px 1px var(--g, transparent); }
+  .stage .ico { height: 42px; display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 1; }
+  .wm {
+    font-weight: 700; letter-spacing: .18em;
+    background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* ---------- the shared top bar ------------------------------------------ */
+  .bar2 {
+    width: 100%; display: flex; align-items: center; gap: 16px;
+    padding: 11px 20px; border-bottom: 1px solid #16203a; font-size: 12.5px; color: #8fb4d8;
+  }
+  .bar2 .wm { font-size: 14px; }
+  .bar2 b { color: #fff; }
+  .bar2 .gold { color: #ffd75e; }
+  .bar2 .spacer { margin-left: auto; }
+
+  /* ---------- the tile, used by every board below -------------------------- */
+  .tl {
+    width: 72px; padding: 7px 3px 6px; text-align: center;
+    background: #0c1122cc; border: 1px solid #223052; border-radius: 10px;
+    line-height: 1;
+  }
+  .tl .ico { height: 30px; font-size: 24px; }
+  .tl .sw { width: 24px; height: 24px; border-radius: 5px; }
+  .tl .nm { margin-top: 5px; font-size: 10.5px; color: #b9d2ee; line-height: 1.2; }
+  .tl.sel { border-color: #ffd75e; background: #1a1a10cc; box-shadow: 0 0 12px #ffd75e33; }
+  .tl.lock { border-color: #ffd75e; }
+  .tl.done { opacity: .4; }
+  .board { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 20px 0; justify-content: center; align-content: flex-start; }
+  .fade {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 76px; pointer-events: none;
+    background: linear-gradient(180deg, transparent, #05060f 72%);
+    display: flex; align-items: flex-end; justify-content: center; padding-bottom: 9px;
+    color: #55708e; font-size: 11.5px; letter-spacing: .06em;
+  }
+
+  /* ---------- the altar: slots, result well, padlock ----------------------- */
+  .altar { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 18px 0 4px; }
+  .slot {
+    position: relative; width: 104px; height: 104px; border-radius: 18px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+    border: 1px solid #223052; background: #0c1122cc; font-size: 12.5px; color: #b9d2ee;
+  }
+  .slot .ico { height: 44px; font-size: 36px; }
+  .slot .sw { width: 40px; height: 40px; border-radius: 8px; }
+  .slot.empty { border-style: dashed; border-color: #1d2a49; color: #2b3a5e; }
+  .slot.empty .ico { font-size: 24px; color: #1d2a49; }
+  .slot.waiting { border-style: dashed; border-color: #33e9e9; color: #33e9e9; box-shadow: 0 0 18px #33e9e922; }
+  .slot.waiting .ico { font-size: 26px; color: #33e9e9; }
+  .slot.pinned { border-color: #ffd75e; background: #14120acc; box-shadow: 0 0 20px #ffd75e22; }
+  .pad {
+    position: absolute; top: -9px; right: -9px; width: 24px; height: 24px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 11px;
+    background: #14120a; border: 1px solid #ffd75e; color: #ffd75e;
+  }
+  .pad.off { background: #0c1122; border-color: #2a3555; color: #3d5584; }
+  .op { font-size: 20px; color: #33e9e9; }
+  .well {
+    width: 124px; height: 124px; border-radius: 22px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 5px;
+    border: 1px solid #ffd75e; background: #14120acc; color: #ffd75e; font-size: 12.5px;
+    box-shadow: 0 0 34px #ffd75e22, inset 0 0 26px #ffd75e11;
+  }
+  .well .ico { height: 52px; font-size: 44px; }
+  .well .sw { width: 48px; height: 48px; border-radius: 10px; }
+  .well.quiet { border-style: dashed; border-color: #2a3555; background: #0c1122cc; color: #3d5584; box-shadow: none; }
+  .well.quiet .ico { font-size: 30px; color: #2a3555; }
+  .sub { text-align: center; color: #8fb4d8; font-size: 12.5px; padding: 0 20px; }
+  .sub i { color: #55708e; font-style: normal; }
+  .sub .k { color: #ffd75e; }
+  .rule { width: 660px; height: 1px; background: #16203a; margin: 9px auto 0; }
+
+  /* ---------- 3. the sweep list -------------------------------------------- */
+  .s3 .body { flex: 1; width: 100%; display: flex; min-height: 0; }
+  .s3 .held {
+    width: 262px; border-right: 1px solid #16203a; padding: 24px 20px 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center;
+  }
+  .s3 .held .big { font-size: 60px; line-height: 1; height: 62px; display: flex; align-items: center; }
+  .s3 .held .big .sw { width: 60px; height: 60px; border-radius: 12px; }
+  .s3 .held h3 { margin: 0; font-size: 19px; color: #fff; font-weight: 700; }
+  .s3 .held .padrow {
+    display: flex; align-items: center; gap: 7px; color: #ffd75e; font-size: 11.5px;
+    border: 1px solid #ffd75e; border-radius: 999px; padding: 4px 12px; background: #14120acc;
+  }
+  .s3 .held .tally { color: #55708e; font-size: 11.5px; }
+  .s3 .held .tally b { color: #8fb4d8; }
+  /* grouped with the tally rather than pinned to the panel floor, where the
+     second line was landing on the 600px edge */
+  .s3 .held .hintkeys { color: #2b3a5e; font-size: 11px; margin-top: 8px; }
+  .s3 .listwrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .s3 .filter {
+    margin: 12px 18px 6px; display: flex; align-items: center; gap: 9px;
+    background: #0a0f1e; border: 1px solid #2a3555; border-radius: 7px; padding: 6px 11px;
+    color: #55708e; font-size: 12.5px;
+  }
+  .s3 .filter b { color: #cfe3ff; font-weight: 400; }
+  .s3 .filter .n { margin-left: auto; }
+  .s3 .list { flex: 1; overflow: hidden; padding: 0 18px; }
+  .s3 .row {
+    display: flex; align-items: center; gap: 11px; padding: 4px 10px;
+    border-bottom: 1px solid #101a2e; font-size: 12.5px; color: #b9d2ee;
+  }
+  .s3 .row .sw { width: 20px; height: 20px; border-radius: 4px; }
+  .s3 .row .em { width: 20px; text-align: center; font-size: 16px; }
+  .s3 .row .made { margin-left: auto; color: #7dff9a; }
+  .s3 .row .none { margin-left: auto; color: #3d4d6b; }
+  .s3 .row .new { margin-left: auto; color: #33e9e9; }
+  .s3 .row.hi { background: #101a2e; border-radius: 6px; color: #fff; border-bottom-color: transparent; }
+  /* the list scrolls, the held panel does not: fade the right column only */
+  .s3 .fade { left: 262px; }
+  .s3 .filter i { color: #3d4d6b; font-style: normal; }
+
+  /* ---------- 5. the pin rail ---------------------------------------------- */
+  .s5 .body { flex: 1; width: 100%; display: flex; min-height: 0; }
+  .s5 .rail {
+    width: 112px; border-right: 1px solid #16203a; padding: 12px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .s5 .rail .cap { color: #55708e; font-size: 10px; letter-spacing: .16em; margin-bottom: 2px; }
+  .s5 .rail .tl { width: 78px; }
+  .s5 .rail .tl.on { border-color: #33e9e9; box-shadow: 0 0 14px #33e9e933; }
+  .s5 .rail .add {
+    width: 78px; height: 44px; border: 1px dashed #223052; border-radius: 10px;
+    display: grid; place-items: center; color: #2b3a5e; font-size: 18px;
+  }
+  .s5 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .s5 .rule { width: 560px; }
+
+  /* ---------- 6. ships today ------------------------------------------------ */
+  .s6 header { margin: 14px 0 0; text-align: center; }
+  .s6 h1.wm { margin: 0; font-size: 26px; }
+  .s6 .goal { margin: 4px 0 0; color: #8fb4d8; font-size: 13px; }
+  .s6 .hud { display: flex; gap: 18px; align-items: center; justify-content: center; margin: 10px 0 4px; font-size: 13px; }
+  .s6 .hud b { color: #fff; }
+  .s6 .hud .best { color: #ffd75e; }
+  .s6 .hud button {
+    background: #101528; color: #7f9fc0; border: 1px solid #2a3555;
+    font: inherit; font-size: 12px; padding: 2px 10px; border-radius: 6px;
+  }
+  .s6 .hud button i { font-style: normal; color: #55708e; margin-left: 6px; }
+  .s6 .grid9 {
+    display: grid; grid-template-columns: repeat(auto-fill, 92px); gap: 10px;
+    justify-content: center; width: 640px; margin: 12px 0 8px; padding: 0 4px 8px;
+  }
+  .s6 .t9 {
+    width: 92px; padding: 10px 4px 8px; text-align: center;
+    background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+  }
+  .s6 .t9 .nm { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
+</style>
+</head>
+<body>
+
+<h1>COLOR ALCHEMY — CAULDRON VARIATIONS</h1>
+<p class="lede">
+  Five cauldrons and the board that ships today. The question every variation
+  answers differently: <b>once you are holding Fire, how do you try it against
+  ten other things without picking Fire up ten times?</b> Tiles and lists
+  throughout &mdash; no chips. Every board shows the same late-game state,
+  <b>all 77 discovered</b>, with the real icons from <b>src/elements.ts</b>.
+</p>
+<p class="keys">
+  <kbd>1</kbd>&ndash;<kbd>6</kbd> open &middot; <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot;
+  <kbd>C</kbd> hide notes &middot; <kbd>Esc</kbd> back
+</p>
+
+<div class="budget">
+  <div class="row">
+    <span class="cap">THE BUDGET EVERY PROPOSAL SPENDS FROM</span>
+    <span class="num">dist/bundle.html <b>12 001 B</b> of 13 312</span>
+  </div>
+  <div class="bar"><i style="width:90.2%"></i></div>
+  <div class="note">
+    1 311 B spare, 90.2% used, and roadroller's config is ~2% stale &mdash;
+    re-fitting it (<b>npm run roadroller-optimize</b>) is worth doing before
+    spending any of this. Every estimate below is compressed bytes, and every
+    one is a guess until someone builds it.
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div id="full">
+  <div id="fullHead"><span id="fullName"></span><span id="fullOf"></span></div>
+  <div id="fullWrap"></div>
+  <div id="fullNote"></div>
+</div>
+
+<script>
+/* The 77 elements, extracted from src/elements.ts. Shape matches ElementDef:
+   n = name, e = emoji, c = colour swatch, bg = full background stack,
+   s = inline SVG body, r = recipes. */
+const ELS = [{"id":"red","n":"Red","q":"The first spark. Everything warm starts here.","c":"#ff3b30"},{"id":"green","n":"Green","q":"The color of things that insist on growing.","c":"#34d158"},{"id":"blue","n":"Blue","q":"Deep and calm, like the start of a sky.","c":"#2f6bff"},{"id":"yellow","n":"Yellow","q":"Two lights make a brighter one. This is not paint.","c":"#ffdc32","r":[["red","green"]]},{"id":"magenta","n":"Magenta","q":"A color your brain made up. There is no magenta wavelength.","c":"#ff44ff","r":[["red","blue"]]},{"id":"cyan","n":"Cyan","q":"Shallow seas and old terminals.","c":"#33e9e9","r":[["green","blue"]]},{"id":"white","n":"White Light","q":"Every color at once, hiding in plain sight.","c":"#ffffff","r":[["blue","yellow"],["red","cyan"],["green","magenta"]]},{"id":"orange","n":"Orange","q":"Named after the fruit — not the other way around.","c":"#ff9430","r":[["red","yellow"]]},{"id":"violet","n":"Violet","q":"The last color the rainbow remembers.","c":"#9a4dff","r":[["blue","magenta"]]},{"id":"indigo","n":"Indigo","q":"Newton wanted seven colors, so he found room for this one.","c":"#4a30d8","r":[["blue","violet"]]},{"id":"pink","n":"Pink","q":"Softness, weaponized.","c":"#ffa8c5","r":[["red","white"]]},{"id":"air","n":"Air","q":"You only notice it when it moves.","e":"💨","r":[["blue","white"]]},{"id":"sky","n":"Sky","q":"Look up. It keeps going.","c":"#7ec8ff","bg":"radial-gradient(circle at 68% 30%, #fff3a0 0 6%, #ffdc32 6% 13%, transparent 17%),radial-gradient(circle at 68% 30%, #ffdc3244 0 22%, transparent 30%),linear-gradient(180deg, #a8dbff 0%, #7ec8ff 55%, #4f9fe8 100%)","r":[["air","blue"]]},{"id":"gold","n":"Gold","q":"Alchemists chased this for centuries. You mixed two squares.","c":"#f7c948","r":[["yellow","orange"]]},{"id":"water","n":"Water","q":"It only looks blue because it borrowed the sky.","e":"💧","r":[["blue","cyan"],["fire","ice"]]},{"id":"fire","n":"Fire","q":"The oldest alchemy there is.","e":"🔥","r":[["red","air"],["fire","charcoal"],["fire","air"]]},{"id":"earth","n":"Earth","q":"The other three get the poetry. This one grows the food.","c":"#a4713f","bg":"radial-gradient(circle at 30% 35%, #7a4a26cc 0 5%, transparent 9%),radial-gradient(circle at 62% 60%, #5c3a1e 0 4%, transparent 8%),radial-gradient(circle at 78% 28%, #b98a55 0 4%, transparent 8%),radial-gradient(circle at 42% 78%, #5c3a1e 0 4.5%, transparent 8%),radial-gradient(circle at 15% 65%, #b98a55aa 0 3.5%, transparent 7%),linear-gradient(180deg, #a4713f 0%, #7c5230 55%, #59391f 100%)","r":[["green","orange"]]},{"id":"clay","n":"Clay","q":"Earth that agreed to hold a shape.","c":"#c1663c","bg":"radial-gradient(circle at 33% 26%, #ffc49faa 0 11%, transparent 32%),linear-gradient(150deg, #d4794c 0%, #c1663c 46%, #8f4526 100%)","r":[["earth","water"]]},{"id":"pottery","n":"Pottery","q":"Clay that met a fire and kept the shape.","e":"🏺","r":[["clay","fire"]]},{"id":"lava","n":"Lava","q":"The ground, briefly reconsidering.","c":"#ff5a1f","bg":"radial-gradient(circle at 27% 32%, #ffe08a 0 3.5%, transparent 7%),radial-gradient(circle at 72% 62%, #ffc04dcc 0 4%, transparent 8%),linear-gradient(108deg, #2b0e07 0 14%, transparent 14% 27%, #1f0905 27% 35%,transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%),linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)","r":[["earth","fire"]]},{"id":"volcano","n":"Volcano","q":"A mountain that kept the receipt.","e":"🌋","r":[["lava","earth"]]},{"id":"stone","n":"Stone","q":"Cooled, hardened, and in no hurry.","c":"#9aa4ad","bg":"radial-gradient(circle at 30% 32%, #6f7880 0 5%, transparent 9%),radial-gradient(circle at 66% 58%, #c8d0d8aa 0 4%, transparent 8%),radial-gradient(circle at 78% 26%, #5c646c 0 3.5%, transparent 7%),radial-gradient(circle at 40% 76%, #b6c0c8aa 0 3.5%, transparent 7%),linear-gradient(160deg, #aab4bd 0%, #8b959d 55%, #626a72 100%)","r":[["lava","water"]]},{"id":"metal","n":"Metal","q":"Stone, refined until it rings.","c":"#c3ced9","bg":"linear-gradient(120deg, transparent 0 30%, #ffffffaa 30% 38%, transparent 38% 62%,#ffffff55 62% 68%, transparent 68%),linear-gradient(180deg, #e6edf3 0%, #aab6c2 38%, #6e7a86 62%, #cdd7e0 100%)","r":[["fire","stone"]]},{"id":"knife","n":"Knife","q":"The oldest tool that still lives in a drawer.","e":"🔪","r":[["fire","metal"]]},{"id":"axe","n":"Axe","q":"The first machine. Everything after is optimization.","e":"🪓","r":[["wood","metal"]]},{"id":"sand","n":"Sand","q":"What mountains become, given enough wind.","c":"#e0c078","bg":"radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%),radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%),radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%),linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)","r":[["earth","air"],["earth","sun"],["stone","air"]]},{"id":"glass","n":"Glass","q":"Sand, taught to tell the truth.","c":"#bfe6f2","bg":"linear-gradient(135deg, transparent 0 28%, #ffffff99 28% 37%, transparent 37% 54%, #ffffff55 54% 60%, transparent 60% 100%),linear-gradient(180deg, #d8f1f8 0%, #a8d8ea 60%, #8ec4dc 100%)","r":[["sand","fire"]]},{"id":"mirror","n":"Mirror","q":"Who's the Fairest of Them All?","e":"🪞","r":[["glass","metal"]]},{"id":"sun","n":"Sun","q":"A very local star.","e":"☀️","r":[["fire","sky"]]},{"id":"night","n":"Night","q":"The sky, resting.","c":"#4a7fd0","bg":"radial-gradient(circle at 22% 28%, #fff 0 4%, transparent 8%),radial-gradient(circle at 65% 16%, #fff 0 3%, transparent 6%),radial-gradient(circle at 82% 52%, #ffffffcc 0 3.5%, transparent 7%),radial-gradient(circle at 38% 62%, #ffffffbb 0 3%, transparent 6%),radial-gradient(circle at 58% 84%, #fff 0 2.5%, transparent 5%),radial-gradient(circle at 12% 76%, #ffffff99 0 3%, transparent 6%),linear-gradient(160deg, #3f6ea8 0%, #16294d 45%, #04060c 100%)","r":[["black","sky"]]},{"id":"star","n":"Star","q":"A pinhole in the dark.","e":"⭐","r":[["night","white"]]},{"id":"moon","n":"Moon","q":"Borrowed light, worn well.","e":"🌙","r":[["night","sun"]]},{"id":"cloud","n":"Cloud","q":"A lake, daydreaming.","e":"☁️","r":[["sky","water"],["water","air"]]},{"id":"rain","n":"Rain","q":"The cloud, giving it all back.","e":"🌧️","r":[["cloud","water"]]},{"id":"lightning","n":"Lightning","q":"The sky, losing its temper.","e":"🌩️","r":[["cloud","electricity"]]},{"id":"storm","n":"Storm","q":"The weather, done negotiating.","e":"⛈️","r":[["lightning","rain"]]},{"id":"tornado","n":"Tornado","q":"Air, finally focused.","e":"🌪️","r":[["air","storm"]]},{"id":"life","n":"Life","q":"One spark in the right puddle, and here we all are.","e":"🧬","r":[["lightning","water"]]},{"id":"animal","n":"Animal","q":"Life, plus the decision to move.","e":"🐾","r":[["earth","life"]]},{"id":"horse","n":"Horse","q":"A horse! A horse! My kingdom for a horse!","e":"🐴","r":[["animal","field"]]},{"id":"hippo","n":"Hippo","q":"River horse, and it means that literally.","e":"🦛","r":[["horse","water"]]},{"id":"wolf","n":"Wolf","q":"The animal that answered the moon.","e":"🐺","r":[["animal","moon"]]},{"id":"bone","n":"Bone","q":"What the fire could not talk out of leaving.","e":"🦴","r":[["animal","fire"],["wolf","fire"],["horse","fire"],["unicorn","fire"],["bear","fire"],["polarbear","fire"],["dog","fire"],["cow","fire"],["bear","horse"],["wolf","horse"],["bear","dog"]]},{"id":"dog","n":"Dog","q":"A wolf that decided to stay.","e":"🐕","r":[["wolf","bone"],["dog","wolf"]]},{"id":"cow","n":"Cow","q":"A plant, on the long way round to milk.","e":"🐄","r":[["animal","plant"]]},{"id":"squirrel","n":"Squirrel","q":"Buries more than it will ever dig up.","e":"🐿️","r":[["animal","tree"]]},{"id":"bird","n":"Bird","q":"The animal that gave up on the ground.","e":"🐦","r":[["air","animal"],["air","penguin"]]},{"id":"penguin","n":"Penguin","q":"A bird that traded the sky for the sea.","e":"🐧","r":[["bird","ice"]]},{"id":"duck","n":"Duck","q":"Kept the sky, took the water too.","e":"🦆","r":[["bird","water"]]},{"id":"fish","n":"Fish","q":"Life, never seeing the need to leave.","e":"🐟","r":[["animal","water"]]},{"id":"owl","n":"Owl","q":"The night, keeping an eye on things.","e":"🦉","r":[["bird","night"]]},{"id":"phoenix","n":"Phoenix","q":"From the ashes, a fire shall be woken","e":"🐦‍🔥","r":[["bird","fire"]]},{"id":"bee","n":"Bee","q":"The flower's travel agent.","e":"🐝","r":[["animal","flower"]]},{"id":"honey","n":"Honey","q":"The one food that never spoils.","e":"🍯","r":[["bee","flower"]]},{"id":"bear","n":"Bear","q":"It found the honey. It always finds the honey.","e":"🐻","r":[["animal","honey"]]},{"id":"polarbear","n":"Polar Bear","q":"A bear that decided the winter was fine.","e":"🐻‍❄️","r":[["bear","ice"]]},{"id":"acid","n":"Acid","q":"Water that learned to bite.","e":"🧪","r":[["green","water"]]},{"id":"electricity","n":"Electricity","q":"A slow argument between a metal and an acid.","e":"⚡","r":[["acid","metal"]]},{"id":"ice","n":"Ice","q":"Water, holding its breath.","e":"🧊","r":[["water","night"]]},{"id":"snow","n":"Snow","q":"Rain that stopped to arrange itself.","e":"🌨️","r":[["cloud","ice"]]},{"id":"prism","n":"Prism","q":"It takes light apart to see how it works.","c":"#bfe6f2","s":"<path d=\"M16 3 30 28H2Z\" fill=\"#cfeaf544\" stroke=\"#eaf8ff\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/><path d=\"M0 11h12\" stroke=\"#fff\" stroke-width=\"2.4\"/><g stroke-width=\"2.4\" stroke-linecap=\"round\"><path d=\"M22 15 32 7\" stroke=\"#ff3b30\"/><path d=\"M22 15 32 10\" stroke=\"#ff9430\"/><path d=\"M22 15 32 13\" stroke=\"#ffdc32\"/><path d=\"M22 15 32 16\" stroke=\"#34d158\"/><path d=\"M22 15 32 19\" stroke=\"#33e9e9\"/><path d=\"M22 15 32 22\" stroke=\"#2f6bff\"/><path d=\"M22 15 32 25\" stroke=\"#9a4dff\"/></g>","r":[["diamond","glass"]]},{"id":"rainbow","n":"Rainbow","q":"White light, confessing everything.","e":"🌈","r":[["white","prism"],["sun","rain"],["prism","sun"]]},{"id":"magic","n":"Magic","q":"Science we haven't named yet.","e":"🪄","r":[["wood","star"]]},{"id":"crystalball","n":"Crystal Ball","q":"Glass that claims to have read ahead.","e":"🔮","r":[["magic","glass"]]},{"id":"unicorn","n":"Unicorn","q":"Always be yourself. Unless you can be a unicorn, then always be a unicorn.","e":"🦄","r":[["horse","magic"]]},{"id":"sunset","n":"Sunset","q":"The sun's long goodbye.","e":"🌅","r":[["sun","pink"]]},{"id":"plant","n":"Plant","q":"Patience, photosynthesizing.","e":"🌿","r":[["life","sun"],["green","life"]]},{"id":"cactus","n":"Cactus","q":"A plant that read the terms of the desert.","e":"🌵","r":[["plant","sand"]]},{"id":"field","n":"Field","q":"Plants, as far as the argument goes.","c":"#5fb54a","bg":"linear-gradient(180deg, #a8dbff 0%, #7ec8ff 46%, #5fb54a 46%, #3f8c36 100%)","r":[["earth","plant"]]},{"id":"tree","n":"Tree","q":"A century of standing still, on purpose.","e":"🌳","r":[["water","plant"]]},{"id":"fruit","n":"Fruit","q":"A tree, bribing something to carry its seeds.","e":"🍎","r":[["tree","sun"]]},{"id":"wood","n":"Wood","q":"A tree, minus the patience.","e":"🪵","r":[["tree","knife"],["axe","tree"]]},{"id":"charcoal","n":"Charcoal","q":"Wood, with everything unnecessary burned away.","c":"#8a3a14","bg":"radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%),radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%),linear-gradient(125deg, #2c2c2f 0 28%, #171719 28% 44%, #333338 44% 60%,#1b1b1e 60% 78%, #27272b 78% 100%)","r":[["wood","fire"],["tree","fire"]]},{"id":"pencil","n":"Pencil","q":"A tree and a fire, arguing on paper.","e":"✏️","r":[["wood","charcoal"]]},{"id":"black","n":"Black","q":"No light at all, which took some arranging.","c":"#5b6472","bg":"radial-gradient(circle at 30% 26%, #2a2f3a 0 18%, transparent 42%),linear-gradient(155deg, #17191f 0%, #0a0b0e 55%, #000000 100%)","r":[["charcoal","stone"]]},{"id":"grey","n":"Grey","q":"The average of every argument.","c":"#7f8894","r":[["black","white"]]},{"id":"diamond","n":"Diamond","q":"Carbon, under enough pressure to become interesting.","e":"💎","r":[["charcoal","lava"]]},{"id":"flower","n":"Flower","q":"The plant, showing off.","e":"🌸","r":[["plant","pink"]]},{"id":"sunflower","n":"Sunflower","q":"A flower with a favorite.","e":"🌻","r":[["sun","flower"],["flower","yellow"]]}];
+const BY = {};
+ELS.forEach((e) => (BY[e.id] = e));
+
+/* icon markup, the same three branches as iconHtml() in src/game.ts */
+function icon(el, cls) {
+  cls = cls || "sw";
+  if (el.s) return '<svg class="' + cls + '" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' + el.s + "</svg>";
+  if (el.c || el.bg) return '<div class="' + cls + '" style="background:' + (el.bg || el.c) + ";--g:" + (el.c || "#8a5cf0") + '55"></div>';
+  return '<span class="em">' + el.e + "</span>";
+}
+const tile = (el, mod) =>
+  '<div class="tl' + (mod ? " " + mod : "") + '"><div class="ico">' + icon(el) + '</div><div class="nm">' + el.n + "</div></div>";
+const board = (mods) =>
+  '<div class="board">' + ELS.map((e) => tile(e, mods && mods[e.id])).join("") + "</div>";
+
+/* a filled or empty altar slot; pad = "on" | "off" | undefined */
+const slot = (id, mod, pad) =>
+  '<span class="slot' + (mod ? " " + mod : "") + '">' +
+  (pad ? '<span class="pad' + (pad === "off" ? " off" : "") + '">' + (pad === "off" ? "&#128275;" : "&#128274;") + "</span>" : "") +
+  (id ? '<span class="ico">' + icon(BY[id]) + "</span>" + BY[id].n
+      : '<span class="ico">+</span>pick one') +
+  "</span>";
+const well = (id, quiet) =>
+  '<span class="well' + (quiet ? " quiet" : "") + '">' +
+  (id ? '<span class="ico">' + icon(BY[id]) + "</span>" + BY[id].n
+      : '<span class="ico">?</span>result') + "</span>";
+
+const TOPBAR = (extra) =>
+  '<div class="bar2"><span class="wm">COLOR ALCHEMY</span>' +
+  '<span>Moves <b>112</b></span><span class="gold">Best 73</span>' +
+  '<span class="spacer"></span>' + (extra || "") +
+  "<span>77 / 77</span><span>Hint</span><span>Menu</span></div>";
+
+function stage(cls, inner) {
+  const d = document.createElement("div");
+  d.className = "stage " + cls;
+  d.innerHTML = inner;
+  return d;
+}
+
+/* --------------------------------------------------------------- 1. baseline */
+function s1() {
+  return stage("s1",
+    TOPBAR() +
+    '<div class="altar">' + slot("fire") + '<span class="op">+</span>' + slot("stone") +
+      '<span class="op">=</span>' + well("metal") + "</div>" +
+    '<div class="sub">&ldquo;Metal &mdash; stone, refined until it rings.&rdquo;</div>' +
+    '<div class="rule"></div>' + board() +
+    '<div class="fade">&darr; 3 more rows</div>');
+}
+
+/* ------------------------------------------------------------- 2. pinned slot */
+function s2() {
+  const tried = {};
+  "stone air charcoal tree wood ice bird horse animal".split(" ").forEach((id) => (tried[id] = "done"));
+  tried.fire = "lock";   // the held element, marked on the board as well as in the slot
+  return stage("s2",
+    TOPBAR('<span class="gold">&#128274; holding Fire</span>') +
+    '<div class="altar">' + slot("fire", "pinned", "on") + '<span class="op">+</span>' +
+      slot(null, "waiting") + '<span class="op">=</span>' + well("metal") + "</div>" +
+    '<div class="sub"><i>Fire stays. Last:</i> Fire + Stone = <span class="k">Metal</span> ' +
+      '<i>&middot; 9 tried, 4 found &middot; padlock, or</i> <span class="k">L</span><i>, to let go</i></div>' +
+    '<div class="rule"></div>' + board(tried) +
+    '<div class="fade">&darr; 3 more rows &middot; dimmed = already tried against Fire</div>');
+}
+
+/* -------------------------------------------------------------- 3. sweep list */
+function s3() {
+  /* three states per row: a route the game has actually recorded, a pair the
+     player tried that made nothing, and everything still untried */
+  const MADE = { stone: "metal", air: "fire", charcoal: "fire", tree: "charcoal",
+                 wood: "charcoal", ice: "water", bird: "phoenix", horse: "bone",
+                 animal: "bone", cow: "bone", dog: "bone", wolf: "bone" };
+  const NONE = "water sand glass cloud rain star moon night gold snow".split(" ")
+    .reduce((o, id) => ((o[id] = 1), o), {});
+  const rows = ELS.filter((e) => e.id !== "fire").map((e) => {
+    const mark = MADE[e.id]
+      ? '<span class="made">&#10003; ' + BY[MADE[e.id]].n + "</span>"
+      : NONE[e.id] ? '<span class="none">&mdash; nothing</span>' : '<span class="new">untried</span>';
+    return '<div class="row' + (e.id === "sky" ? " hi" : "") + '">' + icon(e) +
+           "<span>" + e.n + "</span>" + mark + "</div>";
+  }).join("");
+  return stage("s3",
+    TOPBAR('<span class="gold">&#128274; holding Fire</span>') +
+    '<div class="body">' +
+      '<div class="held">' +
+        '<div class="big">' + icon(BY.fire) + "</div>" +
+        "<h3>Fire</h3>" +
+        '<div class="padrow">&#128274; held &mdash; L releases</div>' +
+        '<div class="tally"><b>12</b> made &middot; <b>10</b> dead ends<br><b>54</b> still untried</div>' +
+        '<div class="hintkeys">&uarr;&darr; moves the row<br>Enter combines it</div>' +
+      "</div>" +
+      '<div class="listwrap">' +
+        '<div class="filter">&#9906; <i>type to filter</i><span class="n">76 elements</span></div>' +
+        '<div class="list">' + rows + "</div>" +
+      "</div>" +
+    "</div>" +
+    '<div class="fade"></div>');
+}
+
+/* -------------------------------------------------------- 4. carry the result */
+function s4() {
+  const chain = [["red", "air", "fire"], ["fire", "sky", "sun"]];
+  return stage("s4",
+    TOPBAR('<span class="gold">&#8635; carrying</span>') +
+    '<div class="altar">' + slot("sun", "pinned", "on") + '<span class="op">+</span>' +
+      slot(null, "waiting") + '<span class="op">=</span>' + well(null, 1) + "</div>" +
+    '<div class="sub"><i>The result stayed in the left slot.</i> ' +
+      chain.map(([a, b, c]) => BY[a].n + " + " + BY[b].n + " &rarr; <span class=\"k\">" +
+        BY[c].n + "</span>").join(" <i>&middot;</i> ") + " <i>&middot; now Sun +</i> &hellip;</div>" +
+    '<div class="rule"></div>' + board({ sun: "lock" }) +
+    '<div class="fade">&darr; 3 more rows &middot; the padlock toggles keep-ingredient / carry-result</div>');
+}
+
+/* ------------------------------------------------------------- 5. the pin rail */
+function s5() {
+  const pins = ["fire", "water", "earth", "air"];
+  return stage("s5",
+    TOPBAR('<span class="gold">4 pinned</span>') +
+    '<div class="body">' +
+      '<div class="rail"><div class="cap">PINNED</div>' +
+        pins.map((id, i) => tile(BY[id], i === 0 ? "lock on" : "lock")).join("") +
+        '<div class="add">+</div>' +
+      "</div>" +
+      '<div class="main">' +
+        '<div class="altar">' + slot("fire", "pinned", "on") + '<span class="op">+</span>' +
+          slot("stone") + '<span class="op">=</span>' + well("metal") + "</div>" +
+        '<div class="sub"><i>Tap a pin, then a tile. Hold or right-click a tile to pin it &middot;</i> ' +
+          '<span class="k">P</span> <i>pins the selection</i></div>' +
+        '<div class="rule"></div>' + board({ fire: "lock", water: "lock", earth: "lock", air: "lock" }) +
+      "</div>" +
+    "</div>" +
+    '<div class="fade">&darr; 3 more rows &middot; gold outline = pinned</div>');
+}
+
+/* ----------------------------------------------------------- 6. ships today */
+function s6() {
+  return stage("s6",
+    '<header><h1 class="wm">COLOR ALCHEMY</h1>' +
+    '<div class="goal">Endgame: discover all 77 elements</div></header>' +
+    '<div class="hud"><span>Moves: <b>112</b></span><span>Elements: <b>77 / 77</b></span>' +
+    '<span class="best">Best: 73</span>' +
+    '<button>Hint<i>H</i></button><button>Sound<i>M</i></button><button>Menu<i>Esc</i></button></div>' +
+    '<div class="grid9">' + ELS.map((e) =>
+      '<div class="t9"><div class="ico">' + icon(e) + '</div><div class="nm">' + e.n + "</div></div>").join("") + "</div>" +
+    '<div class="fade">&darr; 51 more elements below the fold</div>');
+}
+
+/* ------------------------------------------------------------------ options */
+const OPTIONS = [
+  {
+    name: "CAULDRON — THE BASELINE",
+    tag: "what you picked",
+    build: s1,
+    thesis: "Two slots and a result, always on screen — the combine stops being a modal and becomes the board.",
+    notes: [
+      ["Borrows from", "Doodle God's ceremony, and the game's own merge card, which is already the best-looking thing in it."],
+      ["Fixes", "The modal interrupt. Today a discovery covers the board and has to be dismissed; here the same fly-in, ring and pop play in a stage that never leaves, and the quote sits under it."],
+      ["Costs", "~500&ndash;850 B, and it hands some back &mdash; the veil, the merge card and its dismiss path partly go away."],
+      ["Doesn't fix", "Repetition. Both slots clear after every merge, so trying Fire against ten things means finding Fire ten times. That is what 2&ndash;5 are for."],
+      ["At 320px", "Slots shrink to about 76px; the board keeps roughly 3 tiles a row under them."],
+    ],
+  },
+  {
+    name: "PINNED SLOT",
+    tag: "the smallest lock",
+    build: s2,
+    thesis: "A padlock on the left slot: it survives the merge, the right slot clears, and you keep going.",
+    notes: [
+      ["The lock", "Click the padlock, press L, or hold &#9398; on a pad. The locked slot draws gold and the top bar says what is held, so the state is never invisible."],
+      ["Fixes", "Exactly the repetition the baseline leaves. Fire + Stone, Fire + Air, Fire + Tree is three taps instead of six, and nothing scrolls under you between tries."],
+      ["Dimming", "Tiles already tried against the held element drop to 40%. Free for pairs that WORKED &mdash; the game records those routes for the encyclopedia already &mdash; but not for pairs that made nothing. See option 3."],
+      ["Costs", "~120&ndash;220 B on top of the baseline. One boolean, one badge, one branch in the merge path. The cheapest thing on this page."],
+      ["At 320px", "No layout change at all &mdash; the padlock is a corner badge on a slot that is already there. This is the variation a phone gets for free."],
+    ],
+  },
+  {
+    name: "SWEEP LIST",
+    tag: "lock + list, for the endgame",
+    build: s3,
+    thesis: "The held element on the left, every other element as a list on the right, each row saying what that pair did.",
+    notes: [
+      ["Why a list", "Sweeping one element against the other 76 is reading, not looking. 17 rows are on screen at once (measured, not guessed), and every one carries a verdict &mdash; &#10003;, nothing, untried &mdash; that a 72px tile has nowhere to put."],
+      ["Fixes", "The endgame grind, which is where this game is hardest to love. &#10003; Metal means you made that pair; &mdash; nothing means you tried it and got nothing; untried is the only row that can still move you forward."],
+      ["Costs", "~400&ndash;700 B, and it is the ONLY proposal here that needs new saved state. Ticks are free; dead ends are not &mdash; the game forgets a failed pair the moment the toast fades, so remembering them is a new store to write, migrate and cap."],
+      ["Risk", "Marking dead ends turns a puzzle into a checklist. Right tool at 60 / 77, arguably the wrong one at 12 / 77 &mdash; so it may want to be a view you switch to, not the board you start on."],
+      ["At 320px", "The held panel becomes a header strip above the list rather than a column beside it. The list half is already the mobile-shaped one."],
+    ],
+  },
+  {
+    name: "CARRY THE RESULT",
+    tag: "same padlock, other mode",
+    build: s4,
+    thesis: "After a merge the RESULT stays in the left slot, so you build a chain without going back to the board.",
+    notes: [
+      ["The lock", "The same padlock as option 2, with two modes: keep-the-ingredient (Fire stays) or carry-the-result (Sun replaces it). One control, two behaviours, and the top bar names which is on."],
+      ["Fixes", "The other half of the repetition. Long chains &mdash; Red + Air &rarr; Fire, Fire + Sky &rarr; Sun, Sun + Rain &rarr; Rainbow &mdash; are how this tree actually gets played, and today every link costs two fresh picks."],
+      ["Bonus", "The chain line under the altar is a free record of how you got here, which is the one thing the current UI never shows you."],
+      ["Costs", "~150&ndash;260 B on top of the baseline &mdash; option 2's boolean widened to three states, plus a short breadcrumb."],
+      ["At 320px", "The breadcrumb truncates to the last link; everything else is unchanged."],
+    ],
+  },
+  {
+    name: "PIN RAIL",
+    tag: "more than one lock",
+    build: s5,
+    thesis: "A rail of pinned elements down the side — the four you keep reaching for stay one tap away.",
+    notes: [
+      ["The lock", "Hold or right-click a tile to pin it; P pins the current selection. Tap a pin to load the left slot, then a tile for the right. Pins persist across the run."],
+      ["Fixes", "Working two or three lines at once. Fire, Water, Earth and Air appear in half this tree, and a single lock makes you choose between them every time you switch."],
+      ["Costs", "~350&ndash;550 B on top of the baseline. A persisted list of ids, the rail itself, and a second way into the left slot."],
+      ["Risk", "The most UI here for the least new capability &mdash; it is option 2 with a favourites bar. Worth building only if playing option 2 shows that one lock genuinely thrashes."],
+      ["At 320px", "The rail has to go horizontal above the altar, costing a row of vertical space the board can least afford. The weakest of the five on a phone."],
+    ],
+  },
+  {
+    name: "SHIPS TODAY",
+    tag: "control, for scale",
+    build: s6,
+    thesis: "One 92px tile per element, in the order you found them.",
+    notes: [
+      ["Reads well", "Three tiles look like a game. The swatches, the pop animation and the merge card are all doing their job."],
+      ["Breaks at", "About 30 elements. 77 tiles is 1 140px of grid &mdash; four screens on a phone, and the only sort is chronological."],
+      ["Costs", "0 B. It is what ships."],
+      ["At 320px", "Three tiles a row, thirteen rows of scroll."],
+    ],
+  },
+];
+
+/* ------------------------------------------------------------------- render */
+const grid = document.getElementById("grid");
+OPTIONS.forEach((o, i) => {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML =
+    "<h2><span>" + (i + 1) + ". " + o.name + "</span><em>" + o.tag + "</em></h2>" +
+    '<div class="frame"></div>' +
+    '<div class="cardnote"><p class="thesis">' + o.thesis + "</p><dl>" +
+    o.notes.map(([k, v]) =>
+      "<dt>" + k + "</dt><dd" + (k === "Costs" ? ' class="cost' + (i === 5 ? " ok" : "") + '"' : "") +
+      ">" + v + "</dd>").join("") +
+    "</dl></div>";
+  card.querySelector(".frame").appendChild(o.build());
+  card.addEventListener("click", () => open(i));
+  grid.appendChild(card);
+});
+
+/* the stages are laid out 900px wide; scale each into whatever box holds it */
+function fit() {
+  document.querySelectorAll(".frame, #fullWrap").forEach((box) => {
+    const st = box.firstElementChild;
+    if (st) st.style.transform = "scale(" + box.clientWidth / 900 + ")";
+  });
+}
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+
+let cur = -1;
+const full = document.getElementById("full");
+function open(i) {
+  cur = (i + OPTIONS.length) % OPTIONS.length;
+  const o = OPTIONS[cur];
+  const wrap = document.getElementById("fullWrap");
+  wrap.innerHTML = "";
+  wrap.appendChild(o.build());
+  document.getElementById("fullName").textContent = cur + 1 + ". " + o.name;
+  document.getElementById("fullOf").textContent = o.tag + "  —  " + (cur + 1) + " / " + OPTIONS.length;
+  document.getElementById("fullNote").innerHTML =
+    "<div>" + o.thesis + "</div><dl>" +
+    o.notes.map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("") + "</dl>";
+  full.classList.add("show");
+  fit();
+}
+function close() { full.classList.remove("show"); cur = -1; }
+
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape") return close();
+  if (e.key >= "1" && e.key <= String(OPTIONS.length)) return open(+e.key - 1);
+  if (e.key === "c" || e.key === "C") return full.classList.toggle("bare");
+  if (cur < 0) return;
+  if (e.key === "ArrowRight") open(cur + 1);
+  if (e.key === "ArrowLeft") open(cur - 1);
+});
+</script>
+</body>
+</html>

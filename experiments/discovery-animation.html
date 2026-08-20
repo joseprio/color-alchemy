@@ -1,0 +1,511 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — first-discovery animations. Open it in a browser; nothing
+     to build. Click a card — or press its number — for the full-size view;
+     Space replays, 1-6 switch, arrows move, P changes the pair, C hides the
+     notes, Esc goes back. Cards replay themselves every few seconds.
+
+     WHAT THIS IS FOR. A first-EVER discovery — an element never seen in any
+     previous run, which the codex already tracks — is the biggest moment this
+     game has, and right now it gets the same quiet pop in the cauldron well as
+     a rediscovery. These are six ways to give it the whole screen.
+
+     WHAT IT REPLACES. The game used to have exactly this, in miniature: the old
+     merge card flew the two ingredients together, flashed a ring, and popped the
+     result out. That card went away with the modal when the cauldron landed, and
+     option 1 is that same animation unpacked to full screen — the control, so
+     the rest have something honest to beat.
+
+     FOUR RULES EVERY OPTION BELOW OBEYS.
+
+       1. THE 13KB BUDGET IS THE REAL CONSTRAINT. dist/bundle.html is 12352 B of
+          13312 — about 960 B spare. Each card carries an honest estimate of what
+          it would add, compressed. These are CSS keyframes and a handful of
+          spans, so they are cheap, but 960 B is not much and two of them are
+          already too big.
+
+       2. PURE CSS, NOTHING FETCHED. No library, no image, no canvas. Every icon
+          is one the game already draws, read out of src/elements.ts. The whole
+          animation has to be keyframes on markup that openDiscovery() writes
+          once and throws away.
+
+       3. IT MUST BE SKIPPABLE, AND IT MUST END BY ITSELF. Tap, Enter or Ⓐ cuts
+          it short; otherwise it clears itself. Nothing here is allowed to become
+          a thing you dismiss 79 times — that is the modal the cauldron just got
+          rid of. Each card states its duration.
+
+       4. prefers-reduced-motion GETS A STILL. Not "a shorter animation" — the
+          result, its name and its quote, held for the same beat and then gone.
+          Every card says what its still looks like.
+
+     Durations are the thing to argue with. 900ms feels generous the first time
+     and long the fortieth; the count in the corner of each card is how many
+     seconds of your life the option costs across a full 79-element clear. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — first-discovery animations</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    background-attachment: fixed; padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 88ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 18px; }
+  kbd {
+    background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+    padding: 1px 6px; color: #7f9fc0; font: inherit; font-size: 12px;
+  }
+  .budget {
+    border: 1px solid #223052; border-radius: 10px; background: #0a0f1e88;
+    padding: 12px 16px; margin: 0 0 26px; max-width: 88ch;
+  }
+  .budget .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .budget .cap { color: #55708e; font-size: 12px; letter-spacing: .1em; }
+  .budget .num { color: #fff; }
+  .budget .num b { color: #ffd75e; }
+  .bar { height: 10px; border-radius: 5px; background: #131a30; margin: 9px 0 6px; overflow: hidden; border: 1px solid #223052; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, #34d158, #ffdc32 70%, #ff6b6b); }
+  .budget .note { color: #55708e; font-size: 12px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); gap: 22px; }
+  .card { border: 1px solid #223052; border-radius: 12px; background: #0c112288; overflow: hidden; cursor: pointer; transition: border-color .12s, transform .12s; }
+  .card:hover { border-color: #3d5584; transform: translateY(-2px); }
+  .card h2 {
+    margin: 0; padding: 10px 14px; font-size: 13px; letter-spacing: .16em; color: #fff;
+    border-bottom: 1px solid #223052; font-weight: 700;
+    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+  }
+  .card h2 em { font-style: normal; color: #55708e; letter-spacing: 0; font-size: 12px; }
+  .frame { width: 100%; aspect-ratio: 900 / 600; overflow: hidden; position: relative; background: #05060f; }
+  .frame > .stage { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  .cardnote { padding: 11px 14px 13px; color: #8fb4d8; font-size: 12.5px; }
+  .cardnote .thesis { color: #cfe3ff; margin: 0 0 7px; }
+  .cardnote dl { margin: 0; display: grid; grid-template-columns: 7em 1fr; gap: 3px 10px; }
+  .cardnote dt { color: #55708e; }
+  .cardnote dd { margin: 0; }
+  .cost { color: #ffd75e; }
+  .cost.ok { color: #7dff9a; }
+  .cost.bad { color: #ff9d6b; }
+
+  #full { position: fixed; inset: 0; z-index: 20; background: #04060cfb; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; }
+  #full.show { display: flex; }
+  #fullHead, #fullNote, #fullWrap { width: min(1500px, 96vw, calc((100vh - 270px) * 1.5)); }
+  #fullHead { display: flex; gap: 16px; align-items: baseline; }
+  #fullName { color: #fff; letter-spacing: .14em; font-weight: 700; }
+  #fullOf { color: #55708e; margin-left: auto; }
+  #fullWrap { aspect-ratio: 900 / 600; position: relative; overflow: hidden; border: 1px solid #223052; border-radius: 12px; }
+  #fullWrap > .stage { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  #fullNote { color: #8fb4d8; font-size: 13px; }
+  #fullNote dl { margin: 8px 0 0; display: grid; grid-template-columns: 7em 1fr; gap: 4px 12px; }
+  #fullNote dt { color: #55708e; }
+  #fullNote dd { margin: 0; }
+  #full.bare #fullNote, #full.bare #fullHead { display: none; }
+
+  /* ======================================================================== */
+  /*  THE STAGES. Each is the game's own screen at 900x600, scaled to fit, so  */
+  /*  "full screen" means what it will mean in the game.                       */
+  /* ======================================================================== */
+  .stage {
+    width: 900px; height: 600px; overflow: hidden; position: relative;
+    background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+  }
+  /* the board behind the animation, so each option is judged over the real thing */
+  .bg { position: absolute; inset: 0; opacity: .5; display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; align-content: flex-start; }
+  .bg .tl { width: 72px; padding: 7px 3px 6px; text-align: center; background: #0c1122cc; border: 1px solid #223052; border-radius: 10px; line-height: 1; }
+  .bg .tl .ico { height: 30px; font-size: 24px; display: flex; align-items: center; justify-content: center; }
+  .bg .tl .sw { width: 24px; height: 24px; border-radius: 5px; }
+  .bg .tl .nm { margin-top: 5px; font-size: 10.5px; color: #b9d2ee; }
+  .veil { position: absolute; inset: 0; background: #04060ce8; }
+  .fx { position: absolute; inset: 0; overflow: hidden; }
+  .mid { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); }
+  .ing, .res { display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .ing { font-size: 62px; }
+  .ing .sw { width: 62px; height: 62px; border-radius: 12px; box-shadow: 0 0 16px 2px var(--g, transparent); }
+  .res { font-size: 110px; }
+  .res .sw { width: 110px; height: 110px; border-radius: 22px; box-shadow: 0 0 34px 4px var(--g, transparent); }
+  .cap { position: absolute; left: 0; right: 0; top: 63%; text-align: center; }
+  .cap .tag { font-size: 11px; letter-spacing: .34em; color: #33e9e9; }
+  .cap h3 { margin: 6px 0 4px; font-size: 30px; color: #fff; font-weight: 700; }
+  .cap .q { color: #8fb4d8; font-style: italic; font-size: 14px; padding: 0 60px; }
+  .cap .skip { color: #3d5584; font-size: 11px; margin-top: 14px; }
+
+  /* ---------- 1. control: the old merge card, unpacked --------------------- */
+  .v1 .a { animation: v1a .55s ease-in forwards; }
+  .v1 .b { animation: v1b .55s ease-in forwards; }
+  @keyframes v1a { from { transform: translateX(-190px); } 70% { opacity: 1; } to { transform: translateX(0) scale(.5); opacity: 0; } }
+  @keyframes v1b { from { transform: translateX(190px); } 70% { opacity: 1; } to { transform: translateX(0) scale(.5); opacity: 0; } }
+  .v1 .ring { position: absolute; left: 50%; top: 44%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 3px solid #fff; opacity: 0; animation: v1r .55s .5s ease-out forwards; }
+  @keyframes v1r { from { transform: scale(.4); opacity: 1; } to { transform: scale(7); opacity: 0; } }
+  .v1 .res { transform: scale(0); animation: v1p .5s .6s cubic-bezier(.2, 1.9, .4, 1) forwards; }
+  @keyframes v1p { to { transform: scale(1); } }
+  .v1 .cap { opacity: 0; animation: fadeUp .45s .85s ease-out forwards; }
+
+  /* ---------- 2. shockwave -------------------------------------------------- */
+  .v2 { animation: v2shake .4s .3s cubic-bezier(.36, .07, .19, .97); }
+  @keyframes v2shake { 20% { transform: translate(-6px, 3px); } 40% { transform: translate(7px, -4px); } 60% { transform: translate(-4px, -2px); } 80% { transform: translate(3px, 3px); } }
+  .v2 .a { animation: v2a .34s cubic-bezier(.55, 0, .9, .6) forwards; }
+  .v2 .b { animation: v2b .34s cubic-bezier(.55, 0, .9, .6) forwards; }
+  @keyframes v2a { from { transform: translateX(-560px) scaleX(2.2); opacity: .2; } 80% { opacity: 1; } to { transform: translateX(0) scale(.6); opacity: 0; } }
+  @keyframes v2b { from { transform: translateX(560px) scaleX(2.2); opacity: .2; } 80% { opacity: 1; } to { transform: translateX(0) scale(.6); opacity: 0; } }
+  .v2 .flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: v2f .28s .3s ease-out forwards; }
+  @keyframes v2f { 18% { opacity: .85; } to { opacity: 0; } }
+  .v2 .wave { position: absolute; left: 50%; top: 44%; width: 80px; height: 80px; margin: -40px 0 0 -40px; border-radius: 50%; border: 4px solid #ffd75e; opacity: 0; }
+  .v2 .w1 { animation: v2w .8s .3s cubic-bezier(.1, .8, .3, 1) forwards; }
+  .v2 .w2 { border-color: #33e9e9; border-width: 2px; animation: v2w 1s .38s cubic-bezier(.1, .8, .3, 1) forwards; }
+  @keyframes v2w { from { transform: scale(.3); opacity: 1; } to { transform: scale(16); opacity: 0; } }
+  .v2 .res { transform: scale(2.6); opacity: 0; animation: v2r .42s .32s cubic-bezier(.2, .9, .3, 1) forwards; }
+  @keyframes v2r { to { transform: scale(1); opacity: 1; } }
+  .v2 .cap { opacity: 0; animation: fadeUp .4s .66s ease-out forwards; }
+
+  /* ---------- 3. alchemical circle ------------------------------------------ */
+  .v3 .circ {
+    position: absolute; left: 50%; top: 44%; width: 300px; height: 300px; margin: -150px 0 0 -150px;
+    border-radius: 50%; border: 1px dashed #ffd75e88; opacity: 0;
+    animation: v3c 1.9s ease-out forwards;
+  }
+  .v3 .circ2 { width: 218px; height: 218px; margin: -109px 0 0 -109px; border-style: solid; border-color: #33e9e955; animation: v3c2 1.9s ease-out forwards; }
+  @keyframes v3c { from { transform: rotate(0) scale(1.5); opacity: 0; } 22% { opacity: 1; } 72% { transform: rotate(300deg) scale(1); opacity: 1; } to { transform: rotate(400deg) scale(.15); opacity: 0; } }
+  @keyframes v3c2 { from { transform: rotate(0) scale(1.6); opacity: 0; } 26% { opacity: 1; } 72% { transform: rotate(-260deg) scale(1); opacity: 1; } to { transform: rotate(-330deg) scale(.15); opacity: 0; } }
+  /* the tick marks that make it read as a sigil rather than a hoop */
+  .v3 .ticks {
+    position: absolute; left: 50%; top: 44%; width: 300px; height: 300px; margin: -150px 0 0 -150px; border-radius: 50%;
+    background: repeating-conic-gradient(#ffd75e66 0 1.4deg, transparent 1.4deg 15deg);
+    -webkit-mask: radial-gradient(circle, transparent 0 68%, #000 69% 74%, transparent 75%);
+    mask: radial-gradient(circle, transparent 0 68%, #000 69% 74%, transparent 75%);
+    opacity: 0; animation: v3c 1.9s ease-out forwards;
+  }
+  .v3 .a { animation: windIn 1.25s .25s linear both; }
+  .v3 .b { animation: windInB 1.25s .25s linear both; }
+  /* Full size the whole way in: the spin accelerates as they close (deg per
+     second: ~535, 1320, 2090 deg/s into the overlap) and they meet at 60%,
+     still at scale 1. The collapse after that is deliberately unhurried: 0.5s
+     of the 1.25s, at full opacity for the first half of it, so the shrink is
+     visible rather than something the next beat paints over. */
+  @keyframes windIn {
+    from { transform: translateX(-108px) rotate(0) scale(1); }
+    30% { transform: translateX(-84px) rotate(200deg) scale(1); }
+    47% { transform: translateX(-52px) rotate(480deg) scale(1); }
+    60% { transform: translateX(0) rotate(820deg) scale(1); opacity: 1; }
+    80% { transform: translateX(0) rotate(1150deg) scale(.5); opacity: 1; }
+    to { transform: translateX(0) rotate(1400deg) scale(.08); opacity: 0; }
+  }
+  @keyframes windInB {
+    from { transform: translateX(108px) rotate(0) scale(1); }
+    30% { transform: translateX(84px) rotate(-200deg) scale(1); }
+    47% { transform: translateX(52px) rotate(-480deg) scale(1); }
+    60% { transform: translateX(0) rotate(-820deg) scale(1); opacity: 1; }
+    80% { transform: translateX(0) rotate(-1150deg) scale(.5); opacity: 1; }
+    to { transform: translateX(0) rotate(-1400deg) scale(.08); opacity: 0; }
+  }
+  .v3 .res { transform: scale(0); opacity: 0; animation: v3r .75s 1.3s cubic-bezier(.2, 1.5, .4, 1) forwards; }
+  @keyframes v3r { to { transform: scale(1); opacity: 1; } }
+  .v3 .cap { opacity: 0; animation: fadeUp .5s 1.65s ease-out forwards; }
+
+  /* ---------- 4. column of light -------------------------------------------- */
+  .v4 .beam {
+    position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; margin-left: -2px;
+    background: linear-gradient(180deg, #ffffff00, #ffd75ecc 26%, #fff8e0 50%, #ffd75ecc 74%, #ffffff00);
+    filter: blur(1px); opacity: 0; animation: v4b 1.7s ease-out forwards;
+  }
+  @keyframes v4b { from { width: 4px; opacity: 0; } 18% { opacity: .9; } 46% { width: 250px; margin-left: -125px; opacity: 1; } 72% { width: 190px; margin-left: -95px; opacity: .85; } to { width: 4px; margin-left: -2px; opacity: 0; } }
+  .v4 .glow { position: absolute; left: 50%; top: 44%; width: 420px; height: 420px; margin: -210px 0 0 -210px; border-radius: 50%; background: radial-gradient(circle, #ffd75e55 0 22%, transparent 62%); opacity: 0; animation: v4g 1.7s ease-out forwards; }
+  @keyframes v4g { 40% { opacity: 0; } 55% { opacity: 1; } to { opacity: 0; } }
+  .v4 .a { animation: v4a .95s .2s ease-in forwards; }
+  .v4 .b { animation: v4b2 .95s .2s ease-in forwards; }
+  @keyframes v4a { from { transform: translate(-150px, 130px); opacity: 0; } 30%, 76% { opacity: 1; } to { transform: translate(0, 0) scale(.4); opacity: 0; } }
+  @keyframes v4b2 { from { transform: translate(150px, 130px); opacity: 0; } 30%, 76% { opacity: 1; } to { transform: translate(0, 0) scale(.4); opacity: 0; } }
+  .v4 .res { transform: translateY(-230px); opacity: 0; animation: v4r .8s 1s cubic-bezier(.15, .9, .3, 1) forwards; }
+  @keyframes v4r { 25% { opacity: 1; } to { transform: translateY(0); opacity: 1; } }
+  .v4 .cap { opacity: 0; animation: fadeUp .45s 1.5s ease-out forwards; }
+
+  /* ---------- 5. fracture ---------------------------------------------------- */
+  /* the circle's wind-in, minus its .25s delay — option 3 spends that drawing
+     the sigil and this has nothing to draw, so it starts on the first frame.
+     The break is held to the moment the new element lands. */
+  .v5 .a { animation: windIn 1.25s linear both; }
+  .v5 .b { animation: windInB 1.25s linear both; }
+  .v5 .crack {
+    position: absolute; left: 50%; top: 44%; width: 2px; height: 0; transform-origin: 50% 0;
+    background: linear-gradient(180deg, #fff, var(--c, #ffd75e) 40%, transparent);
+    animation: v5c .62s 1.05s cubic-bezier(.1, .85, .3, 1) forwards;
+  }
+  @keyframes v5c { from { height: 0; opacity: 1; } 55% { opacity: 1; } to { height: 520px; opacity: 0; } }
+  .v5 .flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 44%, #fff 0 4%, #ffd75e 8%, transparent 34%); opacity: 0; animation: v5f .38s 1.03s ease-out forwards; }
+  @keyframes v5f { 20% { opacity: .95; } to { opacity: 0; } }
+  .v5 .res { transform: scale(.2); opacity: 0; filter: blur(6px); animation: v5r .55s 1.05s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+  @keyframes v5r { to { transform: scale(1); opacity: 1; filter: blur(0); } }
+  .v5 .cap { opacity: 0; animation: fadeUp .4s 1.5s ease-out forwards; }
+
+  /* ---------- 6. bloom ------------------------------------------------------- */
+  .v6 .a { animation: v6a .85s cubic-bezier(.45, 0, .5, 1) forwards; }
+  .v6 .b { animation: v6b .85s cubic-bezier(.45, 0, .5, 1) forwards; }
+  @keyframes v6a { from { transform: translate(-150px, -90px) rotate(0); } 72% { opacity: 1; } to { transform: translate(0, 0) rotate(240deg) scale(.25); opacity: 0; } }
+  @keyframes v6b { from { transform: translate(150px, 90px) rotate(0); } 72% { opacity: 1; } to { transform: translate(0, 0) rotate(-240deg) scale(.25); opacity: 0; } }
+  .v6 .p {
+    position: absolute; left: 50%; top: 44%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px;
+    border-radius: 50%; background: var(--pc, #ffd75e); opacity: 0;
+    animation: v6p .95s .72s cubic-bezier(.15, .8, .3, 1) forwards;
+  }
+  @keyframes v6p { from { transform: rotate(var(--a)) translateX(0) scale(1); opacity: 1; } to { transform: rotate(var(--a)) translateX(300px) scale(0); opacity: 0; } }
+  .v6 .halo { position: absolute; left: 50%; top: 44%; width: 340px; height: 340px; margin: -170px 0 0 -170px; border-radius: 50%; background: radial-gradient(circle, #ffd75e44 0 26%, transparent 66%); transform: scale(.2); opacity: 0; animation: v6h .9s .7s ease-out forwards; }
+  @keyframes v6h { 40% { opacity: 1; } to { transform: scale(1.25); opacity: 0; } }
+  .v6 .res { transform: scale(0) rotate(-40deg); opacity: 0; animation: v6r .8s .74s cubic-bezier(.2, 1.5, .4, 1) forwards; }
+  @keyframes v6r { to { transform: scale(1) rotate(0); opacity: 1; } }
+  .v6 .cap { opacity: 0; animation: fadeUp .45s 1.15s ease-out forwards; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<h1>COLOR ALCHEMY — FIRST-DISCOVERY ANIMATIONS</h1>
+<p class="lede">
+  Six ways to give a <b>first-ever discovery</b> the whole screen. Each plays over
+  the real board with the real icons from <b>src/elements.ts</b>; option 1 is the
+  animation the game used to have in the merge card, unpacked to full size, kept
+  as the control. Cards replay themselves — click one for the full-size view.
+</p>
+<p class="keys">
+  <kbd>1</kbd>&ndash;<kbd>6</kbd> open &middot; <kbd>Space</kbd> replay &middot;
+  <kbd>P</kbd> change the pair &middot; <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot;
+  <kbd>C</kbd> hide notes &middot; <kbd>Esc</kbd> back
+</p>
+
+<div class="budget">
+  <div class="row">
+    <span class="cap">THE BUDGET EVERY OPTION SPENDS FROM</span>
+    <span class="num">dist/bundle.html <b>12 352 B</b> of 13 312</span>
+  </div>
+  <div class="bar"><i style="width:92.8%"></i></div>
+  <div class="note">
+    960 B spare, 92.8% used. Two of the six do not fit as they stand, and the
+    card says so. <b>npm run roadroller-optimize</b> is ~2% stale and worth
+    running first. Estimates are compressed bytes, and every one is a guess
+    until someone builds it.
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div id="full">
+  <div id="fullHead"><span id="fullName"></span><span id="fullOf"></span></div>
+  <div id="fullWrap"></div>
+  <div id="fullNote"></div>
+</div>
+
+<script>
+const ELS = [{"id":"red","n":"Red","q":"The first spark. Everything warm starts here.","c":"#ff3b30"},{"id":"green","n":"Green","q":"The color of things that insist on growing.","c":"#34d158"},{"id":"blue","n":"Blue","q":"Deep and calm, like the start of a sky.","c":"#2f6bff"},{"id":"yellow","n":"Yellow","q":"Two lights make a brighter one. This is not paint.","c":"#ffdc32","r":[["red","green"]]},{"id":"magenta","n":"Magenta","q":"A color your brain made up. There is no magenta wavelength.","c":"#ff44ff","r":[["red","blue"]]},{"id":"cyan","n":"Cyan","q":"Shallow seas and old terminals.","c":"#33e9e9","r":[["green","blue"]]},{"id":"white","n":"White Light","q":"Every color at once, hiding in plain sight.","c":"#ffffff","r":[["blue","yellow"],["red","cyan"],["green","magenta"]]},{"id":"orange","n":"Orange","q":"Named after the fruit — not the other way around.","c":"#ff9430","r":[["red","yellow"]]},{"id":"violet","n":"Violet","q":"The last color the rainbow remembers.","c":"#9a4dff","r":[["blue","magenta"]]},{"id":"indigo","n":"Indigo","q":"Newton wanted seven colors, so he found room for this one.","c":"#4a30d8","r":[["blue","violet"]]},{"id":"pink","n":"Pink","q":"Softness, weaponized.","c":"#ffa8c5","r":[["red","white"]]},{"id":"air","n":"Air","q":"You only notice it when it moves.","e":"💨","r":[["blue","white"]]},{"id":"sky","n":"Sky","q":"Look up. It keeps going.","c":"#7ec8ff","bg":"radial-gradient(circle at 68% 30%, #fff3a0 0 6%, #ffdc32 6% 13%, transparent 17%),radial-gradient(circle at 68% 30%, #ffdc3244 0 22%, transparent 30%),linear-gradient(180deg, #a8dbff 0%, #7ec8ff 55%, #4f9fe8 100%)","r":[["air","blue"]]},{"id":"gold","n":"Gold","q":"Alchemists chased this for centuries. You mixed two squares.","c":"#f7c948","r":[["yellow","orange"]]},{"id":"water","n":"Water","q":"It only looks blue because it borrowed the sky.","e":"💧","r":[["blue","cyan"],["fire","ice"]]},{"id":"fire","n":"Fire","q":"The oldest alchemy there is.","e":"🔥","r":[["red","air"],["fire","charcoal"],["fire","air"]]},{"id":"earth","n":"Earth","q":"The other three get the poetry. This one grows the food.","c":"#a4713f","bg":"radial-gradient(circle at 30% 35%, #7a4a26cc 0 5%, transparent 9%),radial-gradient(circle at 62% 60%, #5c3a1e 0 4%, transparent 8%),radial-gradient(circle at 78% 28%, #b98a55 0 4%, transparent 8%),radial-gradient(circle at 42% 78%, #5c3a1e 0 4.5%, transparent 8%),radial-gradient(circle at 15% 65%, #b98a55aa 0 3.5%, transparent 7%),linear-gradient(180deg, #a4713f 0%, #7c5230 55%, #59391f 100%)","r":[["green","orange"]]},{"id":"clay","n":"Clay","q":"Earth that agreed to hold a shape.","c":"#c1663c","bg":"radial-gradient(circle at 33% 26%, #ffc49faa 0 11%, transparent 32%),linear-gradient(150deg, #d4794c 0%, #c1663c 46%, #8f4526 100%)","r":[["earth","water"]]},{"id":"pottery","n":"Pottery","q":"Clay that met a fire and kept the shape.","e":"🏺","r":[["clay","fire"]]},{"id":"lava","n":"Lava","q":"The ground, briefly reconsidering.","c":"#ff5a1f","bg":"radial-gradient(circle at 27% 32%, #ffe08a 0 3.5%, transparent 7%),radial-gradient(circle at 72% 62%, #ffc04dcc 0 4%, transparent 8%),linear-gradient(108deg, #2b0e07 0 14%, transparent 14% 27%, #1f0905 27% 35%,transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%),linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)","r":[["earth","fire"]]},{"id":"volcano","n":"Volcano","q":"A mountain that kept the receipt.","e":"🌋","r":[["lava","earth"]]},{"id":"stone","n":"Stone","q":"Cooled, hardened, and in no hurry.","c":"#9aa4ad","bg":"radial-gradient(circle at 30% 32%, #6f7880 0 5%, transparent 9%),radial-gradient(circle at 66% 58%, #c8d0d8aa 0 4%, transparent 8%),radial-gradient(circle at 78% 26%, #5c646c 0 3.5%, transparent 7%),radial-gradient(circle at 40% 76%, #b6c0c8aa 0 3.5%, transparent 7%),linear-gradient(160deg, #aab4bd 0%, #8b959d 55%, #626a72 100%)","r":[["lava","water"]]},{"id":"metal","n":"Metal","q":"Stone, refined until it rings.","c":"#c3ced9","bg":"linear-gradient(120deg, transparent 0 30%, #ffffffaa 30% 38%, transparent 38% 62%,#ffffff55 62% 68%, transparent 68%),linear-gradient(180deg, #e6edf3 0%, #aab6c2 38%, #6e7a86 62%, #cdd7e0 100%)","r":[["fire","stone"]]},{"id":"knife","n":"Knife","q":"The oldest tool that still lives in a drawer.","e":"🔪","r":[["fire","metal"]]},{"id":"axe","n":"Axe","q":"The first machine. Everything after is optimization.","e":"🪓","r":[["wood","metal"]]},{"id":"sand","n":"Sand","q":"What mountains become, given enough wind.","c":"#e0c078","bg":"radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%),radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%),radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%),linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)","r":[["earth","air"],["earth","sun"],["stone","air"]]},{"id":"glass","n":"Glass","q":"Sand, taught to tell the truth.","c":"#bfe6f2","bg":"linear-gradient(135deg, transparent 0 28%, #ffffff99 28% 37%, transparent 37% 54%, #ffffff55 54% 60%, transparent 60% 100%),linear-gradient(180deg, #d8f1f8 0%, #a8d8ea 60%, #8ec4dc 100%)","r":[["sand","fire"]]},{"id":"mirror","n":"Mirror","q":"Who's the Fairest of Them All?","e":"🪞","r":[["glass","metal"]]},{"id":"sun","n":"Sun","q":"A very local star.","e":"☀️","r":[["fire","sky"]]},{"id":"night","n":"Night","q":"The sky, resting.","c":"#4a7fd0","bg":"radial-gradient(circle at 22% 28%, #fff 0 4%, transparent 8%),radial-gradient(circle at 65% 16%, #fff 0 3%, transparent 6%),radial-gradient(circle at 82% 52%, #ffffffcc 0 3.5%, transparent 7%),radial-gradient(circle at 38% 62%, #ffffffbb 0 3%, transparent 6%),radial-gradient(circle at 58% 84%, #fff 0 2.5%, transparent 5%),radial-gradient(circle at 12% 76%, #ffffff99 0 3%, transparent 6%),linear-gradient(160deg, #3f6ea8 0%, #16294d 45%, #04060c 100%)","r":[["black","sky"]]},{"id":"star","n":"Star","q":"A pinhole in the dark.","e":"⭐","r":[["night","white"]]},{"id":"moon","n":"Moon","q":"Borrowed light, worn well.","e":"🌙","r":[["night","sun"]]},{"id":"cloud","n":"Cloud","q":"A lake, daydreaming.","e":"☁️","r":[["sky","water"],["water","air"]]},{"id":"rain","n":"Rain","q":"The cloud, giving it all back.","e":"🌧️","r":[["cloud","water"]]},{"id":"lightning","n":"Lightning","q":"The sky, losing its temper.","e":"🌩️","r":[["cloud","electricity"]]},{"id":"storm","n":"Storm","q":"The weather, done negotiating.","e":"⛈️","r":[["lightning","rain"]]},{"id":"tornado","n":"Tornado","q":"Air, finally focused.","e":"🌪️","r":[["air","storm"]]},{"id":"life","n":"Life","q":"One spark in the right puddle, and here we all are.","e":"🧬","r":[["lightning","water"]]},{"id":"animal","n":"Animal","q":"Life, plus the decision to move.","e":"🐾","r":[["earth","life"]]},{"id":"horse","n":"Horse","q":"A horse! A horse! My kingdom for a horse!","e":"🐴","r":[["animal","field"]]},{"id":"hippo","n":"Hippo","q":"River horse, and it means that literally.","e":"🦛","r":[["horse","water"]]},{"id":"wolf","n":"Wolf","q":"The animal that answered the moon.","e":"🐺","r":[["animal","moon"]]},{"id":"bone","n":"Bone","q":"What the fire could not talk out of leaving.","e":"🦴","r":[["animal","fire"],["wolf","fire"],["horse","fire"],["unicorn","fire"],["bear","fire"],["polarbear","fire"],["dog","fire"],["cow","fire"],["bear","horse"],["wolf","horse"],["bear","dog"]]},{"id":"dog","n":"Dog","q":"A wolf that decided to stay.","e":"🐕","r":[["wolf","bone"],["dog","wolf"]]},{"id":"cow","n":"Cow","q":"A plant, on the long way round to milk.","e":"🐄","r":[["animal","plant"]]},{"id":"squirrel","n":"Squirrel","q":"Buries more than it will ever dig up.","e":"🐿️","r":[["animal","tree"]]},{"id":"bird","n":"Bird","q":"The animal that gave up on the ground.","e":"🐦","r":[["air","animal"],["air","penguin"]]},{"id":"penguin","n":"Penguin","q":"A bird that traded the sky for the sea.","e":"🐧","r":[["bird","ice"]]},{"id":"duck","n":"Duck","q":"Kept the sky, took the water too.","e":"🦆","r":[["bird","water"]]},{"id":"fish","n":"Fish","q":"Life, never seeing the need to leave.","e":"🐟","r":[["animal","water"]]},{"id":"owl","n":"Owl","q":"The night, keeping an eye on things.","e":"🦉","r":[["bird","night"]]},{"id":"phoenix","n":"Phoenix","q":"From the ashes, a fire shall be woken","e":"🐦‍🔥","r":[["bird","fire"]]},{"id":"bee","n":"Bee","q":"The flower's travel agent.","e":"🐝","r":[["animal","flower"]]},{"id":"honey","n":"Honey","q":"The one food that never spoils.","e":"🍯","r":[["bee","flower"]]},{"id":"bear","n":"Bear","q":"It found the honey. It always finds the honey.","e":"🐻","r":[["animal","honey"]]},{"id":"polarbear","n":"Polar Bear","q":"A bear that decided the winter was fine.","e":"🐻‍❄️","r":[["bear","ice"]]},{"id":"acid","n":"Acid","q":"Water that learned to bite.","e":"🧪","r":[["green","water"]]},{"id":"electricity","n":"Electricity","q":"A slow argument between a metal and an acid.","e":"⚡","r":[["acid","metal"]]},{"id":"ice","n":"Ice","q":"Water, holding its breath.","e":"🧊","r":[["water","night"]]},{"id":"snow","n":"Snow","q":"Rain that stopped to arrange itself.","e":"🌨️","r":[["cloud","ice"]]},{"id":"prism","n":"Prism","q":"It takes light apart to see how it works.","c":"#bfe6f2","s":"<path d=\"M16 3 30 28H2Z\" fill=\"#cfeaf544\" stroke=\"#eaf8ff\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/><path d=\"M0 11h12\" stroke=\"#fff\" stroke-width=\"2.4\"/><g stroke-width=\"2.4\" stroke-linecap=\"round\"><path d=\"M22 15 32 7\" stroke=\"#ff3b30\"/><path d=\"M22 15 32 10\" stroke=\"#ff9430\"/><path d=\"M22 15 32 13\" stroke=\"#ffdc32\"/><path d=\"M22 15 32 16\" stroke=\"#34d158\"/><path d=\"M22 15 32 19\" stroke=\"#33e9e9\"/><path d=\"M22 15 32 22\" stroke=\"#2f6bff\"/><path d=\"M22 15 32 25\" stroke=\"#9a4dff\"/></g>","r":[["diamond","glass"]]},{"id":"rainbow","n":"Rainbow","q":"White light, confessing everything.","e":"🌈","r":[["white","prism"],["sun","rain"],["prism","sun"]]},{"id":"magic","n":"Magic","q":"Science we haven't named yet.","e":"🪄","r":[["wood","star"]]},{"id":"crystalball","n":"Crystal Ball","q":"Glass that claims to have read ahead.","e":"🔮","r":[["magic","glass"]]},{"id":"unicorn","n":"Unicorn","q":"Always be yourself. Unless you can be a unicorn, then always be a unicorn.","e":"🦄","r":[["horse","magic"]]},{"id":"sunset","n":"Sunset","q":"The sun's long goodbye.","e":"🌅","r":[["sun","pink"]]},{"id":"plant","n":"Plant","q":"Patience, photosynthesizing.","e":"🌿","r":[["life","sun"],["green","life"]]},{"id":"cactus","n":"Cactus","q":"A plant that read the terms of the desert.","e":"🌵","r":[["plant","sand"]]},{"id":"field","n":"Field","q":"Plants, as far as the argument goes.","c":"#5fb54a","bg":"linear-gradient(180deg, #a8dbff 0%, #7ec8ff 46%, #5fb54a 46%, #3f8c36 100%)","r":[["earth","plant"]]},{"id":"tree","n":"Tree","q":"A century of standing still, on purpose.","e":"🌳","r":[["water","plant"]]},{"id":"fruit","n":"Fruit","q":"A tree, bribing something to carry its seeds.","e":"🍎","r":[["tree","sun"]]},{"id":"wood","n":"Wood","q":"A tree, minus the patience.","e":"🪵","r":[["tree","knife"],["axe","tree"]]},{"id":"charcoal","n":"Charcoal","q":"Wood, with everything unnecessary burned away.","c":"#8a3a14","bg":"radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%),radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%),linear-gradient(125deg, #2c2c2f 0 28%, #171719 28% 44%, #333338 44% 60%,#1b1b1e 60% 78%, #27272b 78% 100%)","r":[["wood","fire"],["tree","fire"]]},{"id":"pencil","n":"Pencil","q":"A tree and a fire, arguing on paper.","e":"✏️","r":[["wood","charcoal"]]},{"id":"black","n":"Black","q":"No light at all, which took some arranging.","c":"#5b6472","bg":"radial-gradient(circle at 30% 26%, #2a2f3a 0 18%, transparent 42%),linear-gradient(155deg, #17191f 0%, #0a0b0e 55%, #000000 100%)","r":[["charcoal","stone"]]},{"id":"grey","n":"Grey","q":"The average of every argument.","c":"#7f8894","r":[["black","white"]]},{"id":"diamond","n":"Diamond","q":"Carbon, under enough pressure to become interesting.","e":"💎","r":[["charcoal","lava"]]},{"id":"flower","n":"Flower","q":"The plant, showing off.","e":"🌸","r":[["plant","pink"]]},{"id":"sunflower","n":"Sunflower","q":"A flower with a favorite.","e":"🌻","r":[["sun","flower"],["flower","yellow"]]}];
+const BY = {};
+ELS.forEach((e) => (BY[e.id] = e));
+
+/* icon markup, the same three branches as iconHtml() in src/game.ts */
+function icon(el, cls) {
+  if (el.s) return '<svg class="' + (cls || "sw") + '" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' + el.s + "</svg>";
+  if (el.c || el.bg) return '<div class="' + (cls || "sw") + '" style="background:' + (el.bg || el.c) + ";--g:" + (el.c || "#8a5cf0") + '55"></div>';
+  return "<span>" + el.e + "</span>";
+}
+
+/* the pairs the previews cycle through: an emoji pair, a swatch pair, and one
+   of each, so no option gets judged on the easy case only */
+const PAIRS = [
+  ["horse", "magic", "unicorn"],
+  ["clay", "fire", "pottery"],
+  ["earth", "water", "clay"],
+  ["wood", "star", "magic"],
+];
+let pair = 0;
+
+/* the board behind the veil, so the animation is judged over the real thing */
+const bgBoard = () =>
+  '<div class="bg">' + ELS.slice(0, 44).map((e) =>
+    '<div class="tl"><div class="ico">' + icon(e) + '</div><div class="nm">' + e.n + "</div></div>").join("") + "</div>";
+
+const caption = (rid) =>
+  '<div class="cap"><div class="tag">NEW ELEMENT</div><h3>' + BY[rid].n + "</h3>" +
+  '<div class="q">&ldquo;' + BY[rid].q + '&rdquo;</div>' +
+  '<div class="skip">tap / Enter / &#9398; to skip</div></div>';
+
+/* every option shares the same furniture: board, veil, two ingredients, a
+   result and a caption. Only the keyframes differ, which is the whole point. */
+function build(v, extra) {
+  const [a, b, r] = PAIRS[pair];
+  const d = document.createElement("div");
+  d.className = "stage v" + v;
+  d.innerHTML =
+    bgBoard() + '<div class="veil"></div><div class="fx">' + (extra || "") +
+    '<div class="mid"><div class="ing a">' + icon(BY[a]) + "</div></div>" +
+    '<div class="mid"><div class="ing b">' + icon(BY[b]) + "</div></div>" +
+    '<div class="mid"><div class="res">' + icon(BY[r]) + "</div></div>" +
+    caption(r) + "</div>";
+  return d;
+}
+
+const particles = () =>
+  Array.from({ length: 16 }, (_, i) =>
+    '<span class="p" style="--a:' + i * 22.5 + "deg;--pc:" +
+    ["#ffd75e", "#33e9e9", "#ff9430", "#7dff9a"][i % 4] + '"></span>').join("");
+
+const OPTIONS = [
+  {
+    name: "MERGE CARD, UNPACKED",
+    tag: "control · 1.3s",
+    build: () => build(1, '<span class="ring"></span>'),
+    thesis: "What the game used to do inside a 420px card, at full size: the two fly together, a ring flashes out, the result pops.",
+    notes: [
+      ["Duration", "1.3s to the caption. 79 discoveries &times; 1.3s = about 1 minute 43 across a full clear."],
+      ["Costs", "~180&ndash;280 B. It is four keyframes and a ring span; most of it was in the bundle until the cauldron replaced the modal, so this is the one that certainly fits."],
+      ["Reduced motion", "Drop the fly-in and the ring, keep the pop as a fade. Nearly free."],
+      ["Verdict", "Honest baseline. Nothing here is wrong, it just does not feel like the biggest moment in the game."],
+    ],
+  },
+  {
+    name: "SHOCKWAVE",
+    tag: "impact · 1.1s",
+    build: () => build(2, '<span class="flash"></span><span class="wave w1"></span><span class="wave w2"></span>'),
+    thesis: "The two rush in from off-screen, hit, and the screen flashes white while two rings blow past the edges.",
+    notes: [
+      ["Duration", "1.1s &mdash; the shortest of the six, because impact reads fast. About 1 minute 27 across a clear."],
+      ["Costs", "~260&ndash;380 B. A flash div, two ring spans, and a shake on the stage itself."],
+      ["Reduced motion", "The flash is the problem, not the movement: a full-screen white flash is exactly what the setting exists to prevent. Still = the result and a static gold ring, no flash at all."],
+      ["Verdict", "The most physical, and the cheapest big upgrade on the control. Tune the flash down to about 0.5 opacity before shipping it."],
+    ],
+  },
+  {
+    name: "ALCHEMICAL CIRCLE",
+    tag: "ceremony · 2.15s",
+    build: () => build(3, '<span class="circ"></span><span class="ticks"></span><span class="circ2 circ"></span>'),
+    thesis: "A sigil draws itself, the two ingredients spiral in at full size — spinning faster the closer they get — and only shrink away once they overlap, leaving the new element in their place.",
+    notes: [
+      ["Duration", "2.15s, and it shares that flight with option 5. 79 &times; 2.15s = about 2 minutes 50 across a clear, which is the one most likely to wear out."],
+      ["Costs", "~420&ndash;600 B, and it does NOT fit in 960 B alongside anything else. The tick ring is a masked repeating-conic-gradient, which is the expensive part."],
+      ["Reduced motion", "Still = the finished sigil behind the result, not drawn. It reads well frozen, which is a point in its favour."],
+      ["Verdict", "The most on-theme &mdash; this is an alchemy game and nothing else here says so. Best case for it: use it ONLY for the quest pair and the last element, and give ordinary discoveries option 1 or 2."],
+    ],
+  },
+  {
+    name: "COLUMN OF LIGHT",
+    tag: "ascension · 1.9s",
+    build: () => build(4, '<span class="beam"></span><span class="glow"></span>'),
+    thesis: "A beam opens down the middle of the screen, the ingredients rise into it and dissolve, and the result descends inside the light.",
+    notes: [
+      ["Duration", "1.9s. About 2 minutes 30 across a clear."],
+      ["Costs", "~300&ndash;420 B. One gradient beam and one radial glow, both animated on width and opacity."],
+      ["Reduced motion", "Still = the result standing in a static beam. The best-looking still of the six."],
+      ["Verdict", "The most elegant, and the only one that reads as vertical rather than as a collision. Animating width forces layout every frame &mdash; use transform: scaleX on a fixed-width beam instead when building it for real."],
+    ],
+  },
+  {
+    name: "FRACTURE",
+    tag: "violence · 1.9s",
+    build: () => build(5, '<span class="flash"></span>' +
+      Array.from({ length: 14 }, (_, i) =>
+        '<span class="crack" style="transform:rotate(' + (i * 25.7 + 8) + 'deg);--c:hsl(' + Math.round(i * 360 / 14) + ' 95% 62%);animation-delay:' + (1.05 + i * 0.012) + 's"></span>').join("")),
+    thesis: "The pair wind in on option 3's spiral and spin down to nothing — then the screen breaks and the new element arrives in the same instant, fourteen rays splitting outward, each a step further round the spectrum.",
+    notes: [
+      ["Duration", "2.15s &mdash; identical to option 3 frame for frame until the pair are gone. 1s of wind-in, then the break and the result together at 1.3s, while the last of the shrink is still playing underneath."],
+      ["Costs", "~340&ndash;480 B alone, and fourteen spans of markup per discovery. It now SHARES its approach with option 3, so shipping both costs far less than the two estimates added together &mdash; one pair of keyframes, two endings."],
+      ["Reduced motion", "Still = the result, sharp, with the cracks drawn but not growing."],
+      ["Verdict", "The most dramatic and the least on-theme: cracking glass suits a puzzle game, less so gentle colour mixing. Would fit Diamond or Prism perfectly and Flower not at all."],
+    ],
+  },
+  {
+    name: "BLOOM",
+    tag: "warmth · 1.7s",
+    build: () => build(6, '<span class="halo"></span>' + particles()),
+    thesis: "The pair spiral into each other, burst into sixteen coloured particles, and the result blooms out of the glow they leave.",
+    notes: [
+      ["Duration", "1.7s. About 2 minutes 14 across a clear."],
+      ["Costs", "~380&ndash;520 B. Sixteen particle spans, each carrying an angle in a custom property, plus the halo."],
+      ["Reduced motion", "Still = the result over a static halo, particles omitted entirely."],
+      ["Verdict", "The friendliest, and the one that best matches a game whose primitives are coloured light. The particle count is the dial: eight still reads, and halves the markup."],
+    ],
+  },
+];
+
+/* ------------------------------------------------------------------- render */
+const grid = document.getElementById("grid");
+OPTIONS.forEach((o, i) => {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML =
+    "<h2><span>" + (i + 1) + ". " + o.name + "</span><em>" + o.tag + "</em></h2>" +
+    '<div class="frame"></div>' +
+    '<div class="cardnote"><p class="thesis">' + o.thesis + "</p><dl>" +
+    o.notes.map(([k, v]) =>
+      "<dt>" + k + "</dt><dd" + (k === "Costs" ? ' class="cost' + (i === 0 ? " ok" : i === 2 ? " bad" : "") + '"' : "") +
+      ">" + v + "</dd>").join("") + "</dl></div>";
+  card.addEventListener("click", () => open(i));
+  grid.appendChild(card);
+  const frame = card.querySelector(".frame");
+  const play = () => {
+    frame.innerHTML = "";
+    frame.appendChild(o.build());
+    fit();
+  };
+  play();
+  setInterval(play, 5000);
+  setTimeout(() => setInterval(play, 5000), i * 420);
+});
+
+function fit() {
+  document.querySelectorAll(".frame, #fullWrap").forEach((box) => {
+    const st = box.firstElementChild;
+    if (st) st.style.transform = "scale(" + box.clientWidth / 900 + ")";
+  });
+}
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+
+let cur = -1;
+const full = document.getElementById("full");
+function replay() {
+  const o = OPTIONS[cur];
+  const wrap = document.getElementById("fullWrap");
+  wrap.innerHTML = "";
+  wrap.appendChild(o.build());
+  fit();
+}
+function open(i) {
+  cur = (i + OPTIONS.length) % OPTIONS.length;
+  const o = OPTIONS[cur];
+  document.getElementById("fullName").textContent = cur + 1 + ". " + o.name;
+  document.getElementById("fullOf").textContent =
+    o.tag + "  —  " + (cur + 1) + " / " + OPTIONS.length +
+    "  —  " + PAIRS[pair].slice(0, 2).map((id) => BY[id].n).join(" + ") +
+    " → " + BY[PAIRS[pair][2]].n + "  (P to change)";
+  document.getElementById("fullNote").innerHTML =
+    "<div>" + o.thesis + "</div><dl>" +
+    o.notes.map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("") + "</dl>";
+  full.classList.add("show");
+  replay();
+}
+function close() { full.classList.remove("show"); cur = -1; }
+
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape") return close();
+  if (e.key >= "1" && e.key <= String(OPTIONS.length)) return open(+e.key - 1);
+  if (e.key === "c" || e.key === "C") return full.classList.toggle("bare");
+  if (e.key === "p" || e.key === "P") {
+    pair = (pair + 1) % PAIRS.length;
+    if (cur >= 0) open(cur);
+    return;
+  }
+  if (cur < 0) return;
+  if (e.key === " ") { e.preventDefault(); return replay(); }
+  if (e.key === "ArrowRight") open(cur + 1);
+  if (e.key === "ArrowLeft") open(cur - 1);
+});
+</script>
+</body>
+</html>
