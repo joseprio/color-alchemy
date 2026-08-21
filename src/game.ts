@@ -168,7 +168,7 @@ function flash(cls: "x" | "h", ...ids: string[]): void {
   }
 }
 function renderFocus(): void {
-  tiles.forEach((t, i) => {
+  tiles.map((t, i) => {
     // one element wears one of the two: gold for a locked pick, cyan for a
     // loose one. Nothing else on the board is marked — a mix leaves the pair
     // in the altar, not on the tiles.
@@ -488,7 +488,7 @@ function openOverlay(html: string, buttons: OverlayButton[]): void {
   oc.innerHTML = html + '<div id="ob"></div>';
   obFns = [];
   obCur = 0;
-  buttons.forEach(([label, fn]) => {
+  buttons.map(([label, fn]) => {
     const b = document.createElement("button");
     b.textContent = label;
     b.onclick = fn;
@@ -499,7 +499,7 @@ function openOverlay(html: string, buttons: OverlayButton[]): void {
   ov.classList.add("w");
 }
 function obPaint(): void {
-  [...ob.children].forEach((b, i) => b.classList.toggle("F", i === obCur));
+  [...ob.children].map((b, i) => b.classList.toggle("F", i === obCur));
 }
 export function obMove(d: number): void {
   obCur = (obCur + d + obFns.length) % obFns.length;
@@ -578,7 +578,7 @@ function menuButtons(): HTMLElement[] {
   return [...mu.querySelectorAll("button")] as HTMLElement[];
 }
 function mPaint(): void {
-  menuButtons().forEach((b, i) => b.classList.toggle("F", i === mCur));
+  menuButtons().map((b, i) => b.classList.toggle("F", i === mCur));
 }
 function disarm(): void {
   const b = armIdx >= 0 ? menuButtons()[armIdx] : null;
@@ -609,7 +609,7 @@ function newGame(i: number): void {
 // flagged from here on, so no best can come out of it.
 function unlockAll(i: number): void {
   if (!armed(i, "Sure? (ends scoring)")) return;
-  ELEMENTS.forEach(e => { if (!found.has(e.id)) { found.add(e.id); addTile(e.id); } });
+  ELEMENTS.map(e => { if (!found.has(e.id)) { found.add(e.id); addTile(e.id); } });
   cheated = true;
   renderFocus();
   hud();
@@ -620,7 +620,7 @@ function unlockAll(i: number): void {
 // all-time codex.
 function wipeAll(i: number): void {
   if (!armed(i, "Sure? (scores and codex too)")) return;
-  [K_RUN, K_QUEST, K_FULL, K_CODEX].forEach(k => store.del(k));
+  [K_RUN, K_QUEST, K_FULL, K_CODEX].map(k => store.del(k));
   codexF.length = 0;
   codexK.clear();
   reset();
@@ -650,7 +650,7 @@ const MENU: [string, (i: number) => void][] = [
 function paintMenu(): void {
   mu.innerHTML = "";
   let n = 0;
-  MENU.forEach(([label, fn], i) => {
+  MENU.map(([label, fn], i) => {
     if (!i && !inRun()) return;
     const j = n++;
     const b = document.createElement("button");
@@ -755,7 +755,7 @@ export function reset(): void {
   held = false;
   cursor = 0;
   lastHint = null;  // its ingredients just left the board
-  STARTERS.forEach(id => { found.add(id); addTile(id); });
+  STARTERS.map(id => { found.add(id); addTile(id); });
   renderFocus();
   paintCauldron();
   hud();
@@ -779,12 +779,12 @@ export function boot(): void {
     const cx = JSON.parse(store.get(K_CODEX) || "null");
     if (cx) {
       (Array.isArray(cx.f) ? (cx.f as string[]) : []).filter(id => BY_ID[id])
-        .forEach(id => { if (!codexF.includes(id)) codexF.push(id); });
+        .map(id => { if (!codexF.includes(id)) codexF.push(id); });
       (Array.isArray(cx.k) ? (cx.k as string[]) : []).filter(k => RECIPE[k])
-        .forEach(k => codexK.add(k));
+        .map(k => codexK.add(k));
     }
   } catch {}
-  STARTERS.forEach(id => { if (!codexF.includes(id)) codexF.push(id); });
+  STARTERS.map(id => { if (!codexF.includes(id)) codexF.push(id); });
 
   // then the saved run
   let run: { f?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean } | null = null;
@@ -792,17 +792,17 @@ export function boot(): void {
   try { run = raw ? JSON.parse(raw) : null; } catch {}
   if (run && Array.isArray(run.f)) {
     const ids = (run.f as string[]).filter(id => BY_ID[id]);
-    STARTERS.forEach(id => { if (!ids.includes(id)) ids.unshift(id); });
-    ids.forEach(id => { found.add(id); addTile(id); });
+    STARTERS.map(id => { if (!ids.includes(id)) ids.unshift(id); });
+    ids.map(id => { found.add(id); addTile(id); });
     // migrate pre-codex saves: a run's discoveries and combos are knowledge
-    ids.forEach(id => { if (!codexF.includes(id)) codexF.push(id); });
-    if (Array.isArray(run.k)) (run.k as string[]).filter(k => RECIPE[k]).forEach(k => codexK.add(k));
+    ids.map(id => { if (!codexF.includes(id)) codexF.push(id); });
+    if (Array.isArray(run.k)) (run.k as string[]).filter(k => RECIPE[k]).map(k => codexK.add(k));
     moves = Math.max(0, (run.m as number) | 0);
     questDone = !!run.q;
     fullDone = !!run.c;
     cheated = !!run.x;
   } else {
-    STARTERS.forEach(id => { found.add(id); addTile(id); });
+    STARTERS.map(id => { found.add(id); addTile(id); });
   }
   hud();
   save();

@@ -51,7 +51,7 @@ export const SFX = {
   fail()   { tone(190, 0, 0.22, "sawtooth", 0.09, -120); },
   dupe()   { tone(520, 0, 0.09, "sine", 0.08); },
   hint()   { tone(587, 0, 0.08, "triangle", 0.08); tone(880, 0.07, 0.13, "triangle", 0.08); },
-  discover() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.07, 0.16, "triangle", 0.11)); },
-  fanfare()  { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.1, 0.32, "triangle", 0.12)); tone(262, 0, 0.9, "sine", 0.07); },
-  grand()    { [392, 523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, i * 0.09, 0.36, "triangle", 0.12)); tone(196, 0, 1.1, "sine", 0.07); },
+  discover() { [523, 659, 784, 1047].map((f, i) => tone(f, i * 0.07, 0.16, "triangle", 0.11)); },
+  fanfare()  { [523, 659, 784, 1047, 1319].map((f, i) => tone(f, i * 0.1, 0.32, "triangle", 0.12)); tone(262, 0, 0.9, "sine", 0.07); },
+  grand()    { [392, 523, 659, 784, 1047, 1319, 1568].map((f, i) => tone(f, i * 0.09, 0.36, "triangle", 0.12)); tone(196, 0, 1.1, "sine", 0.07); },
 };

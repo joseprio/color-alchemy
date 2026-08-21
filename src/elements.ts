@@ -263,10 +263,10 @@ export const ELEMENTS = ([
 export const STARTERS = ["red", "green", "blue"];
 
 export const BY_ID: Record<string, ElementDef> = {};
-ELEMENTS.forEach(e => (BY_ID[e.id] = e));
+ELEMENTS.map(e => (BY_ID[e.id] = e));
 
 // "a+b" (ids sorted) -> result id
 export const RECIPE: Record<string, string> = {};
-ELEMENTS.forEach(e => (e.r || []).forEach(p => (RECIPE[[...p].sort().join("+")] = e.id)));
+ELEMENTS.map(e => (e.r || []).map(p => (RECIPE[[...p].sort().join("+")] = e.id)));
 
 export const N = (id: string): string => BY_ID[id].n;

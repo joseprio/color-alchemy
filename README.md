@@ -97,6 +97,19 @@ npm run audio-bench       # what a sample costs, against the callback budget
   That 18px is `f`'s trailing margin, which is clipped from the scrollable
   overflow only while body is `height:100%` with content overflowing it — the
   same mechanism the padding note on `f` describes.
+- **`.map` is the loop, not `.forEach`: -10 B.** Twenty-one sites across
+  `elements.ts`, `game.ts` and `sfx.ts`, four characters each. Every receiver
+  in `src/` is a real array — `tiles`, `menuButtons()` and the chained
+  `.filter()` results all return `T[]` — so the swap is legal everywhere it
+  is made. It is NOT legal on a Set or a NodeList, which have `forEach` and
+  no `map`; that is why `tools/css-diff.mjs` still calls `forEach` on a
+  `querySelectorAll` result, and why `found` (a Set) never took part.
+  The risk worth measuring is closure deciding `map` is side-effect-free and
+  deleting calls whose result is unused. It does not: the compiled chunk
+  carries 25 `.map(` against 25 in the source and zero `.forEach(`, counted
+  rather than assumed. The cost is a throwaway array per call, and the only
+  one on a warm path is `renderFocus` — driven by input events, never by the
+  rAF loop, which reaches `moveCursor` only on a d-pad edge.
 - **innerHTML instead of textContent is NOT worth it: 3 B.** Nine writes, two
   characters each, and roadroller predicts the longer word almost for free.
   It would also make the first element named "Salt & Pepper" render wrong,
