@@ -310,14 +310,18 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   (`scroll-margin-bottom`) both step over the dock too.
 - **One element, three states, on the tile you keep tapping.** The first tap
   picks it — cyan, and it lands in the left slot. A second tap on the same
-  tile **locks** it, gold, and the slot grows the ring and the X that say so.
-  A third lets it go. Tapping a DIFFERENT element mixes the two, and the lock
-  is the whole difference in what happens next: a loose pick is spent by the
-  mix it makes, so the board comes back empty and the next pair starts from
-  nothing, while a locked one survives every mix — which is what makes trying
-  Fire against ten things ten taps rather than twenty. Nothing else on the
-  board is ever marked: the pair you just tried sits in the altar, not on the
-  tiles.
+  tile **locks** it, gold, and a 🔒 badge appears on the tile and on the slot
+  together, the slot also growing the ring and the X. A third lets it go.
+  Tapping a DIFFERENT element mixes the two, and the lock is the whole
+  difference in what happens next: a loose pick is spent by the mix it makes,
+  so the board comes back empty and the next pair starts from nothing, while a
+  locked one survives every mix — which is what makes trying Fire against ten
+  things ten taps rather than twenty. Nothing else on the board is ever
+  marked: the pair you just tried sits in the altar, not on the tiles.
+  The badge is there so the state does not rest on gold-versus-cyan alone —
+  a distinction a player has to be told, and one a colour-blind player may
+  never see. It is one rule for both places, `#ca.y::before, .t.e::after`,
+  so the two can never disagree about what is locked.
 - Letting go empties the whole altar, not just the pick. Escape / ⓑ does it
   from anywhere, as does the **X** on the slot once the pick is locked.
 - After each attempt the second slot and the well empty themselves — after

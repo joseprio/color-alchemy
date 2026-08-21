@@ -101,6 +101,19 @@ h1 {
   width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
   background: #14120a; border: 1px solid #ffd75e; color: #ffd75e; font-size: 10px;
 }
+/* The lock, said the same way in both places it shows: a padlock badge on the
+   cauldron's A slot and on the board tile that slot came from. Colour carried
+   it alone before — gold for locked, cyan for a loose pick — which is a
+   distinction a player has to be told, and one a colour-blind player may not
+   get at all. Inside the box rather than hanging off it: a badge at -8px would
+   reach into the 10px grid gap and past #gd's padding in the first column. */
+#ca.y::before, .t.e::after {
+  content: "🔒"; position: absolute; top: 5px; left: 5px;
+  width: 20px; height: 20px; border-radius: 50%; display: grid;
+  place-items: center; font-size: 12px; line-height: 1;
+  background: #14120a; border: 1px solid #ffd75e;
+}
+.t.e { position: relative; }
 /* the empty B slot invites the second pick while A is held */
 #ca.y ~ #cb:empty { border-color: #33e9e9; color: #33e9e9; }
 #cr:not(:empty) { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 22px #ffd75e22; }

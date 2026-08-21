@@ -146,12 +146,20 @@ check("pick: the first tap picks the element, loose — cyan, and no lock ring",
   s.pick === 0 && s.sel === -1 &&
   !(await evalJs(`document.getElementById('ca').classList.contains('y')`)) &&
   await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
+// The lock is not colour alone: a padlock badge marks it on the tile and on the
+// cauldron slot, so gold-versus-cyan is not the only thing carrying the state.
+check("pick: a loose pick wears no padlock in either place",
+  (await evalJs(`getComputedStyle(document.querySelector('[data-id=red]'), '::after').content`)) === "none" &&
+  (await evalJs(`getComputedStyle(document.getElementById('ca'), '::before').content`)) === "none");
 await click("red");
 s = await state();
 check("lock: the second tap on the same element locks it",
   s.sel === 0 && s.pick === -1 &&
   await evalJs(`document.getElementById('ca').classList.contains('y')`) &&
   await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
+check("lock: a padlock marks it on the tile AND in the cauldron",
+  (await evalJs(`getComputedStyle(document.querySelector('[data-id=red]'), '::after').content`)) === '"\u{1F512}"' &&
+  (await evalJs(`getComputedStyle(document.getElementById('ca'), '::before').content`)) === '"\u{1F512}"');
 await click("green");
 await sleep(100);
 s = await state();
