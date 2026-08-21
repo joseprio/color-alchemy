@@ -167,7 +167,7 @@ check("mouse: combining resolves in the cauldron, nothing to dismiss", s.phase =
 check("mouse: Yellow discovered, 1 move", s.found.includes("yellow") && s.moves === 1);
 check("cauldron: the well shows the result and the quote sits under it",
   await evalJs(`document.getElementById('cr').textContent.includes('Yellow')`) &&
-  await evalJs(`document.getElementById('cq').textContent.includes('not paint')`));
+  await evalJs(`document.getElementById('cq').textContent.includes('choose you')`));
 check("discovery: a first-EVER element takes the whole screen",
   await evalJs(`document.getElementById('ds').classList.contains('y')`) &&
   (await evalJs(`document.querySelectorAll('#ds .k').length`)) === 14 &&
@@ -480,7 +480,11 @@ await shot("play");
 // deepest thing in the game, so Prism belongs to the endgame list below.
 // Night is Black + Sky now, and Black is the end of the wood chain, so the
 // route drags in Knife, Tree, Wood and Charcoal on its way to a Star - and Magic
-// spends that same Wood again.
+// spends that same Wood again. Violet + Sky would reach the same Night for the
+// same two moves (Magenta, then Violet), and this run takes the Black. The Unicorn takes that long way round on
+// purpose: Animal + Magic would close the quest two moves sooner, skipping the
+// Field and the Horse, and PERFECT_QUEST below is where the minimum is checked
+// - this run is here for coverage, not economy.
 const QUEST = [
   ["red","yellow"],       // orange
   ["blue","white"],       // air
@@ -522,6 +526,7 @@ const EXTRA = [
   ["blue","violet"],      // indigo
   ["red","white"],        // pink
   ["yellow","orange"],    // gold
+  ["gold","water"],       // beer
   ["earth","sun"],        // sand
   ["sand","fire"],        // glass
   ["glass","electricity"],// light bulb
@@ -532,6 +537,9 @@ const EXTRA = [
   ["water","night"],      // ice
   ["cloud","ice"],        // snow
   ["wood","charcoal"],    // pencil
+  ["charcoal","fire"],   // ash
+  ["stone","tree"],       // paper
+  ["paper","pencil"],     // book
   ["earth","water"],      // clay
   ["field","water"],      // park
   ["stone","life"],       // egg
@@ -587,13 +595,13 @@ await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textConte
 s = await state();
 check("quest: Keep playing returns to the game", s.phase === "play" && !s.fullDone);
 check("quest: goal line switches to find-all",
-  await evalJs(`document.getElementById('gl').textContent.includes('all 85')`));
-check("night: icon is a starry blue-to-black swatch, not an emoji",
+  await evalJs(`document.getElementById('gl').textContent.includes('all 89')`));
+check("night: icon is a starry violet-to-black swatch, not an emoji",
   await evalJs(`!!document.querySelector('[data-id=night] .s')
     && document.querySelector('[data-id=night] .s').style.background.includes('gradient')`));
-check("night: comes from Black and Sky now, and Violet no longer makes it",
+check("night: Black + Sky or Violet + Sky, and the two cost the same",
   RECIPE['black+sky'] === "night" &&
-  RECIPE['sky+violet'] === undefined);
+  RECIPE['sky+violet'] === "night");
 check("black: the one color no mixing of lights reaches, so it comes from the materials",
   RECIPE['charcoal+stone'] === "black" &&
   await evalJs(`!!document.querySelector('[data-id=black] .s')`));
@@ -621,7 +629,7 @@ check("highscore: back to the game", s.phase === "play");
 await run(EXTRA);
 await sleep(100);
 s = await state();
-check("full: completion overlay after all 85", s.fullDone && s.phase === "overlay");
+check("full: completion overlay after all 89", s.fullDone && s.phase === "overlay");
 const fullMoves = s.moves;
 check("full: hidden best stored", (await best("bestFull")) === fullMoves);
 check("indigo: Newton's seventh band, between Blue and Violet",
@@ -647,13 +655,14 @@ check("reset: hidden best appears nowhere outside the completion screen",
   !(await evalJs(`document.body.innerText.includes('complete run')`)));
 
 // --- a perfect run must lower both bests ----------------------------------
-// The true minimum, 33 moves. The Rainbow half is still cheap (Sun + Rain, and
+// The true minimum, 31 moves. The Rainbow half is still cheap (Sun + Rain, and
 // the Prism routes stay a scenic detour). What dominates is everything else:
-// the Unicorn needs a Horse, which puts the whole life branch on the critical
+// the Unicorn needs an Animal, which puts the whole life branch on the critical
 // path, and Magic needs Wood + Star, which puts the whole wood chain there
 // twice over — Wood itself, and Black at the end of it for the Night the Star
 // needs. Both run off one Earth/Lava/Stone/Metal spine, and the Cloud does
-// double duty for Rain and for Lightning.
+// double duty for Rain and for Lightning. The Horse is what the Animal saves:
+// it is the same Unicorn two moves dearer, so it belongs to the run above.
 const PERFECT_QUEST = [
   ["red","green"],        // yellow
   ["red","yellow"],       // orange
@@ -677,8 +686,6 @@ const PERFECT_QUEST = [
   ["lightning","water"],  // life
   ["earth","life"],       // animal
   ["life","sun"],         // plant
-  ["earth","plant"],      // field
-  ["animal","field"],     // horse
   ["fire","metal"],       // knife
   ["water","plant"],      // tree
   ["tree","knife"],       // wood
@@ -687,7 +694,7 @@ const PERFECT_QUEST = [
   ["black","sky"],        // night
   ["night","white"],      // star
   ["wood","star"],        // magic
-  ["horse","magic"],      // unicorn
+  ["animal","magic"],     // unicorn
 ];
 const PERFECT_EXTRA = [
   ["red","blue"],         // magenta
@@ -695,6 +702,7 @@ const PERFECT_EXTRA = [
   ["blue","violet"],      // indigo
   ["red","white"],        // pink
   ["yellow","orange"],    // gold
+  ["gold","water"],       // beer
   ["earth","air"],        // sand
   ["sand","fire"],        // glass
   ["glass","electricity"],// light bulb
@@ -705,7 +713,9 @@ const PERFECT_EXTRA = [
   ["water","night"],      // ice
   ["cloud","ice"],        // snow
   ["wood","charcoal"],    // pencil
+  ["charcoal","fire"],   // ash
   ["earth","water"],      // clay
+  ["earth","plant"],      // field
   ["field","water"],      // park
   ["stone","life"],       // egg
   ["stone","animal"],     // lizard
@@ -723,6 +733,7 @@ const PERFECT_EXTRA = [
   ["bird","water"],       // duck
   ["bird","night"],       // owl
   ["bird","pink"],        // flamingo
+  ["animal","field"],     // horse
   ["horse","water"],      // hippo
   ["animal","moon"],      // wolf
   ["animal","fire"],      // bone
@@ -739,19 +750,21 @@ const PERFECT_EXTRA = [
   ["wood","metal"],       // axe
   ["glass","metal"],      // mirror
   ["bird","fire"],        // phoenix
+  ["stone","tree"],       // paper
+  ["paper","pencil"],     // book
 ];
 await run(PERFECT_QUEST);
 await sleep(100);
 s = await state();
-check("perfect: quest done in 33 moves", s.questDone && s.moves === 33);
-check("perfect: quest best lowered to 33", (await best("bestQuest")) === 33);
+check("perfect: quest done in 31 moves", s.questDone && s.moves === 31);
+check("perfect: quest best lowered to 31", (await best("bestQuest")) === 31);
 check("perfect: overlay celebrates the new best",
   await evalJs(`document.getElementById('oc').textContent.includes('NEW BEST')`));
 await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
 await run(PERFECT_EXTRA);
 s = await state();
-check("perfect: full clear in 82 moves", s.fullDone && s.moves === 82);
-check("perfect: hidden best lowered to 82", (await best("bestFull")) === 82);
+check("perfect: full clear in 86 moves", s.fullDone && s.moves === 86);
+check("perfect: hidden best lowered to 86", (await best("bestFull")) === 86);
 
 // --- a sloppier run must NOT overwrite them -------------------------------
 await reset();
@@ -760,7 +773,7 @@ await run([["red","green"], ["red","green"], ["blue","yellow"], ["red","blue"], 
 await sleep(100);
 s = await state();
 check("sloppy: quest done in 35 moves", s.questDone && s.moves === 35);
-check("sloppy: best stays 33", (await best("bestQuest")) === 33);
+check("sloppy: best stays 31", (await best("bestQuest")) === 31);
 
 // --- persistence: reload restores the run ---------------------------------
 await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
@@ -782,8 +795,11 @@ check("alt: Sun+Rain forges the Rainbow, no Prism involved",
   s.found.includes("rainbow") && !s.found.includes("prism") && s.moves === 11);
 check("alt: the intuitive pairs resolve too",
   JSON.stringify(['air+water', 'air+stone', 'fire+ice', 'air+penguin',
-    'dog+wolf', 'charcoal+fire', 'air+fire'].map((k) => RECIPE[k])) ===
-  '["cloud","sand","water","bird","dog","fire","fire"]');
+    'dog+wolf', 'charcoal+fire', 'air+fire', 'grey+sky'].map((k) => RECIPE[k])) ===
+  '["cloud","sand","water","bird","dog","ash","fire","cloud"]');
+check("alt: a Volcano has the same Diamond in it as the Lava it pours",
+  RECIPE['charcoal+lava'] === "diamond" &&
+  RECIPE['charcoal+volcano'] === "diamond");
 check("alt: Diamond cuts Glass into a Prism, the only route to one",
   RECIPE['diamond+glass'] === "prism" &&
   RECIPE['glass+white'] === undefined);
@@ -860,12 +876,12 @@ check("unlock: the first press only arms the button",
 await menuBtn("Sure? (ends");
 s = await state();
 check("unlock: the second press hands over every element",
-  s.found.length === 85 && s.phase === "play" && s.moves === 0);
+  s.found.length === 89 && s.phase === "play" && s.moves === 0);
 check("unlock: an unlocked run stops scoring, and says so",
   await evalJs(`document.getElementById('gl').textContent.includes('does not score')`) &&
   s.phase === "play" && !s.fullDone);
 check("unlock: no best was written from it",
-  (await best("bestFull")) === 82 && (await best("bestQuest")) === 33);
+  (await best("bestFull")) === 86 && (await best("bestQuest")) === 31);
 await key("Escape");
 await menuBtn("Reset everything");
 check("wipe: the first press only arms the button",

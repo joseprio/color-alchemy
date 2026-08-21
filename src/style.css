@@ -30,6 +30,7 @@ body {
   margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
   display: flex; flex-direction: column; align-items: center;
   touch-action: manipulation; overflow-x: hidden;
+  background-attachment: fixed;
   background-image:
     radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
     radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);

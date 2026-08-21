@@ -10,7 +10,7 @@ primaries.
 ```
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
-npm test                  # 112 headless checks against dist/bundle.html
+npm test                  # 118 headless checks against dist/bundle.html
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fouc-check        # is the sheet in place before the first paint?
@@ -42,7 +42,7 @@ npm run audio-bench       # what a sample costs, against the callback budget
   → **9651 bytes, 72.50% of the budget.**
   `src/style.css` is read ONCE, at config load: after editing it during
   `npm start`, restart the watcher.
-- **The element table omits the names it can derive.** For 81 of the 85, `n`
+- **The element table omits the names it can derive.** For 85 of the 89, `n`
   is just the id with a capital, so the table leaves it out and
   `src/elements.ts` fills it in; only White Light, Polar Bear, Crystal Ball
   and Light Bulb are written out. Worth **-162 B** end to end, and it is the
@@ -336,7 +336,7 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 - **The quest:** forge the 🌈 **Rainbow** (White Light + Prism, or Sun + Rain)
   and the 🦄 **Unicorn**. When you hold both, your move count is compared with
   the stored best and kept if lower. You can then keep playing.
-- **The endgame:** discover all 85 elements. The total move count of a full
+- **The endgame:** discover all 89 elements. The total move count of a full
   clear is the *hidden highscore* — it is only ever compared and shown on the
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
@@ -528,41 +528,51 @@ stops the whole game from loading.)
 
 ## Recipe tree — SPOILERS
 
-A perfect quest is **33 moves**, through the Sun + Rain rainbow; the two cheap
-Prism routes cost **36**. That gap used to be seven moves and is now three: the
-quest already has to reach Charcoal on its way to Black, and a Diamond is only
-a Lava away from there, so the Prism is a much shorter detour than it looks.
-A Light Bulb through a Prism is a third Prism route and always one move worse
-than those two: the Prism already needed the Glass and the Unicorn's life
-branch already needed the Electricity, so the bulb itself is the only move it
-adds — flavour for a player holding both, never a cheaper way in.
-A perfect full clear is **82** - one move per element, since nothing can be
+A perfect quest is **31 moves**, through the Sun + Rain rainbow; the cheapest
+Prism route costs **33**, and Prism + Sun or a Light Bulb through a Prism cost
+**34**. It was 33 until the Unicorn learned to take a plain **Animal + Magic**:
+the Horse it used to insist on was two moves of its own — the Field it stands
+in, and then the Horse — and nothing else in the tree needs either of them.
+The Prism gap narrowed with it, from three moves to two: the quest still has to
+reach Charcoal on its way to Black, and a Diamond is only a Lava away from
+there, so the Prism is a much shorter detour than it looks. A Light Bulb
+through a Prism is a third Prism route and never a cheaper one: the Prism
+already needed the Glass and the Unicorn's life branch already needed the
+Electricity, so the bulb itself is the only move it adds — flavour for a
+player holding both, never a cheaper way in.
+A perfect full clear is **86** - one move per element, since nothing can be
 made twice. Best scores are scoped to the current recipe tree, so all of this
 started fresh records automatically.
 
 The Rainbow half of the quest is cheap. Everything else is not, because the two
-remaining halves both bottom out in the same place. The Unicorn needs a
-**Horse**, which pulls the entire life branch onto the critical path (mineral
-chain -> Acid + Metal battery -> Electricity -> Lightning -> Life -> Animal,
-plus a Field for it to stand in). Magic needs **Wood + Star**, and the wood
-chain pays for both halves of that: the Wood itself, and the Charcoal -> Black
-past it that Night - and so the Star - is built from (Knife + Tree -> Wood ->
-Charcoal -> Black). Both branches run off one Earth/Lava/Stone/Metal spine,
-which is what keeps 33 from being far worse, and the Cloud earns its keep
-twice: once for the Rain, once for the Lightning.
+remaining halves both bottom out in the same place. The Unicorn needs an
+**Animal**, which pulls the entire life branch onto the critical path (mineral
+chain -> Acid + Metal battery -> Electricity -> Lightning -> Life -> Animal).
+Magic needs **Wood + Star**, and the wood chain pays for both halves of that:
+the Wood itself, and the Charcoal -> Black past it that Night - and so the Star
+- is built from (Knife + Tree -> Wood -> Charcoal -> Black). Both branches run
+off one Earth/Lava/Stone/Metal spine, which is what keeps 31 from being far
+worse, and the Cloud earns its keep twice: once for the Rain, once for the
+Lightning. The Night has a second route, **Violet + Sky**, and it is an exact
+tie rather than a shortcut: Magenta then Violet costs the same two moves as
+Charcoal then Black, so a quest that never touches the material half still
+lands on 31 - it just arrives at the Star through the colors instead. The original Horse + Magic route is still there and still costs 33 -
+a Field, and then a Horse to stand in it, for a Unicorn the Animal already had.
 
 Additive color mixing does the early work: primaries pair into secondaries,
 and any **complementary pair** (Blue+Yellow, Red+Cyan, Green+Magenta) makes
 White Light. **Black** is the deliberate exception - no two lights mix to
 darkness, so the one color the light half of the tree cannot reach has to
-arrive through the material half instead, as Charcoal + Stone.
+arrive through the material half instead, as Charcoal + Stone. Only the color
+itself, though: the Night it used to gate is reachable from a Violet sky now,
+so a player can own the whole light half and still never make a Black.
 
 Several elements have more than one route, so an intuitive guess tends to land
 somewhere. Six of them are deliberately cyclic - Fire + Ice remakes Water,
 which Ice itself needs; Penguin + Air hands back the Bird the Penguin came from;
-Wolf + Dog is just another Dog; Fire + Charcoal burns the Charcoal back down to
-Fire; Fire + Air is a fanned fire and nothing more; and Axe + Tree makes the
-Wood the Axe itself was cut from - flavor for a pair players try, never a
+Wolf + Dog is just another Dog; Fire + Air is a fanned fire and nothing more;
+Lizard + Egg hatches another Lizard; and Axe + Tree makes the Wood the Axe
+itself was cut from - flavor for a pair players try, never a
 cheaper path.
 
 | Element | Recipe |
@@ -572,17 +582,19 @@ cheaper path.
 | Cyan | Green + Blue |
 | White Light | Blue + Yellow · Red + Cyan · Green + Magenta |
 | Orange | Red + Yellow |
-| Violet | Blue + Magenta |
+| Violet | Blue + Magenta |
+
 | Indigo | Blue + Violet |
 | Pink | Red + White Light |
 | Air | Blue + White Light |
 | Sky | Air + Blue |
 | Gold | Yellow + Orange |
 | Water | Blue + Cyan · Fire + Ice |
-| Fire | Red + Air · Fire + Charcoal · Fire + Air |
+| Fire | Red + Air · Fire + Air |
 | Earth | Green + Orange |
 | Clay | Earth + Water |
 | Pottery | Clay + Fire |
+| Beer | Gold + Water |
 | Lava | Earth + Fire |
 | Volcano | Lava + Earth |
 | Stone | Lava + Water |
@@ -593,10 +605,10 @@ cheaper path.
 | Glass | Sand + Fire |
 | Mirror | Glass + Metal |
 | Sun | Fire + Sky |
-| Night | Black + Sky |
+| Night | Black + Sky · Violet + Sky |
 | Star | Night + White Light |
 | Moon | Night + Sun |
-| Cloud | Sky + Water · Water + Air |
+| Cloud | Sky + Water · Water + Air · Grey + Sky |
 | Rain | Cloud + Water |
 | Acid | Green + Water |
 | Electricity | Acid + Metal |
@@ -607,7 +619,7 @@ cheaper path.
 | Life | Lightning + Water |
 | Egg | Stone + Life |
 | Animal | Earth + Life |
-| Lizard | Stone + Animal |
+| Lizard | Stone + Animal · Egg + Lizard |
 | Horse | Animal + Field |
 | Hippo | Horse + Water |
 | Wolf | Animal + Moon |
@@ -616,13 +628,13 @@ cheaper path.
 | Cow | Animal + Plant |
 | Squirrel | Animal + Tree |
 | Bird | Air + Animal · Air + Penguin |
-| Chick | Egg + Bird |
+| Chick | Egg + Bird · Duck + Egg · Egg + Flamingo |
 | Penguin | Bird + Ice |
 | Duck | Bird + Water |
 | Fish | Animal + Water |
 | Owl | Bird + Night |
 | Flamingo | Bird + Pink |
-| Phoenix | Bird + Fire |
+| Phoenix | Bird + Fire · Ash + Fire |
 | Bee | Animal + Flower |
 | Honey | Bee + Flower |
 | Bear | Animal + Honey |
@@ -633,17 +645,21 @@ cheaper path.
 | **Rainbow** | **White Light + Prism** · **Sun + Rain** · **Prism + Sun** · **Light Bulb + Prism** |
 | Magic | Wood + Star |
 | Crystal Ball | Magic + Glass |
-| **Unicorn** | **Horse + Magic** |
+| **Unicorn** | **Horse + Magic** · **Animal + Magic** |
 | Sunset | Sun + Pink |
 | Plant | Life + Sun · Life + Green |
 | Tree | Water + Plant |
 | Fruit | Tree + Sun |
 | Wood | Tree + Knife · Axe + Tree |
 | Charcoal | Wood + Fire · Tree + Fire |
-| Pencil | Wood + Charcoal |
+| Ash | Charcoal + Fire · Bone + Fire · Fire + Paper · Book + Fire |
+| Pencil | Wood + Charcoal |
+| Paper | Stone + Tree |
+| Book | Paper + Pencil |
+
 | Black | Charcoal + Stone |
 | Grey | Black + White Light |
-| Diamond | Charcoal + Lava |
+| Diamond | Charcoal + Lava · Volcano + Charcoal |
 | Field | Earth + Plant |
 | Park | Field + Water |
 | Cactus | Plant + Sand |
