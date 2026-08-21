@@ -126,6 +126,28 @@ npm run audio-bench       # what a sample costs, against the callback budget
   taken knowingly. Checking `.filter` instead — the method every one of the
   four sites actually calls FIRST — closes that case for **+2 B**, and is the
   swap to make if a save-corruption bug ever shows up here.
+- **The audio gesture-unlock hook is gone: -8 B.** `wakeAudio` sat on
+  `document.onkeydown` and `document["onpointerdown"]` to open the
+  AudioContext inside a user gesture, from back when the music started on
+  load. It starts with the BOARD now, and the board is only reachable through
+  the menu, so the page always has sticky activation by the time anything
+  asks for audio. Verified rather than assumed, and the project harness cannot
+  verify it — `cdp.mjs` launches Chrome with
+  `--autoplay-policy=no-user-gesture-required`, so the 114 checks are blind to
+  autoplay by construction. Tested on a scratch copy with that flag stripped
+  and `AudioContext` instrumented: entering the game by mouse AND by keyboard
+  both leave the context `running`.
+  Two things made it safe to drop. `pump()` calls `ac()` every 200ms while the
+  music flows and `ac()` resumes a suspended context, so the engine already
+  retries — an externally suspended context came back on its own, with no
+  input. And every sound effect calls `ac()` from inside a click handler.
+  The exposure is Safari, which wants TRANSIENT activation — a resume inside
+  the handler's own call stack — where sticky is not enough. Nothing on the
+  entry path plays a sound (`menuGo` just forwards `b.click()`), so the first
+  `ac()` there lands in the frame loop, outside any gesture, and the music
+  would stay silent until the first tile tap unlocks it through `SFX.select`.
+  Taken knowingly, and untestable from this machine: `npm run phone` serves
+  the page to a real device if it ever needs checking.
 - **innerHTML instead of textContent is NOT worth it: 3 B.** Nine writes, two
   characters each, and roadroller predicts the longer word almost for free.
   It would also make the first element named "Salt & Pepper" render wrong,

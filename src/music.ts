@@ -465,14 +465,6 @@ export function musicPlaying(on: boolean): void {
   flow();
 }
 
-// Every pointer and key event lands here, not just the first: ac() resumes a
-// context that is suspended — which iOS can leave it even after a gesture, and
-// which nothing else would retry. The context has to be woken inside a gesture;
-// the music itself starts later, when the game does.
-export function wakeAudio(): void {
-  try { ac(); } catch {}
-}
-
 // Mutes the interface sounds too — one control for all the audio.
 export function toggleMute(): boolean {
   setMuted(!muted);

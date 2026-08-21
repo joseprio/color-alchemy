@@ -1,7 +1,12 @@
 // Tiny WebAudio synth. The context is created lazily on the first call, which
-// in practice is always inside a user-gesture handler, so autoplay policy is
-// satisfied; every call is try/caught so a missing/blocked AudioContext
-// (headless test runs) degrades to silence rather than an exception.
+// is whichever comes first of the music starting (the frame loop, once the
+// board is up) and a sound playing (a click handler). Only the second is a
+// gesture, so autoplay policy is satisfied by STICKY activation — the page has
+// been interacted with by then, since the board is only reachable through the
+// menu. ac() also resumes a suspended context, and pump() calls it every 200ms
+// while the music flows, which is what brings the audio back after a stall.
+// Every call is try/caught so a missing or blocked AudioContext (headless test
+// runs) degrades to silence rather than an exception.
 let AC: AudioContext | null = null;
 
 // Mute is a preference, not run state: New game does not clear it and a reload

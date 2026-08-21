@@ -4,15 +4,10 @@
 import "./css";                     // the stylesheet, before anything renders
 import { boot, phase } from "./game";
 import { initKeyboard, pollPad } from "./input";
-import { wakeAudio, musicPlaying } from "./music";
+import { musicPlaying } from "./music";
 
 boot();
 initKeyboard();
-
-// The music needs a user gesture before the AudioContext may run, so it starts
-// on the first one of either kind — and keeps trying on later ones, because a
-// context can come back suspended. wakeAudio is idempotent, so no removal.
-document["onpointerdown"] = document.onkeydown = wakeAudio;
 
 // the frame loop does two things: poll the gamepad, which has no event API, and
 // tell the music whether the game is being played — it plays over the board and
