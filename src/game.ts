@@ -778,9 +778,9 @@ export function boot(): void {
   try {
     const cx = JSON.parse(store.get(K_CODEX) || "null");
     if (cx) {
-      (Array.isArray(cx.f) ? (cx.f as string[]) : []).filter(id => BY_ID[id])
+      (cx.f && cx.f.map ? (cx.f as string[]) : []).filter(id => BY_ID[id])
         .map(id => { if (!codexF.includes(id)) codexF.push(id); });
-      (Array.isArray(cx.k) ? (cx.k as string[]) : []).filter(k => RECIPE[k])
+      (cx.k && cx.k.map ? (cx.k as string[]) : []).filter(k => RECIPE[k])
         .map(k => codexK.add(k));
     }
   } catch {}
@@ -790,13 +790,13 @@ export function boot(): void {
   let run: { f?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean } | null = null;
   const raw = store.get(K_RUN);
   try { run = raw ? JSON.parse(raw) : null; } catch {}
-  if (run && Array.isArray(run.f)) {
+  if (run && run.f && (run.f as string[]).map) {
     const ids = (run.f as string[]).filter(id => BY_ID[id]);
     STARTERS.map(id => { if (!ids.includes(id)) ids.unshift(id); });
     ids.map(id => { found.add(id); addTile(id); });
     // migrate pre-codex saves: a run's discoveries and combos are knowledge
     ids.map(id => { if (!codexF.includes(id)) codexF.push(id); });
-    if (Array.isArray(run.k)) (run.k as string[]).filter(k => RECIPE[k]).map(k => codexK.add(k));
+    if (run.k && (run.k as string[]).map) (run.k as string[]).filter(k => RECIPE[k]).map(k => codexK.add(k));
     moves = Math.max(0, (run.m as number) | 0);
     questDone = !!run.q;
     fullDone = !!run.c;

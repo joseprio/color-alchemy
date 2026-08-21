@@ -110,6 +110,22 @@ npm run audio-bench       # what a sample costs, against the callback budget
   rather than assumed. The cost is a throwaway array per call, and the only
   one on a warm path is `renderFocus` — driven by input events, never by the
   rAF loop, which reaches `moveCursor` only on a d-pad edge.
+- **`Array.isArray(x)` is `x && x.map`: -7 B.** Four sites in `loadState`, all
+  duck-typing JSON that came back out of localStorage. The left half is not
+  optional: `run.f.map` on its own throws on a save with no `f`, and that one
+  is outside the try/catch, so it would take the whole boot with it.
+  `x?.map` would say it in fewer bytes and CANNOT be used — the closure
+  plugin re-parses closure's output with an acorn-walk too old to visit a
+  ChainExpression, and the build dies in that parse. The README already said
+  that about `?.()`; it is true of `?.` property access too, confirmed by
+  building it.
+  The trade is one case where the two tests disagree: a `run.f` that is an
+  OBJECT carrying a `map` property passes the duck test, `Array.isArray` fails
+  it, and the branch then throws on `.filter` and boots to an empty board.
+  Only hand-edited localStorage produces it, and New game clears it, so it is
+  taken knowingly. Checking `.filter` instead — the method every one of the
+  four sites actually calls FIRST — closes that case for **+2 B**, and is the
+  swap to make if a save-corruption bug ever shows up here.
 - **innerHTML instead of textContent is NOT worth it: 3 B.** Nine writes, two
   characters each, and roadroller predicts the longer word almost for free.
   It would also make the first element named "Salt & Pepper" render wrong,
