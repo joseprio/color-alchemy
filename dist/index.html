@@ -37,12 +37,12 @@
   <button id="sn">Sound<i>M / &#9421;</i></button>
   <button id="mn">Menu<i>Esc / &#9399;</i></button>
 </div>
-<!-- The cauldron. #ca is the LOCKED slot: the first element you pick lands
-     here and stays through every combine, so trying Fire against ten things
-     is ten taps, not twenty. Clicking it (the X is the affordance) empties it,
-     as does picking the same grid tile again. #cb and #cr clear themselves a
-     beat after each attempt; a pair that makes nothing shakes the cauldron
-     rather than the two tiles. -->
+<!-- The cauldron. #ca holds the picked element, and wears the gold ring and
+     its X only once that pick is LOCKED — a second tap on the tile. A locked
+     element stays through every combine, so trying Fire against ten things is
+     ten taps, not twenty; a loose pick is spent by the first mix it makes.
+     #cb and #cr clear themselves a beat after each attempt; a pair that makes
+     nothing shakes the cauldron rather than the two tiles. -->
 <div id="dk">
 <div id="cd">
   <div class="l" id="ca"></div>
@@ -54,7 +54,7 @@
 <div id="cq"></div>
 </div>
 <div id="gd"></div>
-<f>tap one to hold, another to mix &middot; the held one stays &mdash; tap it or the X to drop it, the cyan one to swap &middot; arrows or d-pad + Enter/&#9398; &middot; Esc/&#9399; drops &middot; H/&#9422; hints, costs a move &middot; M/&#9421; mutes</f>
+<f>tap one to pick, another to mix &middot; tap the pick again to lock it &mdash; a locked one stays, a third tap drops it &middot; arrows or d-pad + Enter/&#9398; &middot; Esc/&#9399; drops &middot; H/&#9422; hints, costs a move &middot; M/&#9421; mutes</f>
 <div id="ti" class="C">
   <!-- #tw is shrink-to-fit, so COLOR sets the measure and #tb spreads
        its letters across exactly that width. One span per letter is what makes

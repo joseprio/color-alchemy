@@ -22,11 +22,11 @@ const { evalJs, send, sleep } = t;
 
 const tileClick = (id) =>
   `document.querySelector('[data-id=${id}]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`;
-// Emptying the altar, the way a player would. The second slot has to go too:
-// left set, the next pick on that element would PROMOTE it rather than mix,
-// and cost no move. Clicking the cyan one promotes it (which clears both
-// transient slots) and clicking it again lets go, so two clicks leave nothing
-// held and nothing pending. A no-op when the altar is already empty.
+// Emptying the altar, the way a player would, whichever state the pick is in:
+// a cyan (loose) pick locks on the next click and lets go on the one after, a
+// gold (locked) one lets go on the first. Two clicks on the cyan one and one on
+// the gold one therefore leave nothing picked, and it is a no-op when nothing
+// is.
 const RELEASE = `(() => {
   const c = (e) => e && e.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   const b = document.querySelector('.t.E');
@@ -56,6 +56,7 @@ const state = () => evalJs(`(() => {
     questDone: full || g.includes('Endgame'),
     fullDone: full,
     sel: at('e'),
+    pick: at('E'),
     cursor: at('u'),
     phase: document.getElementById('ov').classList.contains('w') ? 'overlay'
          : document.getElementById('ti').classList.contains('w') ? 'menu' : 'play',
@@ -141,8 +142,15 @@ check("menu: New game enters the game", s.phase === "play");
 // --- mouse: Red + Green -> Yellow ----------------------------------------
 await click("red");
 s = await state();
-check("lock: the first pick locks into the cauldron",
-  s.sel === 0 && await evalJs(`document.getElementById('ca').classList.contains('y')`) &&
+check("pick: the first tap picks the element, loose — cyan, and no lock ring",
+  s.pick === 0 && s.sel === -1 &&
+  !(await evalJs(`document.getElementById('ca').classList.contains('y')`)) &&
+  await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
+await click("red");
+s = await state();
+check("lock: the second tap on the same element locks it",
+  s.sel === 0 && s.pick === -1 &&
+  await evalJs(`document.getElementById('ca').classList.contains('y')`) &&
   await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
 await click("green");
 await sleep(100);
@@ -161,29 +169,28 @@ check("discovery: the rays step round the spectrum",
   (await evalJs(`[...document.querySelectorAll('#ds .k')][7].style.getPropertyValue('--c')`)) === "hsl(180 95% 62%)");
 check("lock: Red is still held after the combine", s.sel === 0 &&
   await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
-check("cauldron: the second element is marked on the board while it sits in slot B",
+check("cauldron: the pair sits in the altar and nothing else is marked",
   await evalJs(`document.getElementById('cb').textContent.includes('Green')`) &&
-  (await evalJs(`[...document.querySelectorAll('.t.E')].map(t => t.dataset.id).join()`)) === "green");
+  !(await evalJs(`!!document.querySelector('.t.E')`)));
 await shot("cauldron");
 // the second slot and the result clear themselves; the lock does not
 await sleep(2400);
-check("cauldron: the board mark clears with the slot",
-  !(await evalJs(`!!document.querySelector('.t.E')`)));
 check("cauldron: B and the result empty themselves, the lock stays",
   (await evalJs(`document.getElementById('cb').textContent`)) === "" &&
   (await evalJs(`document.getElementById('cr').textContent`)) === "" &&
   await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
 await click("red");
 s = await state();
-check("lock: picking the held element again releases it",
-  s.sel === -1 && !(await evalJs(`document.getElementById('ca').classList.contains('y')`)));
+check("lock: tapping a locked element again lets it go",
+  s.sel === -1 && s.pick === -1 &&
+  !(await evalJs(`document.getElementById('ca').classList.contains('y')`)));
 
 // --- keyboard: cursor to Blue + Yellow -> White Light ---------------------
 await key("ArrowRight");            // cursor is on red(0) after the release
 await key("ArrowRight");            // -> blue(2)
-await key("Enter");                 // lock blue
+await key("Enter");                 // pick blue
 s = await state();
-check("keyboard: arrows+Enter select an element", s.sel === 2 && s.cursor === 2);
+check("keyboard: arrows+Enter pick an element", s.pick === 2 && s.cursor === 2);
 await key("ArrowRight");
 await key("Enter");                 // blue + yellow
 await sleep(100);
@@ -192,6 +199,8 @@ check("keyboard: Blue+Yellow forges White Light", s.found.includes("white") && s
 await release();
 
 // --- failed and duplicate combos both count as moves ----------------------
+// the failed pair is made with a LOOSE pick, the rediscovery after it with a
+// LOCKED one — the two halves of the rule, on the two mixes already here
 await click("green");
 await click("yellow");
 s = await state();
@@ -201,7 +210,13 @@ check("fail: the cauldron says nothing happens",
 check("fail: the cauldron shakes and the tiles do not",
   await evalJs(`document.getElementById('cd').classList.contains('x')`) &&
   !(await evalJs(`!!document.querySelector('.t.x')`)));
-// green is still held, so one more pick is the whole rediscovery
+check("pick: a loose pick is spent by its mix — nothing stays picked",
+  s.sel === -1 && s.pick === -1 &&
+  !(await evalJs(`!!document.querySelector('.t.E')`)) &&
+  !(await evalJs(`!!document.querySelector('.t.e')`)));
+// lock green this time, so the rediscovery is one more tap and the lock stays
+await click("green");
+await click("green");
 await click("red");
 s = await state();
 check("dupe: rediscovery costs a move, adds nothing", s.moves === 4 && s.found.length === 5);
@@ -211,26 +226,19 @@ check("dupe: the cauldron names the known result",
   await evalJs(`document.getElementById('cq').textContent.includes('already discovered')`));
 check("dupe: only the known result pulses",
   (await evalJs(`[...document.querySelectorAll('.t.h')].map(t => t.dataset.id).join()`)) === "yellow");
-// Red is the cyan secondary right now: tapping it takes over the lock from
-// Green, empties both transient slots, and spends no move
-check("lock: tapping the cyan secondary promotes it to the held element",
-  (await evalJs(`[...document.querySelectorAll('.t.E')].map(t => t.dataset.id).join()`)) === "red");
-await click("red");
-s = await state();
-check("lock: the promoted element is held and the slots are empty",
-  s.sel === 0 && s.moves === 4 &&
-  await evalJs(`document.getElementById('ca').textContent.includes('Red')`) &&
-  (await evalJs(`document.getElementById('cb').textContent`)) === "" &&
-  (await evalJs(`document.getElementById('cr').textContent`)) === "" &&
+// the lock survived both mixes, and neither mixed-in element is left marked
+check("lock: a locked element survives every mix, and marks nothing else",
+  s.sel === 1 && s.moves === 4 &&
+  await evalJs(`document.getElementById('ca').textContent.includes('Green')`) &&
   !(await evalJs(`!!document.querySelector('.t.E')`)));
 
 // --- encyclopedia: performed combinations only ----------------------------
-// green is still held, so the first Escape releases the lock rather than
-// reaching the menu — cancel first, leave second, exactly as Ⓑ behaves
+// green is still locked, so the first Escape releases it rather than reaching
+// the menu — cancel first, leave second, exactly as Ⓑ behaves
 await key("Escape");
 s = await state();
-check("lock: Escape releases the held element before it opens the menu",
-  s.phase === "play" && s.sel === -1);
+check("lock: Escape releases the locked element before it opens the menu",
+  s.phase === "play" && s.sel === -1 && s.pick === -1);
 await key("Escape");
 s = await state();
 check("keyboard: Escape opens the menu", s.phase === "menu");
@@ -295,7 +303,7 @@ await sleep(120);
 await evalJs("__pad.buttons[0].pressed = false");
 await sleep(80);
 s = await state();
-check("gamepad: A selects at the cursor", s.sel === s.cursor);
+check("gamepad: A picks at the cursor", s.pick === s.cursor);
 await evalJs("__pad.buttons[1].pressed = true");    // B cancels
 await sleep(120);
 await evalJs("__pad.buttons[1].pressed = false");
@@ -596,7 +604,7 @@ check("highscore: Back puts the button column back",
   (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`))
     .includes("Highscore") &&
   !(await evalJs(`!!document.getElementById('ml')`)));
-await key("Escape");
+// Back closed the panel, so ONE Escape leaves the menu — a second would reopen it
 await key("Escape");
 s = await state();
 check("highscore: back to the game", s.phase === "play");

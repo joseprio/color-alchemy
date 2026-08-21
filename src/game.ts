@@ -55,7 +55,8 @@ let fullDone = false;               // all elements found this run
 // "Unlock all" hands you the whole board, so the run must never score again.
 // Persisted with the run: a reload cannot launder a cheated run into a best.
 let cheated = false;
-let sel = -1;                       // index (into order) of the LOCKED element, -1 when empty
+let sel = -1;                       // index (into order) of the picked element, -1 when none
+let held = false;                   // ...and whether that pick is LOCKED (gold) or loose (cyan)
 let slotA: string | null = null;    // A when nothing is locked (a drag, or CA.attempt)
 let slotB: string | null = null;    // the second element, until the attempt resolves
 let slotR: string | null = null;    // the result, likewise
@@ -168,10 +169,11 @@ function flash(cls: "x" | "h", ...ids: string[]): void {
 }
 function renderFocus(): void {
   tiles.forEach((t, i) => {
-    t.classList.toggle("e", i === sel);
-    // the second element stays marked on the board for exactly as long as it
-    // is sitting in the cauldron's second slot
-    t.classList.toggle("E", order[i] === slotB);
+    // one element wears one of the two: gold for a locked pick, cyan for a
+    // loose one. Nothing else on the board is marked — a mix leaves the pair
+    // in the altar, not on the tiles.
+    t.classList.toggle("e", i === sel && held);
+    t.classList.toggle("E", i === sel && !held);
     t.classList.toggle("u", padMode && i === cursor);
   });
 }
@@ -223,6 +225,7 @@ function lift(): void {
   if (pressIdx < 0 || dragging || phase() !== "play") return;
   dragging = true;
   sel = -1;                 // a pending click-selection mid-drag would confuse; clear silently
+  held = false;
   renderFocus();
   const src = tiles[pressIdx];
   src.classList.add("d");
@@ -306,7 +309,7 @@ function paintCauldron(): void {
   fill(ca, sel >= 0 ? order[sel] : slotA);
   fill(cb, slotB);
   fill(cr, slotR);
-  ca.classList.toggle("y", sel >= 0);
+  ca.classList.toggle("y", held);   // the gold ring and its X mean LOCKED
   renderFocus();   // the board mirrors both slots, so they change together
 }
 // B and the result are transient: they clear a beat after the attempt so the
@@ -352,24 +355,32 @@ function openDisc(id: string, aId: string, bId: string): void {
 export function unlock(): void {
   if (sel < 0 && !slotB) return;
   sel = -1;
+  held = false;
   clearSlots();
   SFX.cancel();
   renderFocus();
   paintCauldron();
 }
-// Nothing held -> this element becomes the locked one and STAYS locked.
-// The same element again -> unlock. A different one -> combine, and the lock
-// survives it, so the next attempt is one tap away.
+// One element, three states, on the tile you keep tapping: picked (cyan),
+// then LOCKED (gold), then nothing. A different element mixes with whatever is
+// picked — and the difference the lock buys is what happens next: a loose pick
+// is spent by the mix, so the board comes back empty and the next pair starts
+// from scratch, while a locked one survives every mix, which is what makes
+// trying Fire against ten things ten taps instead of twenty.
 export function selectAt(i: number): void {
   if (phase() !== "play" || i < 0 || i >= order.length) return;
   cursor = i;
-  if (sel === i) { sel = -1; SFX.cancel(); }
-  // the cyan one, still sitting in slot B: tapping it promotes it to the lock
-  // rather than mixing it again — you just used it, so building from it next is
-  // the likelier move, and mixing the same pair twice is a wasted move anyway
-  else if (order[i] === slotB) { sel = i; clearSlots(); SFX.select(); }
-  else if (sel < 0) { sel = i; SFX.select(); }
-  else { renderFocus(); attempt(order[sel], order[i]); return; }
+  if (sel === i) {
+    if (held) { sel = -1; held = false; SFX.cancel(); }   // third tap: let go
+    else { held = true; SFX.select(); }                   // second tap: lock it
+  } else if (sel < 0) { sel = i; SFX.select(); }          // first tap: pick it
+  else {
+    const a = order[sel];
+    if (!held) sel = -1;   // a loose pick is spent by the mix it just made
+    renderFocus();
+    attempt(a, order[i]);
+    return;
+  }
   renderFocus();
   paintCauldron();
 }
@@ -741,6 +752,7 @@ export function reset(): void {
   moves = 0;
   questDone = fullDone = cheated = false;
   sel = -1;
+  held = false;
   cursor = 0;
   lastHint = null;  // its ingredients just left the board
   STARTERS.forEach(id => { found.add(id); addTile(id); });

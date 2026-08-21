@@ -246,20 +246,21 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   from the scrollable overflow when the scroll container is `height: 100%`
   with content overflowing it. Padding inside the last element in the flow is
   real box height, so it survives. The toast and the keyboard cursor
-  (`scroll-margin-bottom`) both step over the dock too. The first element you pick is
-  **held** — it lands in the left slot and stays there through combine after
-  combine, so trying Fire against ten things is ten taps rather than twenty.
-  Its tile stays lit gold on the board, and the second element is marked cyan
-  there for exactly as long as it sits in the second slot — the two slots and
-  the two tiles always agree. Tapping that cyan one **promotes it to the
-  lock** rather than mixing the same pair again: you have just used it, so
-  building from it is the likelier next move, and re-mixing it would only
-  spend a move on a result you already have. Promoting costs nothing.
-- Letting go empties the whole altar, not just the lock — otherwise a stale
-  cyan secondary would sit there waiting to be promoted by a tap meant to mix. Picking it again lets go, as does the **X**
-  on the slot or Escape / ⓑ.
+  (`scroll-margin-bottom`) both step over the dock too.
+- **One element, three states, on the tile you keep tapping.** The first tap
+  picks it — cyan, and it lands in the left slot. A second tap on the same
+  tile **locks** it, gold, and the slot grows the ring and the X that say so.
+  A third lets it go. Tapping a DIFFERENT element mixes the two, and the lock
+  is the whole difference in what happens next: a loose pick is spent by the
+  mix it makes, so the board comes back empty and the next pair starts from
+  nothing, while a locked one survives every mix — which is what makes trying
+  Fire against ten things ten taps rather than twenty. Nothing else on the
+  board is ever marked: the pair you just tried sits in the altar, not on the
+  tiles.
+- Letting go empties the whole altar, not just the pick. Escape / ⓑ does it
+  from anywhere, as does the **X** on the slot once the pick is locked.
 - After each attempt the second slot and the well empty themselves — after
-  about a second for a dead end, two for a discovery — and the held element
+  about a second for a dead end, two for a discovery — and a locked element
   is left facing an empty slot, ready for the next try. Nothing to dismiss:
   there is no discovery card any more, which is why `phase()` has only three
   states.
@@ -306,10 +307,10 @@ notched phone in landscape the footer can sit under the home indicator.
 
 ## Controls
 
-| Input    | Combine | Hint | Let go of the held element | Mute |
+| Input    | Combine | Hint | Let go of the pick | Mute |
 |----------|---------|------|----------------------------|------|
-| Mouse    | click one element to hold it, then another to mix — or drag one onto another | the HUD **Hint** button | click the held element again, or the **X** on the cauldron | the HUD **Sound** button |
-| Touch    | tap one element to hold it, then another to mix — or long-press (~¼s) to lift, then drag onto another | the HUD **Hint** button | tap the held element again, or the **X** on the cauldron | the HUD **Sound** button |
+| Mouse    | click one element to pick it, then another to mix — or drag one onto another | the HUD **Hint** button | click it twice more (lock, then let go), or the **X** on the cauldron | the HUD **Sound** button |
+| Touch    | tap one element to pick it, then another to mix — or long-press (~¼s) to lift, then drag onto another | the HUD **Hint** button | tap it twice more (lock, then let go), or the **X** on the cauldron | the HUD **Sound** button |
 | Keyboard | arrows / WASD move, Enter or Space holds / mixes | **H** | Escape (lets go, else opens the menu) | **M** |
 | Gamepad  | d-pad or left stick move, Ⓐ holds / mixes | Ⓨ | Ⓑ (lets go, else opens the menu); Start opens/closes the menu; overlays: ←/→ + Ⓐ | Ⓧ |
 
