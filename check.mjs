@@ -783,6 +783,9 @@ check("alt: Prism + Sun is also a Rainbow",
   RECIPE['prism+sun'] === "rainbow");
 check("alt: Glass + Electricity lights a Light Bulb, the only route to one",
   RECIPE['electricity+glass'] === "lightbulb");
+check("alt: Rain + Electricity is a Storm too, skipping the Lightning",
+  RECIPE['electricity+rain'] === "storm" &&
+  RECIPE['lightning+rain'] === "storm");
 check("alt: the Sky is blue Air now, and the Sun is lit from it",
   RECIPE['air+blue'] === "sky" &&
   RECIPE['fire+sky'] === "sun" &&

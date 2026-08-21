@@ -533,7 +533,7 @@ cheaper path.
 | Electricity | Acid + Metal |
 | Light Bulb | Glass + Electricity |
 | Lightning | Cloud + Electricity |
-| Storm | Lightning + Rain |
+| Storm | Lightning + Rain · Electricity + Rain |
 | Tornado | Air + Storm |
 | Life | Lightning + Water |
 | Egg | Stone + Life |
