@@ -282,14 +282,15 @@ f {
 }
 #ob button.F { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
 
-/* title screen: floats over the bare background; body.M hides the game UI */
+/* title screen: floats over the bare background; .M hides the game UI.
+   Unqualified on purpose: M is only ever set on <body> (see the legend), so
+   the tag in front of it bought nothing and cost 3 B packed. */
 .C {
   position: fixed; inset: 0; z-index: 6; display: none;
   flex-direction: column; align-items: center; justify-content: center; gap: 8px;
 }
 .C.w { display: flex; }
-body.M h, body.M #hd, body.M #gd, body.M f,
-body.M #dk { display: none; }
+.M h, .M #hd, .M #gd, .M f, .M #dk { display: none; }
 /* The title lockup: shrink-to-fit, so its width is COLOR's width and #tb
    below spreads AlchemY across the same measure. Nothing here is tuned per
    font — swap the family and the two stay matched. */

@@ -87,6 +87,16 @@ npm run audio-bench       # what a sample costs, against the callback budget
   used: **-127 B**. The names carried the meaning, so `src/style.css` opens with
   the legend that replaces them, and it is the one place to look when a selector
   stops making sense.
+- **A class that lands on one tag only does not name the tag: -3 B.** `M` is set
+  on `<body>` and nowhere else, so `body.M h` was five selectors carrying a
+  qualifier that could never change what matched. `.M h` still outranks the
+  `#hd`/`#gd` display rules it has to beat, at (1,1,0) against (1,0,0).
+- **`html, body { height: 100% }` is NOT redundant on body.** Measured and
+  rejected twice over: dropping `body` costs **+2 B** packed even though it is
+  five characters shorter, and it grows the full board by 18px of dead scroll.
+  That 18px is `f`'s trailing margin, which is clipped from the scrollable
+  overflow only while body is `height:100%` with content overflowing it — the
+  same mechanism the padding note on `f` describes.
 - **innerHTML instead of textContent is NOT worth it: 3 B.** Nine writes, two
   characters each, and roadroller predicts the longer word almost for free.
   It would also make the first element named "Salt & Pepper" render wrong,
