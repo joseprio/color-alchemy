@@ -781,6 +781,8 @@ check("alt: Diamond cuts Glass into a Prism, the only route to one",
   RECIPE['glass+white'] === undefined);
 check("alt: Prism + Sun is also a Rainbow",
   RECIPE['prism+sun'] === "rainbow");
+check("alt: a Light Bulb through a Prism is a Rainbow too",
+  RECIPE['lightbulb+prism'] === "rainbow");
 check("alt: Glass + Electricity lights a Light Bulb, the only route to one",
   RECIPE['electricity+glass'] === "lightbulb");
 check("alt: Rain + Electricity is a Storm too, skipping the Lightning",

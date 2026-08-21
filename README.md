@@ -524,10 +524,14 @@ stops the whole game from loading.)
 
 ## Recipe tree — SPOILERS
 
-A perfect quest is **33 moves**, through the Sun + Rain rainbow; the two Prism
-routes cost **36**. That gap used to be seven moves and is now three: the quest
-already has to reach Charcoal on its way to Black, and a Diamond is only a Lava
-away from there, so the Prism is a much shorter detour than it looks.
+A perfect quest is **33 moves**, through the Sun + Rain rainbow; the two cheap
+Prism routes cost **36**. That gap used to be seven moves and is now three: the
+quest already has to reach Charcoal on its way to Black, and a Diamond is only
+a Lava away from there, so the Prism is a much shorter detour than it looks.
+A Light Bulb through a Prism is a third Prism route and always one move worse
+than those two: the Prism already needed the Glass and the Unicorn's life
+branch already needed the Electricity, so the bulb itself is the only move it
+adds — flavour for a player holding both, never a cheaper way in.
 A perfect full clear is **82** - one move per element, since nothing can be
 made twice. Best scores are scoped to the current recipe tree, so all of this
 started fresh records automatically.
@@ -622,7 +626,7 @@ cheaper path.
 | Ice | Water + Night |
 | Snow | Cloud + Ice |
 | Prism | Diamond + Glass |
-| **Rainbow** | **White Light + Prism** · **Sun + Rain** · **Prism + Sun** |
+| **Rainbow** | **White Light + Prism** · **Sun + Rain** · **Prism + Sun** · **Light Bulb + Prism** |
 | Magic | Wood + Star |
 | Crystal Ball | Magic + Glass |
 | **Unicorn** | **Horse + Magic** |

@@ -9,8 +9,9 @@
 // r = recipes (unordered pairs of ids); several recipes may make one element
 // (Bone has eleven routes — a four-legged creature and fire, or a predator and
 // what it caught; fire does not reduce the fish or the bee at all, and a Bird
-// answers it with a Phoenix; White Light, Fire, Sand and Rainbow have three;
-// Bird, Charcoal, Cloud, Dog, Plant, Storm, Sunflower, Water and Wood two each).
+// answers it with a Phoenix; Rainbow has four; White Light, Fire and Sand
+// three; Bird, Charcoal, Cloud, Dog, Plant, Storm, Sunflower, Water and Wood
+// two each).
 // An alternate may be cyclic — Fire + Ice remakes Water, which Ice needs,
 // Penguin + Air hands back the Bird the Penguin came from, Wolf + Dog is just
 // another Dog, Fire + Charcoal burns the Charcoal back down to Fire, Fire + Air
@@ -210,7 +211,8 @@ export const ELEMENTS = ([
       '<path d="M22 15 32 25" stroke="#9a4dff"/></g>',
     r:[["diamond","glass"]] },
   { id:"rainbow", e:"\u{1F308}", q:"White light, confessing everything.",
-    r:[["white","prism"],["sun","rain"],["prism","sun"]] },
+    r:[["white","prism"],["sun","rain"],["prism","sun"],
+       ["lightbulb","prism"]] },
   { id:"magic", e:"\u{1FA84}", q:"Science we haven't named yet.",
     r:[["wood","star"]] },
   { id:"crystalball",n:"Crystal Ball", e:"\u{1F52E}", q:"Glass that claims to have read ahead.",
