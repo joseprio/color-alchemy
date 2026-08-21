@@ -42,11 +42,11 @@ npm run audio-bench       # what a sample costs, against the callback budget
   → **9651 bytes, 72.50% of the budget.**
   `src/style.css` is read ONCE, at config load: after editing it during
   `npm start`, restart the watcher.
-- **The element table omits the names it can derive.** For 81 of the 84, `n`
+- **The element table omits the names it can derive.** For 81 of the 85, `n`
   is just the id with a capital, so the table leaves it out and
-  `src/elements.ts` fills it in; only White Light, Polar Bear and Crystal
-  Ball are written out. Worth **-162 B** end to end, and it is the one field
-  that pays: a NEAR-miss repeat ("sunflower" then "Sunflower") costs
+  `src/elements.ts` fills it in; only White Light, Polar Bear, Crystal Ball
+  and Light Bulb are written out. Worth **-162 B** end to end, and it is the
+  one field that pays: a NEAR-miss repeat ("sunflower" then "Sunflower") costs
   roadroller real bits, where an exact repeat costs it almost none.
   That is also why the obvious bigger idea does NOT work. Re-encoding the
   whole table as a delimited string with recipes as base-36 indexes saves
@@ -271,7 +271,7 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 - **The quest:** forge the 🌈 **Rainbow** (White Light + Prism, or Sun + Rain)
   and the 🦄 **Unicorn**. When you hold both, your move count is compared with
   the stored best and kept if lower. You can then keep playing.
-- **The endgame:** discover all 84 elements. The total move count of a full
+- **The endgame:** discover all 85 elements. The total move count of a full
   clear is the *hidden highscore* — it is only ever compared and shown on the
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
@@ -467,7 +467,7 @@ A perfect quest is **33 moves**, through the Sun + Rain rainbow; the two Prism
 routes cost **36**. That gap used to be seven moves and is now three: the quest
 already has to reach Charcoal on its way to Black, and a Diamond is only a Lava
 away from there, so the Prism is a much shorter detour than it looks.
-A perfect full clear is **80** - one move per element, since nothing can be
+A perfect full clear is **82** - one move per element, since nothing can be
 made twice. Best scores are scoped to the current recipe tree, so all of this
 started fresh records automatically.
 
@@ -531,6 +531,7 @@ cheaper path.
 | Rain | Cloud + Water |
 | Acid | Green + Water |
 | Electricity | Acid + Metal |
+| Light Bulb | Glass + Electricity |
 | Lightning | Cloud + Electricity |
 | Storm | Lightning + Rain |
 | Tornado | Air + Storm |

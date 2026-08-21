@@ -17,7 +17,7 @@
 // is a fanned fire and nothing more, and Axe + Tree makes the Wood the Axe
 // itself was cut from — it is flavor for a pair players try, never a cheaper
 // route.
-// n is OPTIONAL in the table below: for 81 of the 84 it is just the id with a
+// n is OPTIONAL in the table below: for 81 of the 85 it is just the id with a
 // capital, and writing it out again is the one field roadroller genuinely pays
 // for — a near-miss repeat of a string it has already seen costs real bits,
 // where an exact repeat (an id inside a recipe) costs almost none. Omitting the
@@ -193,6 +193,8 @@ export const ELEMENTS = ([
     r:[["green","water"]] },
   { id:"electricity", e:"⚡", q:"A slow argument between a metal and an acid.",
     r:[["acid","metal"]] },
+  { id:"lightbulb", n:"Light Bulb", e:"\u{1F4A1}", q:"The night, made optional.",
+    r:[["electricity","glass"]] },
   { id:"ice", e:"\u{1F9CA}", q:"Fire burns, but ice preserves.",
     r:[["water","night"]] },
   { id:"snow", e:"\u{1F328}️", q:"Rain that stopped to arrange itself.",

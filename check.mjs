@@ -516,6 +516,7 @@ const EXTRA = [
   ["yellow","orange"],    // gold
   ["earth","sun"],        // sand
   ["sand","fire"],        // glass
+  ["glass","electricity"],// light bulb
   ["plant","sand"],       // cactus
   ["night","sun"],        // moon
   ["lightning","rain"],   // storm
@@ -578,7 +579,7 @@ await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textConte
 s = await state();
 check("quest: Keep playing returns to the game", s.phase === "play" && !s.fullDone);
 check("quest: goal line switches to find-all",
-  await evalJs(`document.getElementById('gl').textContent.includes('all 84')`));
+  await evalJs(`document.getElementById('gl').textContent.includes('all 85')`));
 check("night: icon is a starry blue-to-black swatch, not an emoji",
   await evalJs(`!!document.querySelector('[data-id=night] .s')
     && document.querySelector('[data-id=night] .s').style.background.includes('gradient')`));
@@ -612,7 +613,7 @@ check("highscore: back to the game", s.phase === "play");
 await run(EXTRA);
 await sleep(100);
 s = await state();
-check("full: completion overlay after all 84", s.fullDone && s.phase === "overlay");
+check("full: completion overlay after all 85", s.fullDone && s.phase === "overlay");
 const fullMoves = s.moves;
 check("full: hidden best stored", (await best("bestFull")) === fullMoves);
 check("indigo: Newton's seventh band, between Blue and Violet",
@@ -688,6 +689,7 @@ const PERFECT_EXTRA = [
   ["yellow","orange"],    // gold
   ["earth","air"],        // sand
   ["sand","fire"],        // glass
+  ["glass","electricity"],// light bulb
   ["plant","sand"],       // cactus
   ["night","sun"],        // moon
   ["lightning","rain"],   // storm
@@ -740,8 +742,8 @@ check("perfect: overlay celebrates the new best",
 await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
 await run(PERFECT_EXTRA);
 s = await state();
-check("perfect: full clear in 81 moves", s.fullDone && s.moves === 81);
-check("perfect: hidden best lowered to 81", (await best("bestFull")) === 81);
+check("perfect: full clear in 82 moves", s.fullDone && s.moves === 82);
+check("perfect: hidden best lowered to 82", (await best("bestFull")) === 82);
 
 // --- a sloppier run must NOT overwrite them -------------------------------
 await reset();
@@ -779,6 +781,8 @@ check("alt: Diamond cuts Glass into a Prism, the only route to one",
   RECIPE['glass+white'] === undefined);
 check("alt: Prism + Sun is also a Rainbow",
   RECIPE['prism+sun'] === "rainbow");
+check("alt: Glass + Electricity lights a Light Bulb, the only route to one",
+  RECIPE['electricity+glass'] === "lightbulb");
 check("alt: the Sky is blue Air now, and the Sun is lit from it",
   RECIPE['air+blue'] === "sky" &&
   RECIPE['fire+sky'] === "sun" &&
@@ -843,12 +847,12 @@ check("unlock: the first press only arms the button",
 await menuBtn("Sure? (ends");
 s = await state();
 check("unlock: the second press hands over every element",
-  s.found.length === 84 && s.phase === "play" && s.moves === 0);
+  s.found.length === 85 && s.phase === "play" && s.moves === 0);
 check("unlock: an unlocked run stops scoring, and says so",
   await evalJs(`document.getElementById('gl').textContent.includes('does not score')`) &&
   s.phase === "play" && !s.fullDone);
 check("unlock: no best was written from it",
-  (await best("bestFull")) === 81 && (await best("bestQuest")) === 33);
+  (await best("bestFull")) === 82 && (await best("bestQuest")) === 33);
 await key("Escape");
 await menuBtn("Reset everything");
 check("wipe: the first press only arms the button",
