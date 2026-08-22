@@ -193,7 +193,7 @@ check("lock: tapping a locked element again lets it go",
   s.sel === -1 && s.pick === -1 &&
   !(await evalJs(`document.getElementById('ca').classList.contains('y')`)));
 
-// --- keyboard: cursor to Blue + Yellow -> White Light ---------------------
+// --- keyboard: cursor to Blue + Yellow -> White -------------------------
 await key("ArrowRight");            // cursor is on red(0) after the release
 await key("ArrowRight");            // -> blue(2)
 await key("Enter");                 // pick blue
@@ -203,7 +203,7 @@ await key("ArrowRight");
 await key("Enter");                 // blue + yellow
 await sleep(100);
 s = await state();
-check("keyboard: Blue+Yellow forges White Light", s.found.includes("white") && s.moves === 2);
+check("keyboard: Blue+Yellow forges White", s.found.includes("white") && s.moves === 2);
 await release();
 
 // --- failed and duplicate combos both count as moves ----------------------
@@ -253,7 +253,7 @@ check("keyboard: Escape opens the menu", s.phase === "menu");
 await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Encyclopedia').click()`);
 check("encyclopedia: lists discovered combinations",
   await evalJs(`document.getElementById('ml').textContent.includes('Red + Green')`) &&
-  await evalJs(`document.getElementById('ml').textContent.includes('White Light')`));
+  await evalJs(`document.getElementById('ml').textContent.includes('White')`));
 check("encyclopedia: undiscovered elements stay hidden",
   !(await evalJs(`document.getElementById('ml').textContent.includes('Unicorn')`)));
 check("encyclopedia: unperformed alternate recipes stay unspoiled",
@@ -527,8 +527,10 @@ const EXTRA = [
   ["red","white"],        // pink
   ["yellow","orange"],    // gold
   ["gold","water"],       // beer
+  ["red","water"],        // wine
   ["earth","sun"],        // sand
   ["sand","fire"],        // glass
+  ["glass","sand"],       // hourglass
   ["glass","electricity"],// light bulb
   ["plant","sand"],       // cactus
   ["night","sun"],        // moon
@@ -538,7 +540,10 @@ const EXTRA = [
   ["cloud","ice"],        // snow
   ["wood","charcoal"],    // pencil
   ["charcoal","fire"],   // ash
+  ["rain","wood"],        // mushroom
   ["stone","tree"],       // paper
+  ["paper","rainbow"],    // palette
+  ["air","paper"],        // kite
   ["paper","pencil"],     // book
   ["earth","water"],      // clay
   ["field","water"],      // park
@@ -547,10 +552,11 @@ const EXTRA = [
   ["clay","fire"],        // pottery
   ["earth","lava"],       // volcano
   ["charcoal","lava"],    // diamond
+  ["metal","diamond"],    // ring
   ["diamond","glass"],    // prism
-  ["sun","pink"],         // sunset
   ["plant","pink"],       // flower
   ["sun","flower"],       // sunflower
+  ["flower","red"],       // rose
   ["air","animal"],       // bird
   ["egg","bird"],         // chick
   ["bird","ice"],         // penguin
@@ -558,13 +564,18 @@ const EXTRA = [
   ["bird","water"],       // duck
   ["bird","night"],       // owl
   ["bird","pink"],        // flamingo
+  ["bird","rainbow"],     // peacock
   ["horse","water"],      // hippo
   ["animal","moon"],      // wolf
+  ["orange","wolf"],      // fox
   ["horse","fire"],       // bone
   ["wolf","bone"],        // dog
   ["animal","plant"],     // cow
+  ["cow","water"],        // milk
+  ["acid","milk"],        // cheese
   ["animal","tree"],      // squirrel
   ["sun","tree"],         // fruit
+  ["fruit","orange"],     // pumpkin
   ["animal","flower"],    // bee
   ["bee","flower"],       // honey
   ["animal","honey"],     // bear
@@ -595,7 +606,7 @@ await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textConte
 s = await state();
 check("quest: Keep playing returns to the game", s.phase === "play" && !s.fullDone);
 check("quest: goal line switches to find-all",
-  await evalJs(`document.getElementById('gl').textContent.includes('all 89')`));
+  await evalJs(`document.getElementById('gl').textContent.includes('all 100')`));
 check("night: icon is a starry violet-to-black swatch, not an emoji",
   await evalJs(`!!document.querySelector('[data-id=night] .s')
     && document.querySelector('[data-id=night] .s').style.background.includes('gradient')`));
@@ -629,7 +640,7 @@ check("highscore: back to the game", s.phase === "play");
 await run(EXTRA);
 await sleep(100);
 s = await state();
-check("full: completion overlay after all 89", s.fullDone && s.phase === "overlay");
+check("full: completion overlay after all 100", s.fullDone && s.phase === "overlay");
 const fullMoves = s.moves;
 check("full: hidden best stored", (await best("bestFull")) === fullMoves);
 check("indigo: Newton's seventh band, between Blue and Violet",
@@ -703,8 +714,10 @@ const PERFECT_EXTRA = [
   ["red","white"],        // pink
   ["yellow","orange"],    // gold
   ["gold","water"],       // beer
+  ["red","water"],        // wine
   ["earth","air"],        // sand
   ["sand","fire"],        // glass
+  ["glass","sand"],       // hourglass
   ["glass","electricity"],// light bulb
   ["plant","sand"],       // cactus
   ["night","sun"],        // moon
@@ -714,6 +727,7 @@ const PERFECT_EXTRA = [
   ["cloud","ice"],        // snow
   ["wood","charcoal"],    // pencil
   ["charcoal","fire"],   // ash
+  ["rain","wood"],        // mushroom
   ["earth","water"],      // clay
   ["earth","plant"],      // field
   ["field","water"],      // park
@@ -722,10 +736,11 @@ const PERFECT_EXTRA = [
   ["clay","fire"],        // pottery
   ["earth","lava"],       // volcano
   ["charcoal","lava"],    // diamond
+  ["metal","diamond"],    // ring
   ["diamond","glass"],    // prism
-  ["sun","pink"],         // sunset
   ["plant","pink"],       // flower
   ["flower","yellow"],    // sunflower
+  ["flower","red"],       // rose
   ["air","animal"],       // bird
   ["egg","bird"],         // chick
   ["bird","ice"],         // penguin
@@ -733,14 +748,19 @@ const PERFECT_EXTRA = [
   ["bird","water"],       // duck
   ["bird","night"],       // owl
   ["bird","pink"],        // flamingo
+  ["bird","rainbow"],     // peacock
   ["animal","field"],     // horse
   ["horse","water"],      // hippo
   ["animal","moon"],      // wolf
+  ["orange","wolf"],      // fox
   ["animal","fire"],      // bone
   ["wolf","bone"],        // dog
   ["animal","plant"],     // cow
+  ["cow","water"],        // milk
+  ["acid","milk"],        // cheese
   ["animal","tree"],      // squirrel
   ["sun","tree"],         // fruit
+  ["fruit","orange"],     // pumpkin
   ["animal","flower"],    // bee
   ["bee","flower"],       // honey
   ["animal","honey"],     // bear
@@ -751,6 +771,8 @@ const PERFECT_EXTRA = [
   ["glass","metal"],      // mirror
   ["bird","fire"],        // phoenix
   ["stone","tree"],       // paper
+  ["paper","rainbow"],    // palette
+  ["air","paper"],        // kite
   ["paper","pencil"],     // book
 ];
 await run(PERFECT_QUEST);
@@ -763,8 +785,8 @@ check("perfect: overlay celebrates the new best",
 await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
 await run(PERFECT_EXTRA);
 s = await state();
-check("perfect: full clear in 86 moves", s.fullDone && s.moves === 86);
-check("perfect: hidden best lowered to 86", (await best("bestFull")) === 86);
+check("perfect: full clear in 97 moves", s.fullDone && s.moves === 97);
+check("perfect: hidden best lowered to 97", (await best("bestFull")) === 97);
 
 // --- a sloppier run must NOT overwrite them -------------------------------
 await reset();
@@ -876,12 +898,12 @@ check("unlock: the first press only arms the button",
 await menuBtn("Sure? (ends");
 s = await state();
 check("unlock: the second press hands over every element",
-  s.found.length === 89 && s.phase === "play" && s.moves === 0);
+  s.found.length === 100 && s.phase === "play" && s.moves === 0);
 check("unlock: an unlocked run stops scoring, and says so",
   await evalJs(`document.getElementById('gl').textContent.includes('does not score')`) &&
   s.phase === "play" && !s.fullDone);
 check("unlock: no best was written from it",
-  (await best("bestFull")) === 86 && (await best("bestQuest")) === 31);
+  (await best("bestFull")) === 97 && (await best("bestQuest")) === 31);
 await key("Escape");
 await menuBtn("Reset everything");
 check("wipe: the first press only arms the button",

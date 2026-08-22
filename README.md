@@ -42,10 +42,10 @@ npm run audio-bench       # what a sample costs, against the callback budget
   → **9651 bytes, 72.50% of the budget.**
   `src/style.css` is read ONCE, at config load: after editing it during
   `npm start`, restart the watcher.
-- **The element table omits the names it can derive.** For 85 of the 89, `n`
+- **The element table omits the names it can derive.** For 97 of the 100, `n`
   is just the id with a capital, so the table leaves it out and
-  `src/elements.ts` fills it in; only White Light, Polar Bear, Crystal Ball
-  and Light Bulb are written out. Worth **-162 B** end to end, and it is the
+  `src/elements.ts` fills it in; only Polar Bear, Crystal Ball and Light Bulb
+  are written out. Worth **-162 B** end to end, and it is the
   one field that pays: a NEAR-miss repeat ("sunflower" then "Sunflower") costs
   roadroller real bits, where an exact repeat costs it almost none.
   That is also why the obvious bigger idea does NOT work. Re-encoding the
@@ -333,10 +333,10 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   two tiles — the pair you tried is sitting in the slots, so that is where the
   answer belongs. A pair you have already combined still pulses the element it
   makes, out on the board.
-- **The quest:** forge the 🌈 **Rainbow** (White Light + Prism, or Sun + Rain)
+- **The quest:** forge the 🌈 **Rainbow** (White + Prism, or Sun + Rain)
   and the 🦄 **Unicorn**. When you hold both, your move count is compared with
   the stored best and kept if lower. You can then keep playing.
-- **The endgame:** discover all 89 elements. The total move count of a full
+- **The endgame:** discover all 100 elements. The total move count of a full
   clear is the *hidden highscore* — it is only ever compared and shown on the
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
@@ -357,8 +357,9 @@ every tap target under 44px, and drops `.shot-mob-*.png` for a visual pass.
 It found two things worth fixing, both now fixed:
 
 - **The toast was clipped on a phone.** It was `white-space: nowrap`, and the
-  longest hint the game can produce — *Hint: try White Light + Electricity —
-  costs a move* — is 391px wide. On a 320px screen it hung 36px off each edge,
+  longest hint the game can produce — *Hint: try Cloud + Electricity —
+  already paid for* — is 377px wide. On a 320px screen it hangs 29px off each
+  edge,
   where `overflow-x: hidden` on the body silently cut both ends off. It is now
   bounded by `max-width: calc(100vw - 24px)` and wraps, staying one line
   wherever one line fits.
@@ -540,7 +541,7 @@ through a Prism is a third Prism route and never a cheaper one: the Prism
 already needed the Glass and the Unicorn's life branch already needed the
 Electricity, so the bulb itself is the only move it adds — flavour for a
 player holding both, never a cheaper way in.
-A perfect full clear is **86** - one move per element, since nothing can be
+A perfect full clear is **97** - one move per element, since nothing can be
 made twice. Best scores are scoped to the current recipe tree, so all of this
 started fresh records automatically.
 
@@ -561,7 +562,7 @@ a Field, and then a Horse to stand in it, for a Unicorn the Animal already had.
 
 Additive color mixing does the early work: primaries pair into secondaries,
 and any **complementary pair** (Blue+Yellow, Red+Cyan, Green+Magenta) makes
-White Light. **Black** is the deliberate exception - no two lights mix to
+White. **Black** is the deliberate exception - no two lights mix to
 darkness, so the one color the light half of the tree cannot reach has to
 arrive through the material half instead, as Charcoal + Stone. Only the color
 itself, though: the Night it used to gate is reachable from a Violet sky now,
@@ -580,13 +581,13 @@ cheaper path.
 | Yellow | Red + Green |
 | Magenta | Red + Blue |
 | Cyan | Green + Blue |
-| White Light | Blue + Yellow · Red + Cyan · Green + Magenta |
+| White | Blue + Yellow · Red + Cyan · Green + Magenta |
 | Orange | Red + Yellow |
 | Violet | Blue + Magenta |
 
 | Indigo | Blue + Violet |
-| Pink | Red + White Light |
-| Air | Blue + White Light |
+| Pink | Red + White |
+| Air | Blue + White |
 | Sky | Air + Blue |
 | Gold | Yellow + Orange |
 | Water | Blue + Cyan · Fire + Ice |
@@ -595,6 +596,7 @@ cheaper path.
 | Clay | Earth + Water |
 | Pottery | Clay + Fire |
 | Beer | Gold + Water |
+| Wine | Red + Water |
 | Lava | Earth + Fire |
 | Volcano | Lava + Earth |
 | Stone | Lava + Water |
@@ -604,9 +606,10 @@ cheaper path.
 | Sand | Earth + Air · Earth + Sun · Stone + Air |
 | Glass | Sand + Fire |
 | Mirror | Glass + Metal |
+| Hourglass | Glass + Sand |
 | Sun | Fire + Sky |
 | Night | Black + Sky · Violet + Sky |
-| Star | Night + White Light |
+| Star | Night + White |
 | Moon | Night + Sun |
 | Cloud | Sky + Water · Water + Air · Grey + Sky |
 | Rain | Cloud + Water |
@@ -623,9 +626,12 @@ cheaper path.
 | Horse | Animal + Field |
 | Hippo | Horse + Water |
 | Wolf | Animal + Moon |
+| Fox | Orange + Wolf |
 | Bone | Animal + Fire · Wolf + Fire · Horse + Fire · Unicorn + Fire · Bear + Fire · Polar Bear + Fire · Dog + Fire · Cow + Fire · Bear + Horse · Wolf + Horse · Bear + Dog |
 | Dog | Wolf + Bone · Dog + Wolf |
 | Cow | Animal + Plant |
+| Milk | Cow + Water |
+| Cheese | Acid + Milk |
 | Squirrel | Animal + Tree |
 | Bird | Air + Animal · Air + Penguin |
 | Chick | Egg + Bird · Duck + Egg · Egg + Flamingo |
@@ -634,6 +640,7 @@ cheaper path.
 | Fish | Animal + Water |
 | Owl | Bird + Night |
 | Flamingo | Bird + Pink |
+| Peacock | Bird + Rainbow |
 | Phoenix | Bird + Fire · Ash + Fire |
 | Bee | Animal + Flower |
 | Honey | Bee + Flower |
@@ -642,26 +649,31 @@ cheaper path.
 | Ice | Water + Night |
 | Snow | Cloud + Ice |
 | Prism | Diamond + Glass |
-| **Rainbow** | **White Light + Prism** · **Sun + Rain** · **Prism + Sun** · **Light Bulb + Prism** |
+| **Rainbow** | **White + Prism** · **Sun + Rain** · **Prism + Sun** · **Light Bulb + Prism** |
 | Magic | Wood + Star |
 | Crystal Ball | Magic + Glass |
 | **Unicorn** | **Horse + Magic** · **Animal + Magic** |
-| Sunset | Sun + Pink |
 | Plant | Life + Sun · Life + Green |
 | Tree | Water + Plant |
 | Fruit | Tree + Sun |
+| Pumpkin | Fruit + Orange |
 | Wood | Tree + Knife · Axe + Tree |
 | Charcoal | Wood + Fire · Tree + Fire |
 | Ash | Charcoal + Fire · Bone + Fire · Fire + Paper · Book + Fire |
+| Mushroom | Rain + Wood |
 | Pencil | Wood + Charcoal |
 | Paper | Stone + Tree |
 | Book | Paper + Pencil |
+| Palette | Paper + Rainbow |
+| Kite | Air + Paper |
 
 | Black | Charcoal + Stone |
-| Grey | Black + White Light |
+| Grey | Black + White |
 | Diamond | Charcoal + Lava · Volcano + Charcoal |
+| Ring | Metal + Diamond |
 | Field | Earth + Plant |
 | Park | Field + Water |
 | Cactus | Plant + Sand |
 | Flower | Plant + Pink |
 | Sunflower | Sun + Flower · Flower + Yellow |
+| Rose | Flower + Red |
