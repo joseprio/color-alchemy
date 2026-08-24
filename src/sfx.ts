@@ -12,13 +12,14 @@ let AC: AudioContext | null = null;
 // Mute is a preference, not run state: New game does not clear it and a reload
 // restores it, which is why it is its own key rather than part of the saved run.
 // Read through the same try/catch localStorage discipline game.ts uses.
-const K_MUTE = "colorAlchemy.mute";
+import { cell, put } from "./store";
+const S_MUTE = 5;
 export let muted = false;
-try { muted = localStorage.getItem(K_MUTE) === "1"; } catch {}
+muted = cell[S_MUTE] === 1;
 
 export function setMuted(v: boolean): void {
   muted = v;
-  try { localStorage.setItem(K_MUTE, v ? "1" : "0"); } catch {}
+  put(S_MUTE, v ? 1 : 0);
 }
 
 export function ac(): AudioContext {

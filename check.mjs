@@ -68,8 +68,16 @@ const state = () => evalJs(`(() => {
 const enterGame = () =>
   evalJs(`[...document.querySelectorAll('#mu button')]
     .find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
+// The save file is ONE entry holding one array; these indexes mirror the
+// S_* constants in src/game.ts and src/store.ts.
+const SLOT = { tree: 0, run: 1, bestQuest: 2, bestFull: 3, codex: 4, mute: 5 };
+const cellGet = (i) => evalJs(`(JSON.parse(localStorage.getItem("colorAlchemy") || "[]") || [])[${i}]`);
+const cellClear = (i) => evalJs(`(() => {
+  const c = JSON.parse(localStorage.getItem("colorAlchemy") || "[]") || [];
+  c[${i}] = 0; localStorage.setItem("colorAlchemy", JSON.stringify(c));
+})()`);
 const reset = async () => {
-  await evalJs(`localStorage.removeItem('colorAlchemy.run')`);
+  await cellClear(SLOT.run);
   await send("Page.navigate", { url: "file:///" + page.replace(/\\/g, "/") });
   await sleep(900);
   await enterGame();
@@ -96,10 +104,9 @@ for (const chunk of ENTRIES) {
   }
 }
 
-// best-score keys are scoped by a recipe-tree fingerprint — find them by prefix
-const best = (kind) =>
-  evalJs(`+(localStorage.getItem(Object.keys(localStorage)
-    .find(k => k.startsWith('colorAlchemy.${kind}')) || '') || 0)`);
+// bests are scoped by a recipe-tree fingerprint, which now rides in slot 0
+// rather than being suffixed onto two key names
+const best = async (kind) => +((await cellGet(SLOT[kind])) || 0);
 const click = (id) =>
   evalJs(`document.querySelector('[data-id=${id}]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`);
 const key = (k, init = {}) =>
@@ -422,20 +429,20 @@ check("gamepad: B closes the menu", s.phase === "play");
 // callback; what belongs here is that the bindings answer, say which way they
 // went, cost no move, and are remembered.
 const muteKey = () =>
-  evalJs(`localStorage.getItem('colorAlchemy.mute')`);
+  cellGet(SLOT.mute);
 const toastText = () => evalJs(`document.getElementById('to').textContent`);
 let mv = (await state()).moves;
 await key("m");
 s = await state();
 check("mute: M reports Sound off and costs no move",
   (await toastText()) === "Sound off" && s.moves === mv && s.phase === "play");
-check("mute: the choice is stored, so a reload keeps it", (await muteKey()) === "1");
+check("mute: the choice is stored, so a reload keeps it", (await muteKey()) === 1);
 await evalJs("__pad.buttons[2].pressed = true");    // Ⓧ, the one face button left
 await sleep(120);
 await evalJs("__pad.buttons[2].pressed = false");
 await sleep(80);
 check("mute: pad Ⓧ turns the sound back on",
-  (await toastText()) === "Sound on" && (await muteKey()) === "0");
+  (await toastText()) === "Sound on" && (await muteKey()) === 0);
 // The pad press above left it unmuted, so the button offers the action it would
 // take next: Mute.
 check("hud: the mute button names the ACTION and both shortcuts",
@@ -449,12 +456,12 @@ await clickBtn("sn");
 // catches a reintroduced Muted styling.
 check("hud: it mutes and then offers to Unmute",
   (await toastText()) === "Sound off" && (await sndLabel()) === "Unmute" &&
-  (await muteKey()) === "1" &&
+  (await muteKey()) === 1 &&
   !(await evalJs(`document.getElementById('sn').classList.length`)));
 await clickBtn("sn");
 check("hud: unmuting brings the music back and offers to Mute again",
   (await toastText()) === "Sound on" && (await sndLabel()) === "Mute" &&
-  (await muteKey()) === "0" &&
+  (await muteKey()) === 0 &&
   !(await evalJs(`document.getElementById('sn').classList.length`)));
 
 // --- hint: one standing hint, bought once ---------------------------------
@@ -748,7 +755,7 @@ check("reload: run restored, back on the title",
   s.moves === QUEST.length + 4 && s.questDone && s.found.includes("rainbow") && s.phase === "menu");
 check("reload: the mute button paints its word from the stored preference",
   (await evalJs(`document.getElementById('sn').firstChild.textContent`)) === "Unmute" &&
-  (await evalJs(`localStorage.getItem('colorAlchemy.mute')`)) === "1");
+  (await cellGet(SLOT.mute)) === 1);
 await evalJs(`document.getElementById("sn").click()`);   // unmute for what follows
 
 // --- alternate recipe: Sun + Rain is also a Rainbow -----------------------

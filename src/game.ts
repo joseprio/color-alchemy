@@ -4,16 +4,29 @@
 // Scoring: every combination ATTEMPT counts as a move — successes, failures
 // and rediscoveries alike — and so does a HINT, which buys a productive pair
 // for the same price — though repeating a hint you have not acted on yet is
-// free (a perfect quest is 34 moves; a perfect full clear is 66). Two
-// persistent bests:
-//   colorAlchemy.bestQuest : fewest moves to hold both Rainbow and Unicorn.
-//     Shown in the HUD once it exists.
-//   colorAlchemy.bestFull  : fewest total moves to find ALL elements. The
-//     HIDDEN highscore — only ever compared and shown on the completion
-//     screen, which only a full clear reaches (closeOverlay wipes the card so
-//     it cannot linger in the DOM either).
-// The current run also persists (colorAlchemy.run), so closing the tab loses
-// nothing; Restart (double-press to confirm) wipes the run, never the bests.
+// free (a perfect quest is 32 moves; a perfect full clear is 98).
+//
+// PERSISTENCE IS ONE localStorage ENTRY, `colorAlchemy`, holding one array;
+// src/store.ts owns it and the S_* constants below name the slots:
+//   0 tree      the recipe-tree fingerprint. A mismatch drops both bests and
+//               keeps everything else — the two bests are only meaningful
+//               against the tree that set them.
+//   1 run       the current run, so closing the tab loses nothing. Restart
+//               (double-press to confirm) wipes it, never the bests.
+//   2 bestQuest fewest moves to hold both Rainbow and Unicorn. Shown in the
+//               HUD once it exists.
+//   3 bestFull  fewest total moves to find ALL elements. The HIDDEN highscore
+//               — only ever compared and shown on the completion screen,
+//               which only a full clear reaches (closeOverlay wipes the card
+//               so it cannot linger in the DOM either).
+//   4 codex     all-time knowledge, outliving every run.
+//   5 mute      a preference, which is why Reset everything leaves it alone.
+// Five separate keys became this and it measured -41 B: the win is not the
+// repeated `colorAlchemy.` prefix (roadroller charges almost nothing for an
+// exact repeat) but the code the shape removes — a three-method wrapper, two
+// JSON.parse/stringify pairs, and the fingerprint concatenated onto two key
+// names. Shortening all five keys to one character each was measured first as
+// an upper bound and only reached -25, so the structure is where the bytes are.
 import { ELEMENTS, STARTERS, BY_ID, RECIPE, N, type ElementDef } from "./elements";
 import { SFX, muted } from "./sfx";
 import { toggleMute } from "./music";
@@ -29,14 +42,13 @@ for (const ch of JSON.stringify(Object.entries(RECIPE).sort()) + ELEMENTS.length
   vh = ((vh * 33) ^ ch.charCodeAt(0)) >>> 0;
 }
 const TREE = vh.toString(36);
-const K_RUN = "colorAlchemy.run";
-const K_QUEST = "colorAlchemy.bestQuest." + TREE;
-const K_FULL = "colorAlchemy.bestFull." + TREE;
-const store = {
-  get(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } },
-  set(k: string, v: string | number): void { try { localStorage.setItem(k, String(v)); } catch {} },
-  del(k: string): void { try { localStorage.removeItem(k); } catch {} },
-};
+// ONE localStorage entry, sections by index: [tree, run, bestQuest, bestFull,
+// codex, mute]. The tree hash rides in slot 0 instead of being suffixed onto two
+// key names — a mismatch drops the two bests and keeps everything else, which is
+// what the suffixed keys did by orphaning them.
+import { cell, put } from "./store";
+const S_RUN = 1, S_QUEST = 2, S_FULL = 3, S_CODEX = 4;
+if (cell[0] !== TREE) { cell[0] = TREE; cell[S_QUEST] = cell[S_FULL] = 0; }
 
 /* ------------------------------------------------------------------- state */
 let found = new Set<string>();      // discovered element ids (this run)
@@ -69,18 +81,17 @@ const tiles: HTMLElement[] = [];    // DOM nodes parallel to `order`
 const rkey = (a: string, b: string): string => [a, b].sort().join("+");
 
 function save(): void {
-  store.set(K_RUN, JSON.stringify({ f: order, m: moves, q: questDone, c: fullDone, x: cheated }));
+  put(S_RUN, { f: order, m: moves, q: questDone, c: fullDone, x: cheated });
 }
-const K_CODEX = "colorAlchemy.codex";
 function saveCodex(): void {
-  store.set(K_CODEX, JSON.stringify({ f: codexF, k: [...codexK] }));
+  put(S_CODEX, { f: codexF, k: [...codexK] });
 }
 
 /* -------------------------------------------------------------------- HUD */
 function hud(): void {
   mv.textContent = String(moves);
   ct.textContent = found.size + " / " + ELEMENTS.length;
-  const q = store.get(K_QUEST);
+  const q = cell[S_QUEST];
   bq.textContent = q ? "Best quest: " + q : "";
   gl.innerHTML = cheated
     ? "Unlocked &mdash; this run does not score"
@@ -562,10 +573,10 @@ function closeOverlay(): void {
 }
 
 // Compare-and-store; returns the HTML line describing the result.
-function bestLine(key: string, val: number): string {
-  const prev = +(store.get(key) || 0);
+function bestLine(slot: number, val: number): string {
+  const prev = +(cell[slot] || 0);
   if (!prev || val < prev) {
-    store.set(key, val);
+    put(slot, val);
     return '<div class="L N">★ NEW BEST ★</div>' +
            (prev ? '<div class="L S">previous best: ' + prev + "</div>" : "");
   }
@@ -575,7 +586,7 @@ function checkMilestones(): void {
   if (cheated) return;   // nothing an unlocked board reaches is earned
   if (!questDone && found.has("rainbow") && found.has("unicorn")) {
     questDone = true;
-    const q = bestLine(K_QUEST, moves);
+    const q = bestLine(S_QUEST, moves);
     save();
     hud();
     if (found.size === ELEMENTS.length) return finishFull(q); // unicorn was the last element
@@ -595,7 +606,7 @@ function checkMilestones(): void {
 function finishFull(questHtml: string): void {
   fullDone = true;
   // The HIDDEN highscore: compared and shown only here, on a full clear.
-  const f = bestLine(K_FULL, moves);
+  const f = bestLine(S_FULL, moves);
   save();
   hud();
   SFX.grand();
@@ -668,7 +679,7 @@ function unlockAll(i: number): void {
 // all-time codex.
 function wipeAll(i: number): void {
   if (!armed(i, "Sure? (scores and codex too)")) return;
-  [K_RUN, K_QUEST, K_FULL, K_CODEX].map(k => store.del(k));
+  [S_RUN, S_QUEST, S_FULL, S_CODEX].map(i => put(i, 0));
   codexF.length = 0;
   codexK.clear();
   reset();
@@ -757,7 +768,7 @@ export function menuBack(): void {
   continueGame();
 }
 function highscoreHtml(): string {
-  const q = store.get(K_QUEST), f = store.get(K_FULL);
+  const q = cell[S_QUEST], f = cell[S_FULL];
   return (
     '<div class="H"><span>Quest — Rainbow &amp; Unicorn</span><b>' +
     (q ? q + " moves" : "—") + "</b></div>" +
@@ -824,7 +835,7 @@ export function boot(): void {
 
   // restore the codex (all-time knowledge) first
   try {
-    const cx = JSON.parse(store.get(K_CODEX) || "null");
+    const cx = cell[S_CODEX];
     if (cx) {
       (cx.f && cx.f.map ? (cx.f as string[]) : []).filter(id => BY_ID[id])
         .map(id => { if (!codexF.includes(id)) codexF.push(id); });
@@ -836,8 +847,7 @@ export function boot(): void {
 
   // then the saved run
   let run: { f?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean } | null = null;
-  const raw = store.get(K_RUN);
-  try { run = raw ? JSON.parse(raw) : null; } catch {}
+  run = cell[S_RUN] || null;
   if (run && run.f && (run.f as string[]).map) {
     const ids = (run.f as string[]).filter(id => BY_ID[id]);
     STARTERS.map(id => { if (!ids.includes(id)) ids.unshift(id); });
@@ -864,7 +874,7 @@ function showRestoredCompletion(): void {
     '<div class="T">GRAND ALCHEMIST</div>' +
     "<h2>All " + ELEMENTS.length + " elements</h2>" +
     '<div class="L">complete run: <b>' + moves + "</b> moves</div>" +
-    '<div class="L S">best: ' + (+(store.get(K_FULL) || 0) || moves) + "</div>",
+    '<div class="L S">best: ' + (+(cell[S_FULL] || 0) || moves) + "</div>",
     [["New game", () => { closeOverlay(); reset(); }]],
   );
 }

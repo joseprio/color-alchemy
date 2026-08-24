@@ -373,6 +373,20 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
   the run, never the bests.
+- **The save file is one `localStorage` entry** — `colorAlchemy`, holding one
+  array, sections by index: tree fingerprint, run, best quest, best full,
+  codex, mute. `src/store.ts` owns it. It replaced five separate keys and
+  measured **&minus;41 B**, but the interesting part is *why*: shortening all
+  five keys to a single character each was measured first as an upper bound
+  and reached only &minus;25, because roadroller charges almost nothing for
+  an exact repeat like `colorAlchemy.`. The bytes are in the code the shape
+  removes — a three-method wrapper, two `JSON.parse`/`stringify` pairs, and
+  the tree fingerprint concatenated onto two of the key names.
+- **It does not migrate the old keys, so it drops existing saves.** A
+  migration would read the five old entries once and delete them, and would
+  cost more than the 41 bytes the change saves — so the trade was taken
+  deliberately rather than overlooked. Revisit it if the game ever ships to
+  people who already have a codex.
 
 ## On a phone
 
