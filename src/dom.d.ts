@@ -19,6 +19,10 @@ declare const mv: HTMLElement;   // move count
 declare const ct: HTMLElement;   // element count
 declare const bq: HTMLElement;   // best-quest readout
 declare const ht: HTMLElement;   // Hint button
+// Build-time flag, substituted by the `defines` plugin in rollup.config.mjs
+// and therefore a literal by the time closure sees it — which is what lets
+// ADVANCED drop the dead branch AND the handlers it was the only caller of.
+declare const __DEV__: boolean;
 declare const sn: HTMLElement;   // Music button
 declare const mn: HTMLElement;   // Menu button
 declare const dk: HTMLElement;   // docked cauldron strip

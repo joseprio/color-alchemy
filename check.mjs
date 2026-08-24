@@ -143,9 +143,20 @@ check("boot: COLOR and AlchemY come out the same width", await evalJs(`(() => {
   const b = k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left;
   return Math.abs(a - b) / a < 0.02;
 })()`));
+// Unlock all and Reset everything are DEVELOPMENT TOOLS, behind __DEV__ and
+// absent from a plain `npm run build`. One suite covers both builds: it asks the
+// menu which one this is, then either exercises the two or asserts they are
+// genuinely gone. `npm run build-dev` is the build that has them.
+const DEVBUILD = await evalJs(
+  `[...document.querySelectorAll('#mu button')].some(b => b.textContent === 'Unlock all')`);
+const MENU_FRESH = "New game,Highscore,Encyclopedia" +
+  (DEVBUILD ? ",Unlock all,Reset everything" : "");
 check("boot: a fresh boot offers no Continue, having nothing to continue",
   (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`)) ===
-  "New game,Highscore,Encyclopedia,Unlock all,Reset everything");
+  MENU_FRESH);
+check(`boot: the ${DEVBUILD ? "dev" : "shipping"} build ${DEVBUILD ? "offers" : "has no"} development tools`,
+  DEVBUILD === (await evalJs(`[...document.querySelectorAll('#mu button')]
+    .some(b => /Unlock all|Reset everything/.test(b.textContent))`)));
 await shot("title");
 await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'New game').click()`);
 s = await state();
@@ -861,11 +872,14 @@ check("encyclopedia: an element lists every route actually performed",
   await evalJs(`document.getElementById('ml').textContent.includes('Sky + Water')`) &&
   await evalJs(`document.getElementById('ml').textContent.includes('Water + Air')`));
 
-// --- Unlock all / Reset everything ---------------------------------------
+// --- Unlock all / Reset everything (development builds only) --------------
 // both are destructive, so both take two presses; the second must land within
 // 2.5s of the first
 const menuBtn = async (label) =>
   evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent.startsWith('${label}')).click()`);
+if (!DEVBUILD) {
+  console.log("skip 10 development-tool checks — this is the shipping build");
+} else {
 await reset();
 await key("Escape");
 s = await state();
@@ -895,13 +909,14 @@ check("wipe: back to three elements, and both bests are gone",
   (await best("bestQuest")) === 0 && (await best("bestFull")) === 0);
 check("wipe: Continue goes with the run it pointed at",
   (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`)) ===
-  "New game,Highscore,Encyclopedia,Unlock all,Reset everything");
+  MENU_FRESH);
 check("wipe: it puts everything back without starting a game",
   s.phase === "menu" &&
   !(await evalJs(`document.getElementById('gl').textContent.includes('does not score')`)));
 await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Encyclopedia').click()`);
 check("wipe: the all-time codex is gone too, not just the run",
   !(await evalJs(`document.getElementById('ml').textContent.includes('Unicorn')`)));
+}
 
 check("no uncaught exceptions", t.exceptions.length === 0);
 if (t.exceptions.length) console.log(t.exceptions.join("\n"));

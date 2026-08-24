@@ -93,13 +93,9 @@ h { margin: 14px 0 0; text-align: center; }
 .W .s { width: 40px; height: 40px; }
 /* empty: dashed and quiet, so the filled slots are the only thing lit */
 .l:empty, .W:empty { border-style: dashed; border-color: #1b2540; }
-/* #ca carries the lock. Clicking it empties it — the X says so. */
+/* #ca carries the lock, and clicking it still empties it — the corner X that
+   used to advertise that is gone; the padlock badge is the only mark now. */
 #ca.y { border-color: #ffd75e; background: #14120acc; box-shadow: 0 0 16px #ffd75e22; cursor: pointer; }
-#ca.y::after {
-  content: "✕"; position: absolute; top: -8px; right: -8px;
-  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
-  background: #14120a; border: 1px solid #ffd75e; color: #ffd75e; font-size: 10px;
-}
 /* The lock, said the same way in both places it shows: a padlock badge on the
    cauldron's A slot and on the board tile that slot came from. Colour carried
    it alone before — gold for locked, cyan for a loose pick — which is a

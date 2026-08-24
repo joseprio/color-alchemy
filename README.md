@@ -10,6 +10,7 @@ primaries.
 ```
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
+npm run build-dev         # the same, keeping the development-only menu tools
 npm test                  # 118 headless checks against dist/bundle.html
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
@@ -228,6 +229,20 @@ npm run audio-bench       # what a sample costs, against the callback budget
   the swc re-minify, `paver`, `fn-order.json`. Its `web-resource-inliner`
   step is not needed either — there is one script to inline, and one string
   replace does it.
+- **Unlock all and Reset everything are development tools, and a plain build
+  does not contain them.** They sit behind a `__DEV__` literal that the
+  `defines` plugin substitutes before closure runs, so ADVANCED deletes the
+  branch, then finds `unlockAll` and `wipeAll` unreferenced and deletes those
+  too — the confirm strings go with them. Worth **&minus;93 B**, which is what
+  took the bundle back under budget. `npm run build-dev` is the build that
+  keeps them; it reads `npm_lifecycle_event` rather than an env var, because
+  `DEV=1 rollup -c` is not portable to the cmd.exe npm runs scripts in.
+- **One test suite covers both builds.** `check.mjs` asks the menu which build
+  it is looking at, then either exercises the two tools or asserts they are
+  genuinely absent — checking *both* labels, so a half-applied gate cannot pass.
+  Against a shipping bundle it reports `skip 10 development-tool checks`; run
+  `npm run build-dev` first to cover them, and `npm run build` again before
+  committing `dist/`.
 - **The build is byte-deterministic.** Two things buy that: the pinned DOS-epoch
   zip timestamp, and `rr-config.json` — roadroller's parameter search is
   stochastic, so the params are fitted once and pinned, and the build skips
@@ -355,7 +370,9 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   never see. It is one rule for both places, `#ca.y::before, .t.e::after`,
   so the two can never disagree about what is locked.
 - Letting go empties the whole altar, not just the pick. Escape / ⓑ does it
-  from anywhere, as does the **X** on the slot once the pick is locked.
+  from anywhere, and so does clicking the locked slot itself. That slot used
+  to carry a corner **✕** advertising it; the padlock badge is the only mark
+  now, and the click still works.
 - After each attempt the second slot and the well empty themselves — after
   about a second for a dead end, two for a discovery — and a locked element
   is left facing an empty slot, ready for the next try. Nothing to dismiss:
@@ -421,8 +438,8 @@ notched phone in landscape the footer can sit under the home indicator.
 
 | Input    | Combine | Hint | Let go of the pick | Mute |
 |----------|---------|------|----------------------------|------|
-| Mouse    | click one element to pick it, then another to mix — or drag one onto another; dropping it back where it started acts as a click | the HUD **Hint** button | click it twice more (lock, then let go), or the **X** on the cauldron | the HUD **Mute** button |
-| Touch    | tap one element to pick it, then another to mix — or long-press (~¼s) to lift, then drag onto another; dropping it back where it started acts as a tap | the HUD **Hint** button | tap it twice more (lock, then let go), or the **X** on the cauldron | the HUD **Mute** button |
+| Mouse    | click one element to pick it, then another to mix — or drag one onto another; dropping it back where it started acts as a click | the HUD **Hint** button | click it twice more (lock, then let go), or the locked slot itself | the HUD **Mute** button |
+| Touch    | tap one element to pick it, then another to mix — or long-press (~¼s) to lift, then drag onto another; dropping it back where it started acts as a tap | the HUD **Hint** button | tap it twice more (lock, then let go), or the locked slot itself | the HUD **Mute** button |
 | Keyboard | arrows / WASD move, Enter or Space holds / mixes | **H** | Escape (lets go, else opens the menu) | **M** |
 | Gamepad  | d-pad or left stick move, Ⓐ holds / mixes | Ⓨ | Ⓑ (lets go, else opens the menu); Start opens/closes the menu; overlays: ←/→ + Ⓐ | Ⓧ |
 

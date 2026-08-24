@@ -52,6 +52,18 @@ const injectCss = {
 
 // `npm run build` -> production; `npm start` (watch) -> dev
 const production = !process.env.ROLLUP_WATCH;
+// The two development-only menu entries (Unlock all, Reset everything) ship
+// only when this is true: always in watch mode, and in a production build only
+// for `npm run build-dev`. That reads npm_lifecycle_event rather than an env var
+// because `DEV=1 rollup -c` is not portable to the cmd.exe npm runs scripts in.
+const DEV = !production || process.env.npm_lifecycle_event === "build-dev";
+const defines = {
+  name: "defines",
+  transform(code, id) {
+    if (!id.endsWith(".ts") || !code.includes("__DEV__")) return null;
+    return { code: code.replace(/__DEV__/g, String(DEV)), map: null };
+  },
+};
 
 // Emits dist/index.html from the src template with a <script src> reference.
 // Dev serves it as-is; production's postbuild.mjs inlines the script into
@@ -221,6 +233,7 @@ export default {
   },
   plugins: [
     injectCss,
+    defines,
     typescript(),
     emitHtml,
     production &&

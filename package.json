@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "rollup -c",
+    "build-dev": "rollup -c && node postbuild.mjs",
     "check": "tsc --noEmit",
     "prebuild": "npm run check",
     "postbuild": "node postbuild.mjs",

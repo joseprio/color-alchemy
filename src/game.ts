@@ -701,9 +701,12 @@ const MENU: [string, (i: number) => void][] = [
   ["New game", newGame],
   ["Highscore", () => openPanel("HIGHSCORES", highscoreHtml())],
   ["Encyclopedia", () => openPanel("ENCYCLOPEDIA", encycloHtml())],
-  ["Unlock all", unlockAll],
-  ["Reset everything", wipeAll],
 ];
+// DEVELOPMENT TOOLS, and not in the shipped build. Pushed inside an if rather
+// than spread into the list above so that with __DEV__ a literal false closure
+// deletes the branch, then finds unlockAll and wipeAll unreferenced and deletes
+// those too — `npm run build-dev` is the build that keeps them.
+if (__DEV__) MENU.push(["Unlock all", unlockAll], ["Reset everything", wipeAll]);
 // Rebuilt rather than toggled, because which buttons exist depends on state:
 // Reset everything calls this too, so Continue leaves with the run it pointed at.
 function paintMenu(): void {
@@ -827,7 +830,7 @@ export function boot(): void {
   sn.onclick = muteToggle;
   paintMute();
   ht.onclick = hint;
-  ca.onclick = unlock;                  // the X empties the locked slot
+  ca.onclick = unlock;                  // clicking the locked slot empties it
   ds["onpointerdown"] = closeDisc;      // a tap anywhere skips it
   // non-passive so an active drag can stop a pan from starting; until the
   // long-press lifts the tile, touch scrolling behaves normally
