@@ -707,7 +707,7 @@ pairs - Violet + Yellow, Orange + Blue.
 | Sky | Air + Blue · Air + Cyan |
 | Gold | Yellow + Orange |
 | Water | Blue + Matter · Fire + Ice |
-| Fire | Red + Air · Fire + Air |
+| Fire | Red + Air · Orange + Air · Fire + Air |
 | Earth | Brown + Matter |
 | Clay | Earth + Water |
 | Pottery | Clay + Fire |

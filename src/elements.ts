@@ -10,8 +10,8 @@
 // (Bone has eleven routes — a four-legged creature and fire, or a predator and
 // what it caught; fire does not reduce the fish or the bee at all, and a Bird
 // answers it with a Phoenix; the Cloud has five, and every one of them is water
-// meeting warmth or height; Ash, Rainbow and Sand have four; Chick, Glass, Stone
-// and White three; Bird, Black, Charcoal, Diamond, Dog, Fire, Lava, Lizard,
+// meeting warmth or height; Ash, Rainbow and Sand have four; Chick, Fire, Glass,
+// Stone and White three; Bird, Black, Charcoal, Diamond, Dog, Lava, Lizard,
 // Magic, Matter, Night, Phoenix, Plant, Prism, Sky, Storm, Sunflower, Unicorn
 // and Water two each — the Unicorn takes its Magic from a Horse or from a plain
 // Animal, a Diamond comes out of a Lava or the Volcano it came from, and the
@@ -105,7 +105,7 @@ export const ELEMENTS = ([
   { id:"water", e:"\u{1F4A7}", q:"Be like water, my friend.",
     r:[["blue","matter"],["fire","ice"]] },
   { id:"fire", e:"\u{1F525}", q:"Fire transforms all things it touches.",
-    r:[["red","air"],["fire","air"]] },
+    r:[["red","air"],["orange","air"],["fire","air"]] },
   { id:"earth", c:"#a4713f", q:"Keep your feet on the ground and keep reaching for the stars.",
     bg:"radial-gradient(circle at 30% 35%, #7a4a26cc 0 5%, transparent 9%)," +
        "radial-gradient(circle at 62% 60%, #5c3a1e 0 4%, transparent 8%)," +
