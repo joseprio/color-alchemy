@@ -1,0 +1,1071 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — the APPROACH, nine ways. Open it in a browser; nothing to
+     build. Drag the DURATION slider at the top: every card re-times live.
+     Click a card — or press its number — for the full-size view with a
+     frame-by-frame scrubber. Space replays, arrows move, P changes the pair,
+     E drops the ending, C hides the notes, Esc goes back.
+
+     WHAT THIS IS FOR. experiments/discovery-animation.html chose the whole
+     first-discovery sequence, and the game shipped its option 5 (FRACTURE):
+     the pair wind in on a tightening spiral, spin down to nothing, the screen
+     breaks and the new element arrives on the crack. The BREAK is settled and
+     nobody is arguing with it. The first second — the part where the two
+     ingredients travel from wherever they are to the middle of the screen —
+     is what this page is for. It is the only thing that changes between these
+     nine cards.
+
+     WHAT IS HELD CONSTANT, SO THE COMPARISON IS HONEST.
+
+       - THE ENDING IS THE SAME EVERY TIME. Flash, fourteen spectrum rays, the
+         result blooming out of blur, the caption 450ms later, the layer fading
+         from +1350ms. Identical markup, identical keyframes, on all nine.
+       - SO IS THE VEIL, and it is no longer instant: it darkens from nothing
+         over the first 45%, which is how long card 5 takes to reach the sides.
+         A black sheet dropped on frame one is a cut; this is the lights going
+         down. Shared furniture, so it costs no option anything and changes
+         none of the comparisons below.
+       - IMPACT IS ALWAYS AT THE SAME MOMENT: the instant the duration slider
+         names. Every approach is written to land at exactly 100% of it, so
+         "which of these is better" never quietly means "which of these is
+         longer". Change the slider and all nine change together.
+       - THE ICONS ARE THE REAL ONES, read out of src/elements.ts — all 101 of
+         them, so the pair cycler can hand an option an emoji pair, a swatch
+         pair, an inline-SVG pair, or one of each. An approach that only works
+         on two emoji is not an approach that works.
+
+     WHAT THE PAIR DOES AFTER IT LANDS is the vanish: a 300ms shrink-and-fade
+     that runs under the burst. Seven of the nine share it exactly. Two do not,
+     and say so on the card: the control keeps spinning as it collapses (that
+     is the shipped behaviour, and it is half of why the spiral reads as a
+     spiral), and STREAK snaps flat rather than shrinking.
+
+     SETTLED: card 5, FROM THE ALTAR, is now what the game does. Card 1 is the
+     spiral it replaced, kept as the control so the rest still have something
+     to be measured against. Everything below still applies to the other eight,
+     and the page is worth keeping for exactly that reason — the ending has not
+     changed and any of them can still be swapped in.
+
+     THE BUDGET IS NOT WHAT IT WAS. The last experiment had 960 B spare and
+     could ask "what does this option cost". dist/build.zip is 13233 B of
+     13312 — 79 B free, 99.41% used — so that question no longer has a useful
+     answer. The right question is a DELTA: an option REPLACES the spiral, so
+     what matters is what it costs minus what deleting @keyframes dA and dB
+     gives back. Every number here is an estimate and stays one until someone
+     packs the real chunk both ways — the house rule, and the README says it
+     about a bigger idea than this one. ONE of them is no longer an estimate:
+     FROM THE ALTAR was guessed at +80 B and measured +69 B once it was built,
+     which is about as close as this kind of guess gets, and is the only reason
+     to trust the other eight even roughly.
+
+     DURATION IS THE REAL ARGUMENT, WHICH IS WHY IT IS A SLIDER AND NOT A
+     NUMBER IN THE SOURCE. The game ships 1050ms of approach. There are 97
+     first discoveries in a 100-element clear, and the readout at the top does
+     that multiplication for you every time you move the handle. 1050ms is
+     4m 27s of a full run spent watching two icons travel. 600ms is 3m 4s. The
+     slider is there to make that trade visible while you judge the motion,
+     because the motion always looks better slow and the clear never does.
+
+     REDUCED MOTION. This page deliberately ignores prefers-reduced-motion —
+     motion is the subject. The game must not: every card names the still it
+     collapses to, and in all nine cases that still is the one the game already
+     has (result, name, quote, held for the beat, then gone). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — the approach, nine ways</title>
+<style>
+  :root { --t: 1050ms; --s: 1; --scrub: 0ms; --T: calc(var(--t) * var(--s)); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    background-attachment: fixed; padding: 26px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 92ch; margin: 0 0 10px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 8px 0 16px; }
+  kbd {
+    background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+    padding: 1px 6px; color: #7f9fc0; font: inherit; font-size: 12px;
+  }
+
+  /* ---------------------------------------------------------- the controls */
+  /* Sticky, because the whole point is to move the slider while watching the
+     cards behind it. Everything here writes one of three custom properties on
+     :root — --t, --s, --scrub — and every stage on the page inherits them. */
+  .panel {
+    position: sticky; top: 0; z-index: 12; margin: 0 0 22px;
+    border: 1px solid #2a3a63; border-radius: 12px;
+    background: #080d1af2; backdrop-filter: blur(6px);
+    padding: 13px 16px 14px;
+  }
+  .panel .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .panel .row + .row { margin-top: 10px; }
+  .panel .cap { color: #55708e; font-size: 11px; letter-spacing: .14em; min-width: 8.2em; }
+  #dur, #scrub { flex: 1 1 240px; min-width: 190px; height: 22px; }
+  #dur { accent-color: #ffd75e; }
+  #scrub { accent-color: #33e9e9; }
+  .ms { color: #fff; font-size: 16px; min-width: 6.2em; }
+  .ms b { color: #ffd75e; }
+  .chip {
+    background: #101528; border: 1px solid #2a3555; border-radius: 6px; color: #7f9fc0;
+    padding: 3px 9px; font: inherit; font-size: 12px; cursor: pointer;
+  }
+  .chip:hover { border-color: #3d5584; color: #cfe3ff; }
+  .chip.on { background: #1a1a10; border-color: #ffd75e; color: #ffd75e; }
+  .chip.ship { border-style: dashed; }
+  .sums { color: #8fb4d8; font-size: 12.5px; }
+  .sums b { color: #fff; }
+  .sums .warn { color: #ff9d6b; }
+  .sums .ok { color: #7dff9a; }
+  .budget { color: #55708e; font-size: 12px; margin-top: 9px; border-top: 1px solid #16203a; padding-top: 9px; }
+  .budget b { color: #ffd75e; }
+
+  /* ------------------------------------------------------------- the cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
+  .card { border: 1px solid #223052; border-radius: 12px; background: #0c112288; overflow: hidden; cursor: pointer; transition: border-color .12s, transform .12s; }
+  .card:hover { border-color: #3d5584; transform: translateY(-2px); }
+  .card.ships { border-color: #4a4326; }
+  .card h2 {
+    margin: 0; padding: 10px 14px; font-size: 13px; letter-spacing: .16em; color: #fff;
+    border-bottom: 1px solid #223052; font-weight: 700;
+    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+  }
+  .card.ships h2 { border-bottom-color: #4a4326; }
+  .card h2 em { font-style: normal; color: #55708e; letter-spacing: 0; font-size: 12px; }
+  .card.ships h2 em { color: #ffd75e; }
+  .frame { width: 100%; aspect-ratio: 900 / 600; overflow: hidden; position: relative; background: #05060f; }
+  .frame > .stage { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  .cardnote { padding: 11px 14px 13px; color: #8fb4d8; font-size: 12.5px; }
+  .cardnote .thesis { color: #cfe3ff; margin: 0 0 7px; }
+  .cardnote dl { margin: 0; display: grid; grid-template-columns: 6.6em 1fr; gap: 3px 10px; }
+  .cardnote dt { color: #55708e; }
+  .cardnote dd { margin: 0; }
+  .delta { color: #ffd75e; }
+  .delta.ok { color: #7dff9a; }
+  .delta.bad { color: #ff9d6b; }
+
+  /* -------------------------------------------------------- the full view */
+  /* The notes are long enough on some cards to outgrow a laptop screen, so this
+     scrolls — and centring has to be `safe`, or an overflowing flex column
+     clips the head off the top instead of letting you reach it. The plain
+     `center` first, for anything that does not know `safe`. */
+  #full { position: fixed; inset: 0; z-index: 20; background: #04060cfb; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px; overflow-y: auto; }
+  #full { justify-content: safe center; }
+  #full.show { display: flex; }
+  #fullHead, #fullNote, #fullWrap, #fullBar { width: min(1500px, 96vw, calc((100vh - 310px) * 1.5)); }
+  #fullHead { display: flex; gap: 16px; align-items: baseline; }
+  #fullName { color: #fff; letter-spacing: .14em; font-weight: 700; }
+  #fullOf { color: #55708e; margin-left: auto; }
+  #fullWrap { aspect-ratio: 900 / 600; position: relative; overflow: hidden; border: 1px solid #223052; border-radius: 12px; }
+  #fullWrap > .stage { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  #fullBar { display: flex; align-items: center; gap: 12px; }
+  #fullBar .cap { color: #55708e; font-size: 11px; letter-spacing: .14em; }
+  #scrubMs { color: #33e9e9; min-width: 8.5em; font-size: 13px; }
+  #fullNote { color: #8fb4d8; font-size: 13px; }
+  #fullNote dl { margin: 8px 0 0; display: grid; grid-template-columns: 6.6em 1fr; gap: 4px 12px; }
+  #fullNote dt { color: #55708e; }
+  #fullNote dd { margin: 0; }
+  #full.bare #fullNote, #full.bare #fullHead { display: none; }
+
+  /* ======================================================================== */
+  /*  THE STAGE. The game's own screen at 900x600, scaled to fit, so "full     */
+  /*  screen" here means what it means in the game. Behind the veil: the board */
+  /*  and the docked altar, both real, so an approach that starts from the     */
+  /*  altar has something honest to start from.                               */
+  /* ======================================================================== */
+  .stage {
+    width: 900px; height: 600px; overflow: hidden; position: relative;
+    background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+  }
+  .bg { position: absolute; inset: 0 0 134px; opacity: .55; display: flex; flex-wrap: wrap; gap: 10px; padding: 16px 22px; align-content: flex-start; justify-content: center; }
+  .bg .tl { width: 92px; padding: 10px 4px 8px; text-align: center; background: #0c1122cc; border: 1px solid #223052; border-radius: 12px; line-height: 1; }
+  .bg .tl .ico { height: 34px; font-size: 26px; display: flex; align-items: center; justify-content: center; }
+  .bg .tl .sw { width: 26px; height: 26px; border-radius: 6px; }
+  .bg .tl .nm { margin-top: 6px; font-size: 11px; color: #b9d2ee; }
+  /* the docked altar, at the real sizes from src/style.css: two 84px slots and
+     a 96px well, 12px apart, centred — which is what puts option 5's A slot at
+     x-102 and its B slot at x-6, not at a tidy symmetric pair of marks */
+  .dock { position: absolute; left: 0; right: 0; bottom: 0; height: 134px; background: #070a14f2; border-top: 1px solid #16203a; padding-top: 9px; }
+  .dock .cd { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .dock .l, .dock .w { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1px solid #223052; background: #0c1122cc; border-radius: 14px; font-size: 11px; color: #b9d2ee; line-height: 1; }
+  .dock .l { width: 84px; height: 84px; }
+  .dock .w { width: 96px; height: 96px; border-radius: 16px; border-style: dashed; border-color: #1b2540; }
+  .dock .l .sw { width: 34px; height: 34px; border-radius: 7px; }
+  .dock .l .ico { font-size: 28px; height: 34px; display: flex; align-items: center; }
+  /* the + and the = are not decoration: they are two 8.3px spans and two extra
+     12px gaps, and leaving them out of this mock is what put option 5's A slot
+     at -102 instead of the -122 the real altar measures */
+  .dock .q { color: #33e9e9; font-size: 15px; }
+  /* The veil is not there when the layer arrives: it darkens from nothing over
+     the 45% the pair spends climbing to the sides, on the pair's own easing, so
+     the board dims at the speed the ingredients rise instead of being switched
+     off under them. Shared furniture like the ending, so it is the same on all
+     nine — the 45% comes from card 5, which is the one that ships. */
+  .veil { position: absolute; inset: 0; background: #04060ce8;
+    animation: veilin calc(var(--T) * .45) cubic-bezier(.18, .62, .28, 1) both;
+    animation-delay: calc(0ms - var(--scrub)); }
+  @keyframes veilin { from { background-color: #04060c00; } }
+  .fx { position: absolute; inset: 0; overflow: hidden; }
+  /* the centring box; every animated wrapper inside it is free to use transform */
+  .mid { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); }
+  .ing, .res { display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .ing { font-size: 62px; }
+  .ing .sw { width: 62px; height: 62px; border-radius: 12px; }
+  .res { font-size: 110px; }
+  .res .sw { width: 110px; height: 110px; border-radius: 22px; }
+  .cap2 { position: absolute; left: 0; right: 0; top: 63%; text-align: center; padding: 0 24px; }
+  .cap2 b { display: block; font-size: 26px; color: #fff; margin-bottom: 6px; }
+  .cap2 i { color: #8fb4d8; }
+
+  /* ======================================================================== */
+  /*  THE TIMING CONTRACT. Every animation on the stage is written against     */
+  /*  three inherited custom properties and nothing else:                      */
+  /*                                                                           */
+  /*    --t      the approach duration, from the slider                        */
+  /*    --s      the speed multiplier (1, 0.5, 0.25) for watching it slowly    */
+  /*    --scrub  a manual playhead; subtracted from every delay, so parking    */
+  /*             the whole stage at animation-play-state:paused and sweeping   */
+  /*             --scrub steps the entire composition frame by frame           */
+  /*                                                                           */
+  /*  --T is the derived one: calc(var(--t) * var(--s)), the approach as       */
+  /*  actually played. IMPACT IS AT --T. Approach animations run for exactly   */
+  /*  --T and end at translate(0,0); ending animations are delayed by --T plus */
+  /*  their own offset. That is the whole reason nine different motions can be */
+  /*  compared at all: one number moves them all, and none of them can cheat   */
+  /*  by taking longer.                                                        */
+  /*                                                                           */
+  /*  ONE THING THE CONTRACT DOES NOT ENFORCE, and it has to be checked by     */
+  /*  hand: reaching the centre AT impact is not the same as reaching it        */
+  /*  BEFORE impact. The burst fires on the frame the approach ends, so if the  */
+  /*  pair is still closing on that frame, the result blooms out of two icons   */
+  /*  that were never seen to touch. An approach therefore has to be coincident */
+  /*  for a beat BEFORE 100%, the way the shipped spiral is — its dA reaches    */
+  /*  translateX(0) at 60% of its own range and spends the rest collapsing in   */
+  /*  place. Measured, in ms of overlap before the burst at a 1050ms approach:  */
+  /*  PASS & SETTLE 850, STREAK 760, FALL TOGETHER 390, SPIRAL 220,             */
+  /*  ANTICIPATE 180, FROM THE ALTAR 180, CHARGE & PULL 170, ORBIT 100,         */
+  /*  STRAIGHT IN 90. Under about 150ms it reads as a conversion that happened  */
+  /*  early: FROM THE ALTAR had 50ms before its last two stops were moved, and  */
+  /*  it was obvious on the card. ORBIT and STRAIGHT IN are the two left that   */
+  /*  are worth a second look.                                                  */
+  /*                                                                           */
+  /*  Every animated element uses the shorthand for name/duration/easing and   */
+  /*  then re-declares animation-delay on the next line — the shorthand resets */
+  /*  delay to 0, so the order matters, and --scrub would silently stop        */
+  /*  working if an option ever set the shorthand last.                        */
+  /* ======================================================================== */
+  /* the four wrappers, outermost first: .mid centres, .mv travels, .sq        */
+  /* deforms, .gv leaves. An option animates whichever of them it needs and    */
+  /* the rest sit at their defaults doing nothing.                             */
+  .mv, .sq, .ing { animation-duration: var(--T); animation-timing-function: linear; animation-fill-mode: both; animation-delay: calc(0ms - var(--scrub)); }
+  .gv { animation: vanish calc(300ms * var(--s)) cubic-bezier(.4, 0, .85, .6) both; animation-delay: calc(var(--T) - var(--scrub)); }
+  @keyframes vanish { from { transform: scale(1); opacity: 1; } to { transform: scale(.06); opacity: 0; } }
+  /* approach-only mode: the pair lands and stays put, nothing bursts. Each
+     ending element's static rule already leaves it invisible (opacity 0, or
+     height 0 for a ray), so killing the animation is the whole switch. */
+  .stage.noend .gv, .stage.noend .flash, .stage.noend .ray,
+  .stage.noend .res, .stage.noend .cap2 { animation-name: none; }
+  /* scrubbing: the freeze that makes --scrub mean anything lives at the very
+     bottom of this sheet, not here — see the note above @media. */
+
+  /* ----------------------------------------------- the ending, shared by all */
+  /* Lifted from src/style.css unchanged apart from the delay arithmetic: the
+     flash and the rays and the result all fire at impact, the caption 450ms
+     later, the layer fades from +1350ms and is gone at +1700ms. Nine options,
+     one ending — if a card looks better than another it is not because of
+     anything below this line. */
+  .fx .flash {
+    position: absolute; inset: 0; opacity: 0;
+    background: radial-gradient(circle at 50% 44%, #fff 0 4%, #ffd75e 8%, transparent 34%);
+    animation: e_flash calc(380ms * var(--s)) ease-out both;
+    animation-delay: calc(var(--T) - 20ms * var(--s) - var(--scrub));
+  }
+  @keyframes e_flash { 20% { opacity: .95; } to { opacity: 0; } }
+  .fx .ray {
+    position: absolute; left: 50%; top: 44%; width: 2px; height: 0; transform-origin: 50% 0;
+    background: linear-gradient(180deg, #fff, var(--c) 40%, transparent);
+    animation: e_ray calc(620ms * var(--s)) cubic-bezier(.1, .85, .3, 1) both;
+    animation-delay: calc(var(--T) + var(--d, 0ms) * var(--s) - var(--scrub));
+  }
+  @keyframes e_ray { from { height: 0; opacity: 1; } 55% { opacity: 1; } to { height: 520px; opacity: 0; } }
+  .fx .res {
+    transform: scale(.2); opacity: 0; filter: blur(6px);
+    animation: e_res calc(550ms * var(--s)) cubic-bezier(.2, 1.4, .4, 1) both;
+    animation-delay: calc(var(--T) - var(--scrub));
+  }
+  @keyframes e_res { to { transform: scale(1); opacity: 1; filter: blur(0); } }
+  .fx .cap2 {
+    opacity: 0;
+    animation: e_cap calc(400ms * var(--s)) ease-out both;
+    animation-delay: calc(var(--T) + 450ms * var(--s) - var(--scrub));
+  }
+  @keyframes e_cap { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  /* the layer leaves rather than blinking out — veil and effects together, so
+     what comes back is the board, exactly as in the game */
+  .layer {
+    position: absolute; inset: 0;
+    animation: e_out calc(350ms * var(--s)) ease-in both;
+    animation-delay: calc(var(--T) + 1350ms * var(--s) - var(--scrub));
+  }
+  @keyframes e_out { from { opacity: 1; } to { opacity: 0; } }
+  .stage.noend .layer { animation-name: none; }
+
+  /* ======================================================================== */
+  /*  THE NINE APPROACHES. Each one owns nothing but keyframes and an easing   */
+  /*  curve — no option touches the ending, the veil, the board or the timing  */
+  /*  contract. Read them as nine answers to one question: where do the two    */
+  /*  ingredients come from, and what does the last 100ms before they touch    */
+  /*  feel like?                                                              */
+  /* ======================================================================== */
+
+  /* --- 1 · SPIRAL WIND-IN — the control, and what ships today -------------- */
+  /* src/style.css @keyframes dA/dB, renormalised so contact is at 100% rather
+     than at the 60% mark of a longer animation. The stops are the shipped ones:
+     the rotation goes 200deg, 480deg, 820deg over shrinking distances, which is
+     the acceleration you feel rather than see. */
+  .p1 .a { animation-name: p1a; }
+  .p1 .b { animation-name: p1b; }
+  @keyframes p1a {
+    from { transform: translateX(-108px) rotate(0); }
+    50%  { transform: translateX(-84px) rotate(200deg); }
+    78%  { transform: translateX(-52px) rotate(480deg); }
+    to   { transform: translateX(0) rotate(820deg); }
+  }
+  @keyframes p1b {
+    from { transform: translateX(108px) rotate(0); }
+    50%  { transform: translateX(84px) rotate(-200deg); }
+    78%  { transform: translateX(52px) rotate(-480deg); }
+    to   { transform: translateX(0) rotate(-820deg); }
+  }
+  /* the one option that overrides the shared vanish: it keeps spinning as it
+     collapses, over 420ms rather than 300, which is the shipped behaviour */
+  .p1 .gv { animation-name: p1v; animation-duration: calc(420ms * var(--s)); animation-timing-function: linear; }
+  @keyframes p1v {
+    from { transform: rotate(0) scale(1); opacity: 1; }
+    45%  { transform: rotate(300deg) scale(.5); opacity: 1; }
+    to   { transform: rotate(620deg) scale(.06); opacity: 0; }
+  }
+
+  /* --- 2 · STRAIGHT IN ----------------------------------------------------- */
+  /* No rotation at all. Two icons, one accelerating curve, a collision. The
+     argument for it: everything the spiral says about acceleration, this says
+     with an easing function and four fewer keyframe stops. */
+  .p2 .a { animation-name: p2a; animation-timing-function: cubic-bezier(.5, 0, .82, .48); }
+  .p2 .b { animation-name: p2b; animation-timing-function: cubic-bezier(.5, 0, .82, .48); }
+  @keyframes p2a { from { transform: translateX(-180px); } to { transform: translateX(0); } }
+  @keyframes p2b { from { transform: translateX(180px); } to { transform: translateX(0); } }
+
+  /* --- 3 · ANTICIPATE & SNAP ----------------------------------------------- */
+  /* The oldest trick in animation: to go right, go left first. They ease apart
+     over the first third, hang for a beat, then cross the whole gap in the last
+     40% — and .sq stretches along the axis of travel while they do it, so the
+     contact reads as an impact instead of an arrival. Per-keyframe easing, so
+     the pull-back and the snap can have opposite curves. */
+  .p3 .a { animation-name: p3a; }
+  .p3 .b { animation-name: p3b; }
+  @keyframes p3a {
+    0%   { transform: translateX(-132px); animation-timing-function: cubic-bezier(.25, 0, .3, 1); }
+    36%  { transform: translateX(-198px); animation-timing-function: linear; }
+    58%  { transform: translateX(-192px); animation-timing-function: cubic-bezier(.72, 0, .3, 1); }
+    100% { transform: translateX(0); }
+  }
+  @keyframes p3b {
+    0%   { transform: translateX(132px); animation-timing-function: cubic-bezier(.25, 0, .3, 1); }
+    36%  { transform: translateX(198px); animation-timing-function: linear; }
+    58%  { transform: translateX(192px); animation-timing-function: cubic-bezier(.72, 0, .3, 1); }
+    100% { transform: translateX(0); }
+  }
+  .p3 .sq { animation-name: p3s; }
+  @keyframes p3s {
+    0%, 58% { transform: scale(1, 1); }
+    82%     { transform: scale(1.34, .8); }
+    100%    { transform: scale(1, 1); }
+  }
+
+  /* --- 4 · ORBIT ----------------------------------------------------------- */
+  /* Two bodies falling into each other rather than two icons sliding together.
+     .mv carries the angle (two turns, linear), .sq carries the radius (200px to
+     0, eased so it hangs wide and then drops), and .ing carries the exact
+     opposite of .mv's rotation, which keeps the icons upright the whole way
+     round — a tumbling emoji reads as a mistake, a circling one reads as an
+     orbit. Cancelling the spin is why this option needs the third wrapper. */
+  .p4 .a { animation-name: p4a; }
+  .p4 .b { animation-name: p4b; }
+  .p4 .sq { animation-name: p4r; animation-timing-function: cubic-bezier(.45, 0, .7, .55); }
+  .p4 .a .ing { animation-name: p4ca; }
+  .p4 .b .ing { animation-name: p4cb; }
+  @keyframes p4a { from { transform: rotate(0); } to { transform: rotate(700deg); } }
+  @keyframes p4b { from { transform: rotate(180deg); } to { transform: rotate(880deg); } }
+  @keyframes p4r { from { transform: translateX(-200px); } to { transform: translateX(0); } }
+  @keyframes p4ca { from { transform: rotate(0); } to { transform: rotate(-700deg); } }
+  @keyframes p4cb { from { transform: rotate(-180deg); } to { transform: rotate(-880deg); } }
+
+  /* --- 5 · FROM THE ALTAR -------------------------------------------------- */
+  /* The only diegetic one: the pair does not appear out of nowhere at plus and
+     minus 108px, it lifts off the two slots the player actually filled. The
+     start offsets are measured off the real dock — A's slot centre sits 122px
+     left of the screen centre and B's only 6px left of it, because the result
+     well and the + and = take up the right-hand half — so the two paths are
+     lopsided, and the icons start at scale .5 because the slot draws them at
+     34px against the animation's 62.
+
+     TWO PARTS, and nothing in between. Up to 45% the pair is carried OUT to
+     the sides — up out of the slots and wide, growing the whole way, .5 to
+     1.15, because the altar draws them at 34px and this is the one moment the
+     player gets to see clearly what went in. It decelerates into that mark and
+     holds there, flat and unrotated, level with the burst centre.
+
+     From 45% it is one straight run inward with the spin winding up under it.
+     The stops carry the acceleration rather than an easing curve, exactly as
+     the control's do: 185deg, 265, 210, 420, over 20%, 13%, 8% and 14% of the
+     time — 9, 20, 26 and 30 degrees per percent — while the scale runs 1.15
+     down to .42. So they are biggest and stillest at the sides and smallest and
+     fastest at the moment they touch, which is the opposite of what the shipped
+     spiral does with the same second.
+
+     THEY MEET AT 86%, NOT AT 100%. The last 14% is the two of them on the same
+     spot, still winding up and still shrinking — and it is not optional. At an
+     earlier cut this ran all the way to the centre at 100% and the pair, small
+     and moving fastest of anything on the page, was only overlapped for 50ms
+     before the burst: the unicorn arrived out of two icons that had visibly not
+     touched yet. Meeting at 86% buys 180ms of overlap, which is the control's
+     220 and reads correctly. See the note on the timing contract above.
+
+     Ending at .42 rather than 1 is deliberate: the shared vanish then takes an
+     already-tiny pair down to nothing, and the result blooming out at 110px has
+     the whole centre of the screen to itself. */
+  .p5 .a { animation-name: p5a; }
+  .p5 .b { animation-name: p5b; }
+  /* only 0% declares an easing — the run inward is linear, and its acceleration
+     is in the spacing of the stops */
+  @keyframes p5a {
+    0%   { transform: translate(-122px, 253px) scale(.5) rotate(0);
+           animation-timing-function: cubic-bezier(.18, .62, .28, 1); }
+    45%  { transform: translate(-205px, 0) scale(1.15) rotate(0); }
+    65%  { transform: translate(-150px, 0) scale(.98) rotate(185deg); }
+    78%  { transform: translate(-82px, 0) scale(.8) rotate(450deg); }
+    86%  { transform: translate(0, 0) scale(.62) rotate(660deg); }
+    100% { transform: translate(0, 0) scale(.42) rotate(1080deg); }
+  }
+  @keyframes p5b {
+    0%   { transform: translate(-6px, 253px) scale(.5) rotate(0);
+           animation-timing-function: cubic-bezier(.18, .62, .28, 1); }
+    45%  { transform: translate(205px, 0) scale(1.15) rotate(0); }
+    65%  { transform: translate(150px, 0) scale(.98) rotate(-185deg); }
+    78%  { transform: translate(82px, 0) scale(.8) rotate(-450deg); }
+    86%  { transform: translate(0, 0) scale(.62) rotate(-660deg); }
+    100% { transform: translate(0, 0) scale(.42) rotate(-1080deg); }
+  }
+
+  /* --- 6 · PASS & SETTLE --------------------------------------------------- */
+  /* They miss. Each one overshoots the centre, swings back through it, and the
+     swing damps down to nothing — the two icons trading places three times
+     before they agree to occupy the same spot. ease-in-out on every segment is
+     what makes it a pendulum rather than a stutter. */
+  .p6 .a { animation-name: p6a; animation-timing-function: ease-in-out; }
+  .p6 .b { animation-name: p6b; animation-timing-function: ease-in-out; }
+  @keyframes p6a {
+    0%   { transform: translateX(-165px); }
+    38%  { transform: translateX(92px); }
+    64%  { transform: translateX(-44px); }
+    82%  { transform: translateX(20px); }
+    93%  { transform: translateX(-8px); }
+    100% { transform: translateX(0); }
+  }
+  @keyframes p6b {
+    0%   { transform: translateX(165px); }
+    38%  { transform: translateX(-92px); }
+    64%  { transform: translateX(44px); }
+    82%  { transform: translateX(-20px); }
+    93%  { transform: translateX(8px); }
+    100% { transform: translateX(0); }
+  }
+
+  /* --- 7 · STREAK ---------------------------------------------------------- */
+  /* Speed drawn rather than timed. They arrive as smeared light — scaled 3.4x
+     along the axis of travel, blurred and half-transparent — and resolve into
+     themselves only in the last third, so the icons are legible for exactly as
+     long as they need to be and no longer. The blur is the expensive part, and
+     the one thing on this page a slow phone might notice. */
+  .p7 .a { animation-name: p7a; animation-timing-function: cubic-bezier(.16, .9, .28, 1); }
+  .p7 .b { animation-name: p7b; animation-timing-function: cubic-bezier(.16, .9, .28, 1); }
+  @keyframes p7a { from { transform: translateX(-340px); } to { transform: translateX(0); } }
+  @keyframes p7b { from { transform: translateX(340px); } to { transform: translateX(0); } }
+  .p7 .sq { animation-name: p7s; animation-timing-function: cubic-bezier(.16, .9, .28, 1); }
+  @keyframes p7s {
+    from { transform: scale(3.4, .62); filter: blur(4px); opacity: 0; }
+    22%  { opacity: .85; }
+    to   { transform: scale(1, 1); filter: blur(0); opacity: 1; }
+  }
+  /* it snaps flat instead of shrinking: the streak leaves the way it came */
+  .p7 .gv { animation-name: p7v; animation-duration: calc(220ms * var(--s)); animation-timing-function: cubic-bezier(.7, 0, .9, .4); }
+  @keyframes p7v { from { transform: scale(1, 1); opacity: 1; } to { transform: scale(.5, 2.6); opacity: 0; } }
+
+  /* --- 8 · CHARGE & PULL --------------------------------------------------- */
+  /* The one that questions the premise. The pair barely travels: it sits where
+     it starts for the first 62% while a tether of light strings between them,
+     brightens, thickens and starts to hum — and only then does the tether
+     contract and yank them together in the remaining 38%. All the time is spent
+     on tension instead of transit, which means the duration slider buys
+     anticipation here and distance everywhere else. Needs one extra span. */
+  .p8 .a { animation-name: p8a; animation-timing-function: cubic-bezier(.85, 0, .2, 1); }
+  .p8 .b { animation-name: p8b; animation-timing-function: cubic-bezier(.85, 0, .2, 1); }
+  @keyframes p8a {
+    0%   { transform: translateX(-124px); }
+    30%  { transform: translateX(-129px); }
+    46%  { transform: translateX(-121px); }
+    62%  { transform: translateX(-132px); }
+    100% { transform: translateX(0); }
+  }
+  @keyframes p8b {
+    0%   { transform: translateX(124px); }
+    30%  { transform: translateX(129px); }
+    46%  { transform: translateX(121px); }
+    62%  { transform: translateX(132px); }
+    100% { transform: translateX(0); }
+  }
+  .p8 .tether {
+    position: absolute; left: 50%; top: 44%; width: 260px; height: 3px; margin: -1.5px 0 0 -130px;
+    background: linear-gradient(90deg, transparent, #ffd75e 22%, #fff 50%, #ffd75e 78%, transparent);
+    opacity: 0; animation-name: p8t;
+    animation-duration: var(--T); animation-timing-function: cubic-bezier(.85, 0, .2, 1);
+    animation-fill-mode: both; animation-delay: calc(0ms - var(--scrub));
+  }
+  @keyframes p8t {
+    0%   { opacity: 0; transform: scale(.7, .4); }
+    26%  { opacity: .55; transform: scale(1, 1); }
+    50%  { opacity: .8; transform: scale(1, 2.2); }
+    62%  { opacity: 1; transform: scale(1, 3.4); }
+    100% { opacity: 0; transform: scale(.04, 1.6); }
+  }
+
+  /* --- 9 · FALL TOGETHER --------------------------------------------------- */
+  /* The only one on the other axis. One drops from above the screen, one rises
+     from below, and both decelerate into the meeting point instead of
+     accelerating into it — so this is the only approach that is calm at the
+     moment of contact and lets the burst supply all the violence. It also has
+     the shortest honest duration of the nine: a vertical meeting reads at 500ms
+     in a way a horizontal charge does not. */
+  .p9 .a { animation-name: p9a; animation-timing-function: cubic-bezier(.26, 0, .18, 1); }
+  .p9 .b { animation-name: p9b; animation-timing-function: cubic-bezier(.26, 0, .18, 1); }
+  @keyframes p9a { from { transform: translateY(-330px); opacity: 0; } 18% { opacity: 1; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes p9b { from { transform: translateY(330px); opacity: 0; } 18% { opacity: 1; } to { transform: translateY(0); opacity: 1; } }
+
+  /* ---------------------------------------------------------- the freeze --- */
+  /* LAST RULE IN THE SHEET, and it has to be. Half the animations here are
+     declared with the `animation:` shorthand, which resets animation-play-state
+     to running along with everything else it touches — so this rule sitting up
+     with the timing contract lost every tie to `.fx .ray` and friends and the
+     ending kept playing under a frozen approach. Same specificity, later in the
+     sheet, wins. Anything added below this line must not use the shorthand.
+
+     What the freeze buys: every animation on a stage that is born with this
+     class is created paused at currentTime 0, so its local time is exactly
+     minus its delay — and every delay on this page ends in "- var(--scrub)".
+     One custom property therefore seeks nine keyframe timelines at once, with
+     no JS anywhere near an animation object. */
+  .stage.frozen, .stage.frozen * { animation-play-state: paused; }
+</style>
+</head>
+<body>
+
+<h1>COLOR ALCHEMY — THE APPROACH, NINE WAYS</h1>
+<p class="lede">
+  The first-discovery sequence is settled from the flash onwards. This page is
+  only about <b>the part before it</b>: how the two ingredients get to the middle
+  of the screen. Nine approaches, one shared ending, and one duration that moves
+  all nine at once &mdash; because an approach that only wins by being longer has
+  not won. <b>Card 5 is what the game does now</b>; card 1 is the spiral it
+  replaced, kept as the control.
+</p>
+<p class="keys">
+  <kbd>1</kbd>&ndash;<kbd>9</kbd> open &middot; <kbd>Space</kbd> replay &middot;
+  <kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot; <kbd>P</kbd> change the pair &middot;
+  <kbd>E</kbd> ending on/off &middot; <kbd>[</kbd> <kbd>]</kbd> nudge the duration 50ms &middot;
+  <kbd>C</kbd> hide notes &middot; <kbd>Esc</kbd> back
+</p>
+
+<div class="panel">
+  <div class="row">
+    <span class="cap">APPROACH</span>
+    <input id="dur" type="range" min="250" max="2000" step="10" value="1050">
+    <span class="ms"><b id="durMs">1050</b> ms</span>
+    <button class="chip" data-dur="450">450</button>
+    <button class="chip" data-dur="600">600</button>
+    <button class="chip" data-dur="800">800</button>
+    <button class="chip ship" data-dur="1050">1050 · ships</button>
+    <button class="chip" data-dur="1400">1400</button>
+  </div>
+  <div class="row">
+    <span class="cap">PLAYBACK</span>
+    <button class="chip on" data-speed="1">1&times;</button>
+    <button class="chip" data-speed="0.5">&frac12;&times;</button>
+    <button class="chip" data-speed="0.25">&frac14;&times;</button>
+    <span class="cap" style="min-width:0;margin-left:8px">ENDING</span>
+    <button class="chip on" id="endBtn">flash, rays, result</button>
+    <span class="cap" style="min-width:0;margin-left:8px">PAIR</span>
+    <button class="chip" id="pairBtn">&hellip;</button>
+  </div>
+  <div class="row"><span class="sums" id="sums"></span></div>
+  <div class="budget">
+    <b>dist/build.zip is 13233 B of 13312</b> &mdash; 79 B free, 99.41% used, with
+    card 5 in it. Nothing here gets added; an option <i>replaces</i>
+    <code>@keyframes dA</code> and <code>dB</code>, so every card quotes a
+    <b>delta against the spiral</b>, not a cost. Estimates &mdash; except card 5,
+    guessed at +80 B and measured <b>+69 B</b> once it was built. The
+    progressive veil is a further <b>+18 B</b> and belongs to no option: it is
+    furniture, and whichever approach ships gets it.
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div id="full">
+  <div id="fullHead"><span id="fullName"></span><span id="fullOf"></span></div>
+  <div id="fullWrap"></div>
+  <div id="fullBar">
+    <span class="cap">SCRUB</span>
+    <input id="scrub" type="range" min="0" max="2750" step="5" value="0">
+    <span id="scrubMs">live</span>
+    <button class="chip" id="playBtn">play</button>
+  </div>
+  <div id="fullNote"></div>
+</div>
+
+<script>
+const ELS =
+[{"id":"red","c":"#ff3b30","q":"All hands to battle stations!","n":"Red"},{"id":"green","c":"#34d158","q":"In every wood, in every spring, there is a different green.","n":"Green"},{"id":"blue","c":"#2f6bff","q":"The closest color to truth.","n":"Blue"},{"id":"yellow","c":"#ffdc32","q":"Pikachu, I choose you!","r":[["red","green"]],"n":"Yellow"},{"id":"magenta","c":"#ff44ff","q":"The fire that red attempts to be, and purple secretly desires.","r":[["red","blue"]],"n":"Magenta"},{"id":"cyan","c":"#33e9e9","q":"Cyan is sus","r":[["green","blue"]],"n":"Cyan"},{"id":"white","c":"#ffffff","q":"Let there be light.","r":[["blue","yellow"],["red","cyan"],["green","magenta"]],"n":"White"},{"id":"orange","c":"#ff9430","q":"The new black.","r":[["red","yellow"]],"n":"Orange"},{"id":"violet","c":"#9a4dff","q":"The last color of the rainbow.","r":[["blue","magenta"]],"n":"Violet"},{"id":"indigo","c":"#4a30d8","q":"Here because Newton insisted.","r":[["blue","violet"]],"n":"Indigo"},{"id":"pink","c":"#ffa8c5","q":"You can never go wrong with a little pink, a lot works too.","r":[["red","white"]],"n":"Pink"},{"id":"brown","c":"#8b5a2b","q":"The very shade of earth itself.","r":[["green","orange"]],"n":"Brown"},{"id":"matter","c":"#7ec8ff","q":"Energy waiting to happen.","s":"<g transform='translate(16 16)' fill='none' stroke='#7ec8ff' stroke-width='2'><ellipse rx='13' ry='5'/><ellipse rx='13' ry='5' transform='rotate(60)'/><ellipse rx='13' ry='5' transform='rotate(-60)'/><circle r='4' fill='#eaf8ff' stroke='none'/></g>","r":[["violet","yellow"],["blue","orange"]],"n":"Matter"},{"id":"air","e":"💨","q":"The air is full of ideas. They are knocking you in the head all the time.","r":[["white","matter"]],"n":"Air"},{"id":"sky","c":"#7ec8ff","q":"Only from the heart can you touch the sky.","bg":"radial-gradient(circle at 68% 30%, #fff3a0 0 6%, #ffdc32 6% 13%, transparent 17%),radial-gradient(circle at 68% 30%, #ffdc3244 0 22%, transparent 30%),linear-gradient(180deg, #a8dbff 0%, #7ec8ff 55%, #4f9fe8 100%)","r":[["air","blue"]],"n":"Sky"},{"id":"gold","c":"#f7c948","q":"Gold can do much, but love can do all.","r":[["yellow","orange"]],"n":"Gold"},{"id":"water","e":"💧","q":"Be like water, my friend.","r":[["blue","matter"],["fire","ice"]],"n":"Water"},{"id":"fire","e":"🔥","q":"Fire transforms all things it touches.","r":[["red","air"],["fire","air"]],"n":"Fire"},{"id":"earth","c":"#a4713f","q":"Keep your feet on the ground and keep reaching for the stars.","bg":"radial-gradient(circle at 30% 35%, #7a4a26cc 0 5%, transparent 9%),radial-gradient(circle at 62% 60%, #5c3a1e 0 4%, transparent 8%),radial-gradient(circle at 78% 28%, #b98a55 0 4%, transparent 8%),radial-gradient(circle at 42% 78%, #5c3a1e 0 4.5%, transparent 8%),radial-gradient(circle at 15% 65%, #b98a55aa 0 3.5%, transparent 7%),linear-gradient(180deg, #a4713f 0%, #7c5230 55%, #59391f 100%)","r":[["brown","matter"]],"n":"Earth"},{"id":"clay","c":"#c1663c","q":"Shape clay into a vessel; it is the space within that makes it useful.","bg":"radial-gradient(circle at 33% 26%, #ffc49faa 0 11%, transparent 32%),linear-gradient(150deg, #d4794c 0%, #c1663c 46%, #8f4526 100%)","r":[["earth","water"]],"n":"Clay"},{"id":"pottery","e":"🏺","q":"Who is the Potter, pray, and who the Pot?","r":[["clay","fire"]],"n":"Pottery"},{"id":"beer","e":"🍺","q":"Beer is proof that God loves us and wants us to be happy.","r":[["gold","water"]],"n":"Beer"},{"id":"wine","e":"🍷","q":"Wine is sunlight, held together by water.","r":[["red","water"]],"n":"Wine"},{"id":"lava","c":"#ff5a1f","q":"The floor is lava!","bg":"radial-gradient(circle at 27% 32%, #ffe08a 0 3.5%, transparent 7%),radial-gradient(circle at 72% 62%, #ffc04dcc 0 4%, transparent 8%),linear-gradient(108deg, #2b0e07 0 14%, transparent 14% 27%, #1f0905 27% 35%,transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%),linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)","r":[["earth","fire"]],"n":"Lava"},{"id":"volcano","e":"🌋","q":"A cannon of immense size.","r":[["lava","earth"]],"n":"Volcano"},{"id":"stone","e":"🪨","q":"Every stone holds a statue; the sculptor merely reveals it.","r":[["lava","water"],["lava","rain"]],"n":"Stone"},{"id":"metal","c":"#c3ced9","q":"Soft enough to wire, hard enough to shield, liquid enough to pour.","bg":"linear-gradient(120deg, transparent 0 30%, #ffffffaa 30% 38%, transparent 38% 62%,#ffffff55 62% 68%, transparent 68%),linear-gradient(180deg, #e6edf3 0%, #aab6c2 38%, #6e7a86 62%, #cdd7e0 100%)","r":[["fire","stone"]],"n":"Metal"},{"id":"tool","e":"🛠️","q":"We shape our tools, and thereafter our tools shape us.","r":[["fire","metal"]],"n":"Tool"},{"id":"sand","c":"#e0c078","q":"It's coarse and rough and irritating and it gets everywhere.","bg":"radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%),radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%),radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%),linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)","r":[["earth","air"],["earth","sun"],["stone","air"]],"n":"Sand"},{"id":"glass","c":"#bfe6f2","q":"Glass, china, and reputation are easily cracked, and never well mended.","bg":"linear-gradient(135deg, transparent 0 28%, #ffffff99 28% 37%, transparent 37% 54%, #ffffff55 54% 60%, transparent 60% 100%),linear-gradient(180deg, #d8f1f8 0%, #a8d8ea 60%, #8ec4dc 100%)","r":[["sand","fire"]],"n":"Glass"},{"id":"mirror","e":"🪞","q":"Who's the Fairest of Them All?","r":[["glass","metal"]],"n":"Mirror"},{"id":"hourglass","e":"⌛","q":"Like sands through the hourglass, so are the days of our lives.","r":[["glass","sand"]],"n":"Hourglass"},{"id":"sun","e":"☀️","q":"Even the darkest night will end and the sun will rise.","r":[["fire","sky"]],"n":"Sun"},{"id":"night","c":"#8a56e0","q":"A world lit by itself.","bg":"radial-gradient(circle at 22% 28%, #fff 0 4%, transparent 8%),radial-gradient(circle at 65% 16%, #fff 0 3%, transparent 6%),radial-gradient(circle at 82% 52%, #ffffffcc 0 3.5%, transparent 7%),radial-gradient(circle at 38% 62%, #ffffffbb 0 3%, transparent 6%),radial-gradient(circle at 58% 84%, #fff 0 2.5%, transparent 5%),radial-gradient(circle at 12% 76%, #ffffff99 0 3%, transparent 6%),linear-gradient(160deg, #7b3fd0 0%, #241047 45%, #04060c 100%)","r":[["black","sky"],["violet","sky"]],"n":"Night"},{"id":"star","e":"⭐","q":"The forget-me-nots of the angels.","r":[["night","white"]],"n":"Star"},{"id":"moon","e":"🌙","q":"Everyone is a moon, and has a dark side which he never shows to anybody.","r":[["night","sun"]],"n":"Moon"},{"id":"cloud","e":"☁️","q":"Resembles the thoughts in our mind! Both change from second to second!","r":[["sky","water"],["water","air"],["grey","sky"]],"n":"Cloud"},{"id":"rain","e":"🌧️","q":"If you want the rainbow, you have to put up with the rain.","r":[["cloud","water"]],"n":"Rain"},{"id":"lightning","e":"🌩️","q":"Never strikes twice.","r":[["cloud","electricity"]],"n":"Lightning"},{"id":"storm","e":"⛈️","q":"It was the most terrible, yet majestic spectacle.","r":[["lightning","rain"],["electricity","rain"]],"n":"Storm"},{"id":"tornado","e":"🌪️","q":"I've a feeling we're not in Kansas anymore.","r":[["air","storm"]],"n":"Tornado"},{"id":"life","e":"🧬","q":"It finds a way.","r":[["lightning","water"]],"n":"Life"},{"id":"egg","e":"🥚","q":"Which came first?","r":[["stone","life"]],"n":"Egg"},{"id":"animal","e":"🐾","q":"All animals are equal, but some are more equal than others.","r":[["earth","life"]],"n":"Animal"},{"id":"lizard","e":"🦎","q":"Life's better on a warm rock.","r":[["stone","animal"],["egg","lizard"]],"n":"Lizard"},{"id":"horse","e":"🐴","q":"My kingdom for a horse!","r":[["animal","field"]],"n":"Horse"},{"id":"hippo","e":"🦛","q":"The world's most dangerous couch potato.","r":[["horse","water"]],"n":"Hippo"},{"id":"wolf","e":"🐺","q":"If you live with wolves, you must learn to howl.","r":[["animal","moon"]],"n":"Wolf"},{"id":"fox","e":"🦊","q":"The fox changes his skin, but not his habits.","r":[["orange","wolf"]],"n":"Fox"},{"id":"bone","e":"🦴","q":"Flesh decays; bone endures.","r":[["animal","fire"],["wolf","fire"],["horse","fire"],["unicorn","fire"],["bear","fire"],["polarbear","fire"],["dog","fire"],["cow","fire"],["bear","horse"],["wolf","horse"],["bear","dog"]],"n":"Bone"},{"id":"dog","e":"🐕","q":"The more I learn about people, the more I like my dog.","r":[["wolf","bone"],["dog","wolf"]],"n":"Dog"},{"id":"cow","e":"🐄","q":"One end is moo, the other, milk.","r":[["animal","plant"]],"n":"Cow"},{"id":"milk","e":"🥛","q":"Got milk?","r":[["cow","water"]],"n":"Milk"},{"id":"cheese","e":"🧀","q":"The nectar of the Gods.","r":[["acid","milk"]],"n":"Cheese"},{"id":"squirrel","e":"🐿️","q":"You can't keep a squirrel on the ground.","r":[["animal","tree"]],"n":"Squirrel"},{"id":"bird","e":"🐦","q":"To have faith is to have wings.","r":[["air","animal"],["air","penguin"]],"n":"Bird"},{"id":"chick","e":"🐥","q":"Are you my mother?","r":[["egg","bird"],["duck","egg"],["egg","flamingo"]],"n":"Chick"},{"id":"penguin","e":"🐧","q":"Always dressed to impress and ready for any occasion.","r":[["bird","ice"]],"n":"Penguin"},{"id":"duck","e":"🦆","q":"If it looks like a duck and quacks like a duck, it's a duck.","r":[["bird","water"]],"n":"Duck"},{"id":"fish","e":"🐟","q":"So long, and thanks for all the fish.","r":[["animal","water"]],"n":"Fish"},{"id":"owl","e":"🦉","q":"Spanish or Vanish","r":[["bird","night"]],"n":"Owl"},{"id":"flamingo","e":"🦩","q":"Be a flamingo in a flock of pigeons.","r":[["bird","pink"]],"n":"Flamingo"},{"id":"peacock","e":"🦚","q":"I'm a peacock, you gotta let me fly!","r":[["bird","rainbow"]],"n":"Peacock"},{"id":"phoenix","e":"🐦‍🔥","q":"From the ashes, a fire shall be woken","r":[["bird","fire"],["ash","fire"]],"n":"Phoenix"},{"id":"bee","e":"🐝","q":"Busy bees make more honey.","r":[["animal","flower"]],"n":"Bee"},{"id":"honey","e":"🍯","q":"Life is the flower for which love is the honey.","r":[["bee","flower"]],"n":"Honey"},{"id":"bear","e":"🐻","q":"Sometimes you eat the bear, and sometimes the bear eats you.","r":[["animal","honey"]],"n":"Bear"},{"id":"polarbear","n":"Polar Bear","e":"🐻‍❄️","q":"The undisputed king of the ice.","r":[["bear","ice"]]},{"id":"acid","e":"🧪","q":"Water that bites.","r":[["green","water"]],"n":"Acid"},{"id":"electricity","e":"⚡","q":"So subtle and powerful that it seems to be the very soul of the universe.","r":[["acid","metal"]],"n":"Electricity"},{"id":"lightbulb","n":"Light Bulb","e":"💡","q":"I have not failed. I've just found 10,000 ways that won't work.","r":[["electricity","glass"]]},{"id":"ice","e":"🧊","q":"Let it go!","r":[["water","night"]],"n":"Ice"},{"id":"snow","e":"🌨️","q":"Winter is coming.","r":[["cloud","ice"]],"n":"Snow"},{"id":"prism","c":"#bfe6f2","q":"Every eye is a different prism, showing a different world.","s":"<path d=\"M16 3 30 28H2Z\" fill=\"#cfeaf544\" stroke=\"#eaf8ff\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/><path d=\"M0 11h12\" stroke=\"#fff\" stroke-width=\"2.4\"/><g stroke-width=\"2.4\" stroke-linecap=\"round\"><path d=\"M22 15 32 7\" stroke=\"#ff3b30\"/><path d=\"M22 15 32 10\" stroke=\"#ff9430\"/><path d=\"M22 15 32 13\" stroke=\"#ffdc32\"/><path d=\"M22 15 32 16\" stroke=\"#34d158\"/><path d=\"M22 15 32 19\" stroke=\"#33e9e9\"/><path d=\"M22 15 32 22\" stroke=\"#2f6bff\"/><path d=\"M22 15 32 25\" stroke=\"#9a4dff\"/></g>","r":[["diamond","glass"]],"n":"Prism"},{"id":"rainbow","e":"🌈","q":"Somewhere over the rainbow, skies are blue.","r":[["white","prism"],["sun","rain"],["prism","sun"],["lightbulb","prism"]],"n":"Rainbow"},{"id":"magic","e":"🪄","q":"Any sufficiently advanced technology is indistinguishable from magic.","r":[["wood","star"],["pumpkin","night"]],"n":"Magic"},{"id":"crystalball","n":"Crystal Ball","e":"🔮","q":"Reply hazy, try again.","r":[["magic","glass"]]},{"id":"unicorn","e":"🦄","q":"Always be yourself. Unless you can be a unicorn, then always be a unicorn.","r":[["horse","magic"],["animal","magic"]],"n":"Unicorn"},{"id":"plant","e":"🌿","q":"Grow where you are planted.","r":[["life","sun"],["green","life"]],"n":"Plant"},{"id":"cactus","e":"🌵","q":"Adapt to your environment, grow thick skin, and stay sharp.","r":[["plant","sand"]],"n":"Cactus"},{"id":"field","c":"#5fb54a","q":"Pray for a good harvest, but keep on plowing.","bg":"linear-gradient(180deg, #a8dbff 0%, #7ec8ff 46%, #5fb54a 46%, #3f8c36 100%)","r":[["earth","plant"]],"n":"Field"},{"id":"park","e":"🏞️","q":"Not an island of nature, but a bridge connecting humans back to it.","r":[["field","water"]],"n":"Park"},{"id":"tree","e":"🌳","q":"He who plants a tree, plants a hope.","r":[["water","plant"]],"n":"Tree"},{"id":"fruit","e":"🍎","q":"An apple a day keeps the doctor away.","r":[["tree","sun"]],"n":"Fruit"},{"id":"pumpkin","e":"🎃","q":"Trick or treat!","r":[["fruit","orange"]],"n":"Pumpkin"},{"id":"wood","e":"🪵","q":"Chop your own wood and it will warm you twice.","r":[["tree","tool"]],"n":"Wood"},{"id":"charcoal","c":"#8a3a14","q":"Charcoal never forgets that it was once wood.","bg":"radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%),radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%),linear-gradient(125deg, #2c2c2f 0 28%, #171719 28% 44%, #333338 44% 60%,#1b1b1e 60% 78%, #27272b 78% 100%)","r":[["wood","fire"],["tree","fire"]],"n":"Charcoal"},{"id":"ash","c":"#b9b3ad","q":"Ashes to ashes, dust to dust.","bg":"radial-gradient(circle at 28% 30%, #efece8cc 0 6%, transparent 12%),radial-gradient(circle at 70% 64%, #ff6a2aaa 0 3%, transparent 8%),linear-gradient(140deg, #b3aca4 0%, #8a827b 46%, #625b55 100%)","r":[["charcoal","fire"],["bone","fire"],["fire","paper"],["book","fire"]],"n":"Ash"},{"id":"mushroom","e":"🍄","q":"All are edible, but some only once.","r":[["rain","wood"]],"n":"Mushroom"},{"id":"pencil","e":"✏️","q":"A pencil and a dream can take you anywhere.","r":[["wood","charcoal"]],"n":"Pencil"},{"id":"paper","e":"📄","q":"Paper has more patience than people.","r":[["stone","tree"]],"n":"Paper"},{"id":"book","e":"📖","q":"A room without books is like a body without a soul.","r":[["paper","pencil"]],"n":"Book"},{"id":"palette","e":"🎨","q":"I dream of painting and then I paint my dream.","r":[["paper","rainbow"]],"n":"Palette"},{"id":"kite","e":"🪁","q":"Kites rise highest against the wind, not with it.","r":[["air","paper"]],"n":"Kite"},{"id":"black","c":"#5b6472","q":"Only in the darkness can you see the stars.","bg":"radial-gradient(circle at 30% 26%, #2a2f3a 0 18%, transparent 42%),linear-gradient(155deg, #17191f 0%, #0a0b0e 55%, #000000 100%)","r":[["charcoal","stone"]],"n":"Black"},{"id":"grey","c":"#7f8894","q":"A gray day provides the best light.","r":[["black","white"]],"n":"Grey"},{"id":"diamond","e":"💎","q":"Life tries to crush you, but you choose whether to become dust or a diamond.","r":[["charcoal","lava"],["volcano","charcoal"]],"n":"Diamond"},{"id":"ring","e":"💍","q":"One ring to bring them all, and in the darkness bind them.","r":[["metal","diamond"]],"n":"Ring"},{"id":"flower","e":"🌸","q":"Where flowers bloom so does hope.","r":[["plant","pink"]],"n":"Flower"},{"id":"sunflower","e":"🌻","q":"Wherever the sun goes, the sunflower will follow.","r":[["sun","flower"],["flower","yellow"]],"n":"Sunflower"},{"id":"rose","e":"🌹","q":"A rose by any other name would smell as sweet.","r":[["flower","red"]],"n":"Rose"}];
+const BY = {};
+ELS.forEach((e) => (BY[e.id] = e));
+
+/* icon markup, the same three branches as iconHtml() in src/game.ts */
+function icon(el, cls) {
+  if (el.s) return '<svg class="' + (cls || "sw") + '" viewBox="0 0 32 32">' + el.s + "</svg>";
+  if (el.c || el.bg) return '<div class="' + (cls || "sw") + '" style="background:' + (el.bg || el.c) + '"></div>';
+  return "<span>" + el.e + "</span>";
+}
+
+/* The pairs the cards cycle through, chosen so no approach gets judged on the
+   easy case only: two emoji, a swatch and an emoji, an emoji and a swatch
+   making an inline SVG, and two swatches. A 62px emoji and a 62px square do not
+   move the same way — the square has hard edges that make a spin read, and the
+   emoji has none. */
+const PAIRS = [
+  ["horse", "magic", "unicorn"],
+  ["earth", "water", "clay"],
+  ["diamond", "glass", "prism"],
+  ["black", "white", "grey"],
+  ["charcoal", "lava", "diamond"],
+];
+let pair = 0;
+
+/* the board behind the veil, and the altar the pair came off */
+const board = () =>
+  '<div class="bg">' + ELS.slice(0, 30).map((e) =>
+    '<div class="tl"><div class="ico">' + icon(e) + '</div><div class="nm">' + e.n + "</div></div>").join("") + "</div>" +
+  '<div class="dock"><div class="cd">' +
+  '<div class="l"><div class="ico">' + icon(BY[PAIRS[pair][0]]) + "</div><span>" + BY[PAIRS[pair][0]].n + "</span></div>" +
+  '<span class="q">+</span>' +
+  '<div class="l"><div class="ico">' + icon(BY[PAIRS[pair][1]]) + "</div><span>" + BY[PAIRS[pair][1]].n + "</span></div>" +
+  '<span class="q">=</span><div class="w"></div></div></div>';
+
+/* the fourteen rays: the shipped markup, stagger and spectrum step, unchanged */
+const rays = () =>
+  Array.from({ length: 14 }, (_, i) =>
+    '<span class="ray" style="transform:rotate(' + (i * 25.7 + 8) + "deg);--c:hsl(" +
+    Math.round(i * 360 / 14) + ' 95% 62%);--d:' + i * 12 + 'ms"></span>').join("");
+
+/* Every option gets identical markup. The four nested wrappers per ingredient
+   are the whole trick: .mid centres, .mv travels, .sq deforms, .gv leaves — so
+   an option can animate translation, squash and exit independently without any
+   of them fighting over the same transform. */
+function build(n, extra) {
+  const [a, b, r] = PAIRS[pair];
+  const el = BY[r];
+  const d = document.createElement("div");
+  d.className = "stage p" + n + (ending ? "" : " noend");
+  // .mid and .mv MUST be separate elements. Sharing one, as this did at first,
+  // means the option's keyframes set transform on the same box that carries the
+  // translate(-50%,-50%) doing the centring — the animation wins, the centring
+  // is silently dropped, and the pair converges half its own box down and right
+  // of the flash and the rays. It looked plausible on every card because every
+  // card was wrong by the same 43x31px.
+  const ing = (cls, id) =>
+    '<div class="mid"><div class="' + cls + ' mv"><div class="sq"><div class="gv">' +
+    '<div class="ing">' + icon(BY[id]) + "</div></div></div></div></div>";
+  d.innerHTML =
+    board() +
+    '<div class="layer"><div class="veil"></div><div class="fx">' + (extra || "") +
+    rays() + '<span class="flash"></span>' +
+    ing("a", a) + ing("b", b) +
+    '<div class="mid"><div class="res">' + icon(el) + "</div></div>" +
+    '<div class="cap2"><b>' + el.n + "</b><i>&ldquo;" + el.q + "&rdquo;</i></div>" +
+    "</div></div>";
+  return d;
+}
+
+/* Nine options. "Delta" is against the spiral this would replace, not against
+   an empty bundle — @keyframes dA and dB and their two class rules go away
+   whichever of the other eight wins. "Reads at" is the shortest duration I
+   could still tell what happened at; it is the number to check the slider
+   against, because a 2000ms preview flatters everything. */
+const OPTIONS = [
+  {
+    name: "SPIRAL WIND-IN",
+    tag: "the control · shipped until card 5",
+    thesis: "src/style.css as it stands: they wind in at full size, spinning faster the closer they get — 200°, then 480°, then 820° over ever-shorter distances — meet, and spin down to nothing under the burst.",
+    notes: [
+      ["Delta", "±0 B by definition — it is the baseline every other row is measured against. It is no longer in the bundle; card 5 replaced it."],
+      ["Reads at", "~850ms. Under that the rotation stops being acceleration and starts being a blur, and the whole point of the option is lost."],
+      ["Vanish", "Its own: 420ms, still spinning. The other eight share a 300ms shrink."],
+      ["Still", "Result, name, quote. Same as every card here."],
+      ["Against it", "The spin is doing two jobs — conveying speed and filling time — and it is only good at the second. At 1050ms the icons are unreadable for most of their journey, which is a strange thing to do to the two elements the player just chose."],
+    ],
+  },
+  {
+    name: "STRAIGHT IN",
+    tag: "do less · 2 stops",
+    thesis: "No rotation at all. Two icons, one accelerating curve, a collision. Everything the spiral says about acceleration, said with an easing function instead of twelve keyframe stops.",
+    notes: [
+      ["Delta", "about −95 B. The only option that gives the budget something back worth having."],
+      ["Reads at", "~350ms, which is the real argument for it: it is legible at a third of what the spiral needs, so it can be the shortest option AND the clearest one."],
+      ["Vanish", "Shared 300ms shrink."],
+      ["Still", "Result, name, quote."],
+      ["Against it", "It is plain. Set the slider to 1050 and it looks like nothing much happens for a second; set it to 450 and it is the best card on this page. This option is a bet that the fix is duration, not choreography."],
+    ],
+  },
+  {
+    name: "ANTICIPATE & SNAP",
+    tag: "cartoon physics · 4 stops",
+    thesis: "To go right, go left first. They ease apart over the first third, hang, then cross the entire gap in the last 40% while stretching along the axis of travel — so contact reads as an impact rather than an arrival.",
+    notes: [
+      ["Delta", "about +40 B. Per-keyframe easing (the pull-back and the snap need opposite curves) plus the squash."],
+      ["Reads at", "~600ms. Below that the pull-back reads as a stutter, because anticipation needs about 200ms to register as intent."],
+      ["Vanish", "Shared 300ms shrink. The squash returns to scale 1 first, so nothing pops."],
+      ["Still", "Result, name, quote."],
+      ["In the game", "One element, not three: the scale folds into the translate keyframes, so the extra wrappers this page uses for clarity are not needed."],
+      ["Against it", "It is the most animated of the nine and the most cartoon, which cuts against a game whose visual language is flat squares and system emoji."],
+    ],
+  },
+  {
+    name: "ORBIT",
+    tag: "two bodies · 5 blocks",
+    thesis: "Not two icons sliding together — two bodies falling into each other. Two full turns on a radius that hangs wide and then drops, with the icons counter-rotated so they stay upright the whole way round.",
+    notes: [
+      ["Delta", "about +120 B, the most expensive of the nine, and 148 B is all there is."],
+      ["Reads at", "~900ms. Two turns need time; at 600ms it is a smear and one turn at 600ms is not an orbit."],
+      ["Vanish", "Shared 300ms shrink."],
+      ["Still", "Result, name, quote."],
+      ["In the game", "The one option that genuinely needs nested elements: rotating about a point means composing rotate-then-translate, and keeping the icon upright needs a third wrapper to undo the first. Three spans per ingredient instead of two."],
+      ["Against it", "Cost, and it is the option most likely to read as decorative rather than causal — they circle because circling looks nice, not because anything is pulling them."],
+    ],
+  },
+  {
+    name: "FROM THE ALTAR",
+    tag: "diegetic · out, then in · SHIPS",
+    ships: true,
+    thesis: "Two moves, not one. The pair lifts off the two slots the player actually filled and is carried OUT to the sides, growing as it goes; then it runs back in to the middle, winding up to three full turns and shrinking the whole way.",
+    notes: [
+      ["Delta", "<b>+69 B, measured</b> — 13164 to 13233 of 13312. Guessed at +80 before it was built. It came in under because the two ingredients ended up sharing ONE @keyframes block rather than a mirrored pair: they differ in three numbers (which slot, how far out and which way, which way it spins), so those became custom properties and the whole of dB went away."],
+      ["Reads at", "~750ms. The two halves fail differently — too short and the pair never settles at the sides, so the whole thing reads as one diagonal smear."],
+      ["The two halves", "OUT (0&ndash;45%): decelerating, no rotation at all, scale .5 to 1.15 — the icons are at their biggest and stillest at the sides, which is the one moment the player gets a clear look at what went in. IN (45&ndash;100%): linear, with the acceleration in the spacing of the stops — 9, 20, 26 then 30 degrees per percent — while the scale runs 1.15 down to .42."],
+      ["Contact", "They arrive on the same spot at 86%, and the last 14% is the two of them stacked there, still winding up. That is a fix, not a flourish: running all the way in to 100% left them overlapped for only 50ms before the burst, and the result visibly bloomed out of two icons that had not touched. 86% buys 180ms, against the control's 220ms."],
+      ["Vanish", "Shared 300ms shrink, from the .42 it lands at — the least distance left to travel of the nine, and the 110px result blooms into a centre that is already empty."],
+      ["Still", "Result, name, quote."],
+      ["Honest", "The paths are lopsided on purpose — A's slot centre is 122px left of screen centre and B's is only 6px, because the result well and the + and = eat the right-hand half. Measured off the shipped altar, not worked out: an earlier version of this card forgot the two separator spans and started A 20px adrift."],
+      ["Against it", "The altar is under the veil at 9% opacity when this plays, so the origin is remembered rather than seen — worth testing with the veil held back for the first 200ms. Three turns in the back half is also a lot of spin to end on; if it blurs, 720&deg; keeps the wind-up and loses the smear."],
+    ],
+  },
+];
+/* split only so this file stays readable; the nine are one list */
+OPTIONS.push(
+  {
+    name: "PASS & SETTLE",
+    tag: "overshoot · 6 stops",
+    thesis: "They miss. Each overshoots the centre, swings back through it, and the swing damps to nothing — the two trading places three times before they agree to occupy the same spot.",
+    notes: [
+      ["Delta", "about +55 B. Six stops each, and ease-in-out on every segment is what makes it a pendulum instead of a stutter."],
+      ["Reads at", "~800ms. Five swings need room; below that the damping compresses into a shudder."],
+      ["Vanish", "Shared 300ms shrink."],
+      ["Still", "Result, name, quote."],
+      ["Against it", "It is the funniest of the nine and the least serious. It also spends the most time with the two icons on the wrong sides of the screen, which is briefly confusing on a swatch pair where the only difference between them is hue."],
+    ],
+  },
+  {
+    name: "STREAK",
+    tag: "speed, drawn · blur",
+    thesis: "Speed drawn rather than timed. They arrive as smeared light — 3.4× along the axis of travel, blurred, half-transparent — and resolve into themselves only in the last third, so the icons are legible exactly as long as they need to be.",
+    notes: [
+      ["Delta", "about +85 B, including its own exit."],
+      ["Reads at", "~300ms, the shortest of the nine. The smear IS the information, so there is nothing left to lose by making it fast — this is the option that makes a 400ms approach defensible."],
+      ["Vanish", "Its own, 220ms: it snaps flat rather than shrinking, leaving the way it came."],
+      ["Still", "Result, name, quote."],
+      ["In the game", "Folds to one element — translate, scale and filter can all sit on the same span."],
+      ["Against it", "filter: blur() on a 62px emoji is the one thing on this page a cheap phone might actually feel, and npm run mobile-check does not cover paint cost. Measure before shipping it."],
+    ],
+  },
+  {
+    name: "CHARGE & PULL",
+    tag: "questions the premise · +1 span",
+    thesis: "The pair barely travels. It sits where it starts for the first 62% while a tether of light strings between them, brightens and thickens — then the tether contracts and yanks them together in the remaining 38%.",
+    notes: [
+      ["Delta", "about +140 B, plus one span of markup per discovery."],
+      ["Reads at", "~750ms, but it fails differently from the rest: too short and there is no charge, which leaves nothing but a fast snap. The tension is the whole option."],
+      ["Vanish", "Shared 300ms shrink."],
+      ["Still", "Result, name, quote — with the tether drawn at full brightness behind it, which is the best-looking still of the nine."],
+      ["Why it is here", "Every other card assumes the fix is a better journey. This one assumes the journey is the problem: time spent on anticipation reads as build-up, time spent on transit reads as waiting. Set the slider to 1400 and compare it against card 1 at 1400 — that is the comparison this page was built for."],
+      ["Against it", "Cost, and the tether is a gold bar that means nothing in a game where gold already means locked."],
+    ],
+  },
+  {
+    name: "FALL TOGETHER",
+    tag: "the other axis · 2 stops",
+    thesis: "One drops from above the screen, one rises from below, and both decelerate into the meeting point rather than accelerating into it — the only approach that is calm at the moment of contact and lets the burst supply all the violence.",
+    notes: [
+      ["Delta", "about −80 B. The second option that hands bytes back."],
+      ["Reads at", "~450ms. Vertical entry is legible fast because the two paths never overlap until the last frame."],
+      ["Vanish", "Shared 300ms shrink."],
+      ["Still", "Result, name, quote."],
+      ["Against it", "The board is a horizontal grid and the altar is a horizontal row; nothing else in the game moves on this axis, so it may read as belonging to a different screen. Against that: it is the only card here where both icons are fully readable at 500ms."],
+    ],
+  },
+);
+
+const EXTRA = { 8: '<span class="tether"></span>' };   /* 1-based: only CHARGE needs markup */
+
+/* --------------------------------------------------------------- the state */
+/* Three numbers and two flags. Everything visible is derived from them, and
+   the two that the CSS cares about are written straight onto :root — no stage
+   is ever re-timed by hand, they all inherit. */
+const ROOT = document.documentElement.style;
+const ENDING_MS = 1700;          /* impact -> the layer is gone: 380 flash, 620 rays, caption at +450, fade from +1350 */
+const FIRSTS = 97;               /* 100 elements, 3 starters */
+let dur = 1050;
+let speed = 1;
+let ending = true;
+let frozen = false;
+
+const fmt = (ms) => {
+  const s = Math.round(ms / 1000), m = s / 60 | 0;
+  return m ? m + "m " + String(s % 60).padStart(2, "0") + "s" : s + "s";
+};
+
+function applyTiming() {
+  ROOT.setProperty("--t", dur + "ms");
+  ROOT.setProperty("--s", String(speed));
+  document.getElementById("durMs").textContent = dur;
+  const total = dur + (ending ? ENDING_MS : 0);
+  const run = total * FIRSTS;
+  const ship = (1050 + ENDING_MS) * FIRSTS;
+  const cls = run > ship ? "warn" : run < ship ? "ok" : "";
+  document.getElementById("sums").innerHTML =
+    "approach <b>" + dur + "ms</b> + ending " + (ending ? ENDING_MS + "ms" : "<i>off</i>") +
+    " = <b>" + ((total / 1000).toFixed(2)) + "s</b> per first discovery &nbsp;&middot;&nbsp; &times; " +
+    FIRSTS + " firsts = <b class=\"" + cls + "\">" + fmt(run) + "</b> of a full clear" +
+    (run === ship ? " (what ships)" : " &nbsp;(" + (run > ship ? "+" : "&minus;") + fmt(Math.abs(run - ship)) + " vs what ships)") +
+    (speed === 1 ? "" : " &nbsp;&middot;&nbsp; previewing at " + speed + "&times;");
+}
+
+/* --------------------------------------------------------------- the cards */
+const grid = document.getElementById("grid");
+const players = [];
+OPTIONS.forEach((o, i) => {
+  const card = document.createElement("div");
+  card.className = "card" + (o.ships ? " ships" : "");
+  card.innerHTML =
+    "<h2><span>" + (i + 1) + ". " + o.name + "</span><em>" + o.tag + "</em></h2>" +
+    '<div class="frame"></div>' +
+    '<div class="cardnote"><p class="thesis">' + o.thesis + "</p><dl>" +
+    o.notes.map(([k, v]) =>
+      "<dt>" + k + "</dt><dd" + (k === "Delta" ? ' class="delta' + deltaClass(v) + '"' : "") +
+      ">" + v + "</dd>").join("") + "</dl></div>";
+  card.addEventListener("click", () => open(i));
+  grid.appendChild(card);
+  const frame = card.querySelector(".frame");
+  players.push(() => {
+    frame.innerHTML = "";
+    frame.appendChild(build(i + 1, EXTRA[i + 1]));
+  });
+});
+/* green when the option hands bytes back, orange when it wants three figures */
+function deltaClass(v) {
+  if (v.indexOf("−") >= 0) return " ok";
+  return /\+\s*1\d\d\s*B/.test(v) ? " bad" : "";
+}
+
+/* One clock for all nine, so the cards stay in step and the eye can compare
+   two of them in the same glance. The period follows the duration: the
+   animation plus a second of dead air, never less than 2.4s. */
+let clock = 0;
+function restart() {
+  clearInterval(clock);
+  const beat = () => { players.forEach((p) => p()); fit(); };
+  beat();
+  const period = Math.max(2400, dur + (ending ? ENDING_MS : 300) + 1000);
+  clock = setInterval(beat, period / speed);
+}
+
+function fit() {
+  document.querySelectorAll(".frame, #fullWrap").forEach((box) => {
+    const st = box.firstElementChild;
+    if (st) st.style.transform = "scale(" + box.clientWidth / 900 + ")";
+  });
+}
+addEventListener("resize", fit);
+
+/* ------------------------------------------------------------ the controls */
+const durEl = document.getElementById("dur");
+/* Two speeds of response, on purpose. The readouts and the CSS variable update
+   on every input event, which is what makes dragging the handle feel like a
+   dial rather than a form field — the running animations re-time under your
+   hand. Rebuilding nine stages is the expensive half, so it waits until the
+   drag settles. */
+let settle = 0;
+function setDur(ms, fromSlider) {
+  dur = Math.min(2000, Math.max(250, Math.round(ms / 10) * 10));
+  if (!fromSlider) durEl.value = dur;
+  document.querySelectorAll("[data-dur]").forEach((b) =>
+    b.classList.toggle("on", +b.dataset.dur === dur));
+  applyTiming();
+  clearTimeout(settle);
+  settle = setTimeout(() => {
+    sizeScrub();
+    restart();
+    if (cur >= 0) { head(); replay(); }
+  }, 180);
+}
+durEl.addEventListener("input", () => setDur(+durEl.value, true));
+document.querySelectorAll("[data-dur]").forEach((b) =>
+  b.addEventListener("click", () => setDur(+b.dataset.dur)));
+document.querySelectorAll("[data-speed]").forEach((b) =>
+  b.addEventListener("click", () => {
+    speed = +b.dataset.speed;
+    document.querySelectorAll("[data-speed]").forEach((o) =>
+      o.classList.toggle("on", o === b));
+    applyTiming();
+    restart();
+    if (cur >= 0) replay();
+  }));
+const endBtn = document.getElementById("endBtn");
+function setEnding(on) {
+  ending = on;
+  endBtn.classList.toggle("on", ending);
+  endBtn.textContent = ending ? "flash, rays, result" : "approach only";
+  applyTiming();
+  restart();
+  if (cur >= 0) replay();
+}
+endBtn.addEventListener("click", () => setEnding(!ending));
+const pairBtn = document.getElementById("pairBtn");
+function setPair(i) {
+  pair = (i + PAIRS.length) % PAIRS.length;
+  const [a, b, r] = PAIRS[pair];
+  pairBtn.textContent = BY[a].n + " + " + BY[b].n + " → " + BY[r].n;
+  restart();
+  if (cur >= 0) open(cur);
+}
+pairBtn.addEventListener("click", () => setPair(pair + 1));
+
+/* ------------------------------------------------------------- the full view */
+/* The scrubber is the reason every delay on the stage is written as
+   "... - var(--scrub)": park the whole composition at animation-play-state
+   paused, sweep --scrub, and each element resolves to the frame it would be
+   showing at that instant. No JS touches an animation — one custom property
+   moves nine keyframe timelines at once. */
+let cur = -1;
+const full = document.getElementById("full");
+const wrap = document.getElementById("fullWrap");
+const scrubEl = document.getElementById("scrub");
+const scrubMs = document.getElementById("scrubMs");
+const playBtn = document.getElementById("playBtn");
+
+function stage() { return wrap.firstElementChild; }
+/* the scrubber is in timeline ms, not played ms: --scrub is t * speed, so the
+   handle means the same instant of the animation at every playback rate */
+function sizeScrub() { scrubEl.max = dur + (ending ? ENDING_MS : 400); }
+function setFrozen(on) {
+  frozen = on;
+  const st = stage();
+  if (st) st.classList.toggle("frozen", frozen);
+  playBtn.textContent = frozen ? "play" : "playing";
+  playBtn.classList.toggle("on", frozen);
+  if (!frozen) { scrubMs.textContent = "live"; if (st) st.style.removeProperty("--scrub"); }
+}
+scrubEl.addEventListener("input", () => {
+  const t = +scrubEl.value;
+  // Freezing a stage that has already been running would park it at whatever
+  // currentTime it happened to reach, and every frame after that would be off
+  // by that much. Rebuilding it with .frozen already on starts every clock at
+  // zero, which is what makes the handle read true.
+  if (!frozen) { setFrozen(true); replay(); }
+  const st = stage();
+  if (st) st.style.setProperty("--scrub", t * speed + "ms");
+  scrubMs.textContent = t + "ms " + (t < dur ? "· approach" : t < dur + 380 ? "· impact" : "· ending");
+});
+playBtn.addEventListener("click", () => { setFrozen(false); replay(); });
+
+function replay() {
+  wrap.innerHTML = "";
+  wrap.appendChild(build(cur + 1, EXTRA[cur + 1]));
+  if (frozen) {
+    stage().classList.add("frozen");
+    stage().style.setProperty("--scrub", +scrubEl.value * speed + "ms");
+  }
+  fit();
+}
+function head() {
+  const o = OPTIONS[cur];
+  document.getElementById("fullName").textContent = cur + 1 + ". " + o.name;
+  document.getElementById("fullOf").textContent =
+    o.tag + "  —  " + (cur + 1) + " / " + OPTIONS.length +
+    "  —  " + dur + "ms approach  —  " +
+    PAIRS[pair].slice(0, 2).map((id) => BY[id].n).join(" + ") +
+    " → " + BY[PAIRS[pair][2]].n;
+}
+function open(i) {
+  cur = (i + OPTIONS.length) % OPTIONS.length;
+  const o = OPTIONS[cur];
+  head();
+  document.getElementById("fullNote").innerHTML =
+    "<div>" + o.thesis + "</div><dl>" +
+    o.notes.map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("") + "</dl>";
+  full.classList.add("show");
+  sizeScrub();
+  replay();
+}
+function close() { full.classList.remove("show"); cur = -1; setFrozen(false); }
+
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape") return close();
+  // a focused slider or chip owns the keys it actually uses — but not the
+  // digits, or clicking a preset would cost you the number shortcuts
+  const tag = e.target && e.target.tagName;
+  if ((tag === "INPUT" || tag === "BUTTON") &&
+      (e.key === " " || /^(Arrow|Home|End|Page)/.test(e.key))) return;
+  if (e.key >= "1" && e.key <= String(OPTIONS.length)) return open(+e.key - 1);
+  if (e.key === "e" || e.key === "E") return setEnding(!ending);
+  if (e.key === "p" || e.key === "P") return setPair(pair + 1);
+  if (e.key === "c" || e.key === "C") return full.classList.toggle("bare");
+  if (e.key === "[") return setDur(dur - 50);
+  if (e.key === "]") return setDur(dur + 50);
+  if (cur < 0) return;
+  if (e.key === " ") { e.preventDefault(); setFrozen(false); return replay(); }
+  if (e.key === "ArrowRight") open(cur + 1);
+  if (e.key === "ArrowLeft") open(cur - 1);
+});
+
+/* --------------------------------------------------------------------- go */
+setPair(0);
+setDur(1050);
+addEventListener("load", fit);
+</script>
+</body>
+</html>
