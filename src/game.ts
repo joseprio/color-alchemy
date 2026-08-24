@@ -80,6 +80,18 @@ const tiles: HTMLElement[] = [];    // DOM nodes parallel to `order`
 
 const rkey = (a: string, b: string): string => [a, b].sort().join("+");
 
+// Restarting a CSS animation is remove-class, FLUSH, add-class — and the flush
+// is a layout read. A bare `void el.offsetWidth` does not survive the build:
+// closure ADVANCED sees a pure property read whose value is discarded and
+// deletes the statement, which silently broke every repeat animation in the
+// game (a second dead end in a row did not shake, a repeated dupe did not
+// pulse, back-to-back discoveries did not re-fade). Feeding the value into a
+// branch is what makes it undroppable: closure cannot prove which way it goes,
+// so it has to do the read.
+function reflow(el: HTMLElement): void {
+  if (el.offsetWidth < 0) el.hidden = true;
+}
+
 function save(): void {
   put(S_RUN, { f: order, m: moves, q: questDone, c: fullDone, x: cheated });
 }
@@ -176,7 +188,7 @@ function flash(cls: "x" | "h", ...ids: string[]): void {
     const t = tiles[order.indexOf(id)];
     if (!t) continue;
     t.classList.remove("x", "h");
-    void t.offsetWidth;
+    reflow(t);
     t.classList.add(cls);
   }
 }
@@ -334,7 +346,18 @@ function onPressUp(e: PointerEvent): void {
     sel = dragSel;
     held = dragHeld;
     selectAt(idx);          // pick it, lock it, let it go, or mix it — selectAt owns that
-  } else SFX.cancel();      // dropped on nothing: no move, and the pick is spent
+  } else {
+    // Dropped on nothing: the gesture is off, so NOTHING changed — put the pick
+    // back exactly as the lift found it. A lock especially: it is the one state
+    // the player set deliberately and expects to survive until they drop it
+    // deliberately, and letting a drag that landed on empty space destroy it was
+    // the opposite of that. This also covers a lock held on some OTHER tile while
+    // a third is dragged nowhere.
+    sel = dragSel;
+    held = dragHeld;
+    renderFocus();          // cancelPress() just rendered it away
+    SFX.cancel();           // the gesture was cancelled, not the pick
+  }
 }
 function cancelPress(): void {
   clearTimeout(pressTimer);
@@ -406,7 +429,7 @@ function openDisc(id: string, aId: string, bId: string): void {
     '<span class="m"><span class="g b">' + iconHtml(BY_ID[bId]) + "</span></span>" +
     '<span class="m"><span class="g r">' + iconHtml(el) + "</span></span>" +
     '<span class="c"><b>' + el.n + "</b><i>“" + el.q + "”</i></span>";
-  void ds.offsetWidth;   // re-arm the fade when one discovery follows another
+  reflow(ds);            // re-arm the fade when one discovery follows another
   ds.classList.add("y");
   discTimer = setTimeout(closeDisc, 2750);
 }
@@ -483,7 +506,7 @@ export function attempt(aId: string, bId: string): void {
   // re-arm both one-shots: the same pair tried twice has to react twice
   cd.classList.remove("x");
   cr.classList.remove("P");
-  void cd.offsetWidth;
+  reflow(cd);
   (res ? cr : cd).classList.add(res ? "P" : "x");
   hud();
   save();

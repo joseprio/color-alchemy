@@ -243,6 +243,16 @@ npm run audio-bench       # what a sample costs, against the callback budget
   Against a shipping bundle it reports `skip 10 development-tool checks`; run
   `npm run build-dev` first to cover them, and `npm run build` again before
   committing `dist/`.
+- **A bare `void el.offsetWidth` does not survive closure ADVANCED**, and its
+  removal is silent. Restarting a CSS animation is remove-class &rarr; *flush*
+  &rarr; add-class; the flush is a layout read whose value is discarded, which
+  is exactly the shape ADVANCED deletes as dead code. All three of ours went,
+  and every repeat animation quietly stopped replaying: a second dead end in a
+  row did not shake, a repeated dupe did not pulse, back-to-back first
+  discoveries did not re-fade. `reflow()` in `game.ts` feeds the read into a
+  branch instead, which closure cannot fold away, and `check.mjs` counts
+  `animationstart` events rather than looking for the class — the class is
+  present either way, so only the event proves the animation ran.
 - **The build is byte-deterministic.** Two things buy that: the pinned DOS-epoch
   zip timestamp, and `rr-config.json` — roadroller's parameter search is
   stochastic, so the params are fitted once and pinned, and the build skips
@@ -481,8 +491,12 @@ reads as two things being picked at once — but that pick is remembered, and a
 drop back on the source puts it back and runs the same three states a tap does:
 pick it, lock it, let it go, or mix it with whatever was already picked. So a
 player who lifts a tile and changes their mind loses nothing, and a drag that
-never found a target costs no move. Dropping on *nothing* still spends the
-pick — that gesture already sounds like a cancel and reads as one.
+never found a target costs no move. **A drag that lands on empty space changes
+nothing at all** — the pick comes back exactly as the lift found it, lock
+included, whether the lock was on the dragged tile or on another one. It used
+to spend the pick, on the theory that the gesture reads as a cancel; it does
+not, and destroying a lock the player set deliberately because a drag missed
+the board was the wrong end of that argument.
 
 **A lock survives a dragged mix, the same as a tapped one.** That is the whole
 thing a lock buys — trying Fire against ten things is ten gestures, not twenty —

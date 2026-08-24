@@ -324,6 +324,34 @@ await release();
 await drag("red", null);
 s = await state();
 check("drag: dropping on nothing costs no move", s.moves === 5 && s.sel === -1);
+// A drag that lands on empty space is an ABORTED GESTURE: no move, and the pick
+// is exactly what it was before. The lock especially — it is the one state the
+// player set deliberately, and a drag that missed used to destroy it.
+await drag("red", "red");            // pick
+await drag("red", "red");            // lock
+s = await state();
+check("void-drop: locked before the drag", s.sel === 0 && s.pick === -1);
+await drag("red", null);             // the locked tile, dropped on nothing
+s = await state();
+check("void-drop: dragging the locked element to empty space keeps the lock",
+  s.sel === 0 && s.pick === -1 && s.moves === 5 &&
+  (await evalJs(`document.getElementById("ca").classList.contains("y")`)));
+await drag("green", null);           // an UNRELATED tile, dropped on nothing
+s = await state();
+check("void-drop: a lock survives an unrelated drag that lands nowhere",
+  s.sel === 0 && s.pick === -1 && s.moves === 5);
+await evalJs(`document.getElementById("ca").click()`);   // let the lock go
+await drag("blue", "blue");          // a LOOSE pick
+await drag("blue", null);
+s = await state();
+check("void-drop: a loose pick survives it too — nothing happened",
+  s.pick === 2 && s.sel === -1 && s.moves === 5);
+// clear it with self-drops, not release(): the drag above armed clickGuard and
+// release() works by clicking. Loose -> locked -> let go.
+await drag("blue", "blue");
+await drag("blue", "blue");
+s = await state();
+check("void-drop: the board is clear again", s.sel === -1 && s.pick === -1);
 // Dropping a tile back where it started is not a drag, it is a tap that
 // changed its mind — so it runs the same three states a tap does, and the
 // pick the lift suspended has to survive to make that possible.
@@ -917,6 +945,33 @@ await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textConte
 check("wipe: the all-time codex is gone too, not just the run",
   !(await evalJs(`document.getElementById('ml').textContent.includes('Unicorn')`)));
 }
+
+// --- animation restarts ---------------------------------------------------
+// A repeat of the SAME reaction has to replay its animation. Restarting a CSS
+// animation is remove-class, flush, add-class; without the flush the browser
+// coalesces the pair into no change within one turn and nothing starts. That
+// flush was a bare `void cd.offsetWidth`, and closure ADVANCED deleted it as a
+// pure read whose value goes nowhere — so two dead ends in a row shook once.
+// Counts animationstart events rather than the class, which is present either
+// way; only the event says the animation actually ran. Own board, own reset:
+// this spends moves and nothing after it should care.
+await reset();
+await evalJs(`window.__anim = [];
+  document.getElementById('cd').addEventListener('animationstart', e => window.__anim.push(e.animationName));`);
+await click("red");
+await click("green");             // -> Yellow, a discovery
+await sleep(400);
+await release();
+await click("green");
+await click("yellow");            // dead end
+await sleep(500);
+const shake1 = await evalJs(`window.__anim.length`);
+await release();
+await click("green");
+await click("yellow");            // the SAME dead end again
+await sleep(500);
+const shake2 = await evalJs(`window.__anim.length`);
+check("animation: a second dead end in a row shakes again", shake2 === shake1 + 1);
 
 check("no uncaught exceptions", t.exceptions.length === 0);
 if (t.exceptions.length) console.log(t.exceptions.join("\n"));
