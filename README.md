@@ -638,15 +638,16 @@ stops the whole game from loading.)
 
 ## Recipe tree — SPOILERS
 
-A perfect quest is **32 moves**, through the Sun + Rain rainbow; the cheapest
-Prism route costs **33**, and Prism + Sun or a Light Bulb through a Prism cost
-**34**. The Prism detour is **one move**, and the reason is worth knowing before
-anything reprices it: a Prism takes its edge from a Diamond *or from a Tool*,
-and the quest already makes a Tool, because Magic needs Wood and Wood is what a
-Tool cuts. So the Prism costs only the Glass and the Sand under it — two moves,
-against the one the Sun + Rain rainbow saves. On its own a Prism is **15 moves**
-through the Tool where the Diamond route needs **24**, which is why that route
-is the one route on the Tool that is a genuine shortcut rather than a tie.
+A perfect quest is **31 moves**, through the Sun + Rain rainbow; the cheapest
+Prism route costs **34**, and a Light Bulb through a Prism costs **35**. The Prism
+detour is **three moves**, and what sets that number is not the Prism at all —
+it is which way Magic goes. Sun + Earth put Plant within reach at depth 7 instead
+of 12, which made **Pumpkin + Night** cheaper than Wood + Star, so the perfect
+quest now carries **no Wood and no Tool**. A Prism therefore has to buy the whole
+Tool → Sand → Glass chain itself. It used to be one move behind, back when the
+quest made a Tool on its way to the Wood. On its own a Prism is 15 moves through
+the Tool where the Diamond route needs 24 — still the one route on the Tool that
+is a genuine shortcut rather than a tie.
 A Light Bulb through a Prism is a third Prism route and never a cheaper one: the
 Prism already needed the Glass and the Unicorn's life branch already needed the
 Electricity, so the bulb itself is the only move it adds — flavour for a player
@@ -655,20 +656,23 @@ A perfect full clear is **98** - one move per element, since nothing can be
 made twice. Best scores are scoped to the current recipe tree, so all of this
 started fresh records automatically.
 
-The Rainbow half of the quest is cheap. Everything else is not, because the two
-remaining halves both bottom out in the same place. The Unicorn needs an
-**Animal**, which pulls the entire life branch onto the critical path (mineral
-chain -> Acid + Metal battery -> Electricity -> Lightning -> Life -> Animal).
-Magic needs **Wood + Star**, and the wood chain pays for both halves of that:
-the Wood itself, and the Charcoal -> Black past it that Night - and so the Star
-- is built from (Tool + Tree -> Wood -> Charcoal -> Black). Both branches run
-off one Earth/Lava/Stone/Metal spine, which is what keeps 32 from being far
-worse, and the Cloud earns its keep twice: once for the Rain, once for the
-Lightning. The Night has a second route, **Violet + Sky**, and it is an exact
-tie rather than a shortcut: Magenta then Violet costs the same two moves as
-Charcoal then Black, so a quest that never touches the material half still
-lands on 31 - it just arrives at the Star through the colors instead. The original Horse + Magic route is still there and still costs 33 -
-a Field, and then a Horse to stand in it, for a Unicorn the Animal already had.
+The Rainbow half of the quest is cheap. The Unicorn is not: it needs an
+**Animal**, which pulls the whole life branch onto the critical path (mineral
+chain -> Acid + Metal battery -> Electricity -> Lightning -> Life -> Animal),
+and that spine of Earth/Lava/Stone/Metal is what the run is really paying for.
+
+The Magic half used to be the other expensive one, and **it is not any more**.
+It went **Wood + Star**, which dragged in the wood chain twice over - the Wood
+itself, and the Charcoal -> Black past it that the Night and so the Star were
+built from. Two later edits killed that route between them: **Pumpkin + Night**
+gave Magic a second way in, and **Sun + Earth** put Plant at depth 7 instead of
+12, which made that way the cheap one. The perfect quest now reaches Magic
+through Plant -> Tree -> Fruit -> Pumpkin and takes its Night from **Violet +
+Sky**, so it touches **no Wood, no Tool, no Charcoal and no Black at all**. That
+is also why the Prism detour tripled: a Prism has to buy the entire Tool -> Sand
+-> Glass chain itself now, where it used to borrow a Tool the quest was making
+anyway. The Cloud still earns its keep twice: once for the Rain, once for the
+Lightning.
 
 Additive color mixing does the early work: primaries pair into secondaries,
 and any **complementary pair** (Blue+Yellow, Red+Cyan, Green+Magenta) makes
@@ -718,7 +722,7 @@ pairs - Violet + Yellow, Orange + Blue.
 | Stone | Lava + Water · Lava + Rain · Lava + Air |
 | Metal | Fire + Stone |
 | Tool | Fire + Metal |
-| Sand | Earth + Air · Earth + Sun · Stone + Air · Stone + Tool |
+| Sand | Earth + Air · Stone + Air · Stone + Tool |
 | Glass | Sand + Fire · Sand + Electricity · Sand + Lightning |
 | Mirror | Glass + Metal |
 | Hourglass | Glass + Sand |
@@ -768,7 +772,7 @@ pairs - Violet + Yellow, Orange + Blue.
 | Magic | Wood + Star · Pumpkin + Night |
 | Crystal Ball | Magic + Glass |
 | Unicorn | Horse + Magic · Animal + Magic |
-| Plant | Life + Sun · Green + Life |
+| Plant | Earth + Sun · Life + Sun · Green + Life |
 | Cactus | Plant + Sand |
 | Field | Earth + Plant |
 | Park | Field + Water |

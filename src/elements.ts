@@ -10,10 +10,10 @@
 // (Bone has eleven routes — a four-legged creature and fire, or a predator and
 // what it caught; fire does not reduce the fish or the bee at all, and a Bird
 // answers it with a Phoenix; the Cloud has five, and every one of them is water
-// meeting warmth or height; Ash, Rainbow and Sand have four; Chick, Fire, Glass,
-// Stone and White three; Bird, Black, Charcoal, Diamond, Dog, Lava, Lizard,
-// Magic, Matter, Night, Phoenix, Plant, Prism, Sky, Storm, Sunflower, Unicorn
-// and Water two each — the Unicorn takes its Magic from a Horse or from a plain
+// meeting warmth or height; Ash and Rainbow have four; Chick, Fire, Glass,
+// Plant, Sand, Stone and White three; Bird, Black, Charcoal, Diamond, Dog,
+// Lava, Lizard, Magic, Matter, Night, Phoenix, Prism, Sky, Storm, Sunflower,
+// Unicorn and Water two each — the Unicorn takes its Magic from a Horse or from a plain
 // Animal, a Diamond comes out of a Lava or the Volcano it came from, and the
 // Night falls out of a Violet sky as readily as a Black one.
 // A TOOL is the other half of four of those: it cuts the Wood, it grinds a
@@ -147,7 +147,7 @@ export const ELEMENTS = ([
        "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
        "radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%)," +
        "linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)",
-    r:[["earth","air"],["earth","sun"],["stone","air"],["stone","tool"]] },
+    r:[["earth","air"],["stone","air"],["stone","tool"]] },
   { id:"glass", c:"#bfe6f2", q:"Glass, china, and reputation are easily cracked, and never well mended.",
     bg:"linear-gradient(135deg, transparent 0 28%, #ffffff99 28% 37%, transparent 37% 54%, #ffffff55 54% 60%, transparent 60% 100%)," +
        "linear-gradient(180deg, #d8f1f8 0%, #a8d8ea 60%, #8ec4dc 100%)",
@@ -270,7 +270,7 @@ export const ELEMENTS = ([
   { id:"unicorn", e:"\u{1F984}", q:"Always be yourself. Unless you can be a unicorn, then always be a unicorn.",
     r:[["horse","magic"],["animal","magic"]] },
   { id:"plant", e:"\u{1F33F}", q:"Grow where you are planted.",
-    r:[["life","sun"],["green","life"]] },
+    r:[["earth","sun"],["life","sun"],["green","life"]] },
   { id:"cactus", e:"\u{1F335}", q:"Adapt to your environment, grow thick skin, and stay sharp.",
     r:[["plant","sand"]] },
   // a horizon rather than an object: sky above, green below, hard stop between
