@@ -9,18 +9,34 @@
 // r = recipes (unordered pairs of ids); several recipes may make one element
 // (Bone has eleven routes — a four-legged creature and fire, or a predator and
 // what it caught; fire does not reduce the fish or the bee at all, and a Bird
-// answers it with a Phoenix; Ash and Rainbow have four; Chick, White, Cloud
-// and Sand three; Bird, Charcoal, Diamond, Dog, Fire, Lizard, Night,
-// Phoenix, Plant, Storm, Sunflower, Unicorn, Water and Wood two each — the
-// Unicorn takes its Magic from a Horse or from a plain Animal, a Diamond comes
-// out of a Lava or the Volcano it came from, and the Night falls out of a
-// Violet sky as readily as a Black one).
+// answers it with a Phoenix; the Cloud has five, and every one of them is water
+// meeting warmth or height; Ash, Rainbow and Sand have four; Chick, Glass, Stone
+// and White three; Bird, Black, Charcoal, Diamond, Dog, Fire, Lava, Lizard,
+// Magic, Matter, Night, Phoenix, Plant, Prism, Sky, Storm, Sunflower, Unicorn
+// and Water two each — the Unicorn takes its Magic from a Horse or from a plain
+// Animal, a Diamond comes out of a Lava or the Volcano it came from, and the
+// Night falls out of a Violet sky as readily as a Black one.
+// A TOOL is the other half of four of those: it cuts the Wood, it grinds a
+// Stone into Sand, it works a Charcoal into Black, and it cuts a Glass into a
+// Prism. The first three are ties or long ways round; the PRISM is the one
+// genuine shortcut in the table — 15 moves through the Tool where the Diamond
+// route needs 24 — and it is deliberate, so do not price it as flavour.)
+// MATTER IS THE THROAT OF THE WHOLE TREE, and that is deliberate rather than
+// accidental — worth knowing before anything is rewired around it. It is made
+// from two COMPLEMENTARY pairs (Violet + Yellow, Orange + Blue), and it hands
+// three of the four classical elements straight back out when a colour is
+// added: Brown for Earth, White for Air, Blue for Water. All three of those
+// are now its SOLE route — green + orange belongs to Brown, blue + white is
+// gone, blue + cyan is gone — so 88 of the 101 elements are unreachable until
+// Matter is found. What is left without it is the 13 pure colours and Gold.
+// Fire is the one classical element it does not make; that is the gap if this
+// ever grows a fourth.
 // An alternate may be cyclic — Fire + Ice remakes Water, which Ice needs,
 // Penguin + Air hands back the Bird the Penguin came from, Wolf + Dog is just
 // another Dog, Fire + Air is a fanned fire and nothing more, Lizard + Egg
-// hatches another Lizard, and Axe + Tree makes the Wood the Axe itself was
-// cut from — it is flavor for a pair players try, never a cheaper route.
-// n is OPTIONAL in the table below: for 97 of the 100 it is just the id with a
+// hatches another Lizard, and Lava + Stone just melts the Stone back into
+// more Lava — it is flavor for a pair players try, never a cheaper route.
+// n is OPTIONAL in the table below: for 98 of the 101 it is just the id with a
 // capital, and writing it out again is the one field roadroller genuinely pays
 // for — a near-miss repeat of a string it has already seen costs real bits,
 // where an exact repeat (an id inside a recipe) costs almost none. Omitting the
@@ -58,17 +74,36 @@ export const ELEMENTS = ([
     r:[["blue","violet"]] },
   { id:"pink", c:"#ffa8c5", q:"You can never go wrong with a little pink, a lot works too.",
     r:[["red","white"]] },
+  // Brown TAKES the pair Earth used to own. Earth is not lost: it comes back
+  // below as Brown + Matter, which is the only reason this swap is safe —
+  // green + orange was Earth's single route, and 72 of the elements after it
+  // are downstream of Earth.
+  { id:"brown", c:"#8b5a2b", q:"The very shade of earth itself.",
+    r:[["green","orange"]] },
+  // Both routes are a COMPLEMENTARY PAIR — violet against yellow, orange
+  // against blue — which is the whole idea: the two halves of the colour wheel
+  // cancelling out and leaving something with weight instead of light. Placed
+  // here rather than by depth because every string it uses (the two hexes, the
+  // four ingredient ids) is already in this stretch of the table, and an exact
+  // repeat costs roadroller almost nothing.
+  { id:"matter", c:"#7ec8ff", q:"Energy waiting to happen.",
+    s:"<g transform='translate(16 16)' fill='none' stroke='#7ec8ff' stroke-width='2'>" +
+      "<ellipse rx='13' ry='5'/>" +
+      "<ellipse rx='13' ry='5' transform='rotate(60)'/>" +
+      "<ellipse rx='13' ry='5' transform='rotate(-60)'/>" +
+      "<circle r='4' fill='#eaf8ff' stroke='none'/></g>",
+    r:[["violet","yellow"],["blue","orange"]] },
   { id:"air", e:"\u{1F4A8}", q:"The air is full of ideas. They are knocking you in the head all the time.",
-    r:[["blue","white"]] },
+    r:[["white","matter"]] },
   { id:"sky", c:"#7ec8ff", q:"Only from the heart can you touch the sky.",
     bg:"radial-gradient(circle at 68% 30%, #fff3a0 0 6%, #ffdc32 6% 13%, transparent 17%)," +
        "radial-gradient(circle at 68% 30%, #ffdc3244 0 22%, transparent 30%)," +
        "linear-gradient(180deg, #a8dbff 0%, #7ec8ff 55%, #4f9fe8 100%)",
-    r:[["air","blue"]] },
+    r:[["air","blue"],["air","cyan"]] },
   { id:"gold", c:"#f7c948", q:"Gold can do much, but love can do all.",
     r:[["yellow","orange"]] },
   { id:"water", e:"\u{1F4A7}", q:"Be like water, my friend.",
-    r:[["blue","cyan"],["fire","ice"]] },
+    r:[["blue","matter"],["fire","ice"]] },
   { id:"fire", e:"\u{1F525}", q:"Fire transforms all things it touches.",
     r:[["red","air"],["fire","air"]] },
   { id:"earth", c:"#a4713f", q:"Keep your feet on the ground and keep reaching for the stars.",
@@ -78,7 +113,7 @@ export const ELEMENTS = ([
        "radial-gradient(circle at 42% 78%, #5c3a1e 0 4.5%, transparent 8%)," +
        "radial-gradient(circle at 15% 65%, #b98a55aa 0 3.5%, transparent 7%)," +
        "linear-gradient(180deg, #a4713f 0%, #7c5230 55%, #59391f 100%)",
-    r:[["green","orange"]] },
+    r:[["brown","matter"]] },
   { id:"clay", c:"#c1663c", q:"Shape clay into a vessel; it is the space within that makes it useful.",
     bg:"radial-gradient(circle at 33% 26%, #ffc49faa 0 11%, transparent 32%),"
        + "linear-gradient(150deg, #d4794c 0%, #c1663c 46%, #8f4526 100%)",
@@ -95,30 +130,28 @@ export const ELEMENTS = ([
        "linear-gradient(108deg, #2b0e07 0 14%, transparent 14% 27%, #1f0905 27% 35%," +
        "transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%)," +
        "linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)",
-    r:[["earth","fire"]] },
+    r:[["earth","fire"],["lava","stone"]] },
   { id:"volcano", e:"\u{1F30B}", q:"A cannon of immense size.",
     r:[["lava","earth"]] },
   { id:"stone", e:"\u{1FAA8}", q:"Every stone holds a statue; the sculptor merely reveals it.",
-    r:[["lava","water"]] },
+    r:[["lava","water"],["lava","rain"],["lava","air"]] },
   { id:"metal", c:"#c3ced9", q:"Soft enough to wire, hard enough to shield, liquid enough to pour.",
     bg:"linear-gradient(120deg, transparent 0 30%, #ffffffaa 30% 38%, transparent 38% 62%," +
        "#ffffff55 62% 68%, transparent 68%)," +
        "linear-gradient(180deg, #e6edf3 0%, #aab6c2 38%, #6e7a86 62%, #cdd7e0 100%)",
     r:[["fire","stone"]] },
-  { id:"knife", e:"\u{1F52A}", q:"Can help you or end you.",
+  { id:"tool", e:"\u{1F6E0}\u{FE0F}", q:"We shape our tools, and thereafter our tools shape us.",
     r:[["fire","metal"]] },
-  { id:"axe", e:"\u{1FA93}", q:"A dull axe doubles the work.",
-    r:[["wood","metal"]] },
   { id:"sand", c:"#e0c078", q:"It's coarse and rough and irritating and it gets everywhere.",
     bg:"radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%)," +
        "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
        "radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%)," +
        "linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)",
-    r:[["earth","air"],["earth","sun"],["stone","air"]] },
+    r:[["earth","air"],["earth","sun"],["stone","air"],["stone","tool"]] },
   { id:"glass", c:"#bfe6f2", q:"Glass, china, and reputation are easily cracked, and never well mended.",
     bg:"linear-gradient(135deg, transparent 0 28%, #ffffff99 28% 37%, transparent 37% 54%, #ffffff55 54% 60%, transparent 60% 100%)," +
        "linear-gradient(180deg, #d8f1f8 0%, #a8d8ea 60%, #8ec4dc 100%)",
-    r:[["sand","fire"]] },
+    r:[["sand","fire"],["sand","electricity"],["sand","lightning"]] },
   { id:"mirror", e:"\u{1FA9E}", q:"Who's the Fairest of Them All?",
     r:[["glass","metal"]] },
   { id:"hourglass", e:"⌛", q:"Like sands through the hourglass, so are the days of our lives.",
@@ -142,7 +175,7 @@ export const ELEMENTS = ([
   { id:"moon", e:"\u{1F319}", q:"Everyone is a moon, and has a dark side which he never shows to anybody.",
     r:[["night","sun"]] },
   { id:"cloud", e:"☁️", q:"Resembles the thoughts in our mind! Both change from second to second!",
-    r:[["sky","water"],["water","air"],["grey","sky"]] },
+    r:[["sky","water"],["water","air"],["grey","sky"],["fire","water"],["sun","water"]] },
   { id:"rain", e:"\u{1F327}️", q:"If you want the rainbow, you have to put up with the rain.",
     r:[["cloud","water"]] },
   { id:"lightning", e:"\u{1F329}️", q:"Never strikes twice.",
@@ -226,12 +259,12 @@ export const ELEMENTS = ([
       '<path d="M22 15 32 13" stroke="#ffdc32"/><path d="M22 15 32 16" stroke="#34d158"/>' +
       '<path d="M22 15 32 19" stroke="#33e9e9"/><path d="M22 15 32 22" stroke="#2f6bff"/>' +
       '<path d="M22 15 32 25" stroke="#9a4dff"/></g>',
-    r:[["diamond","glass"]] },
+    r:[["diamond","glass"],["glass","tool"]] },
   { id:"rainbow", e:"\u{1F308}", q:"Somewhere over the rainbow, skies are blue.",
     r:[["white","prism"],["sun","rain"],["prism","sun"],
        ["lightbulb","prism"]] },
   { id:"magic", e:"\u{1FA84}", q:"Any sufficiently advanced technology is indistinguishable from magic.",
-    r:[["wood","star"]] },
+    r:[["wood","star"],["pumpkin","night"]] },
   { id:"crystalball",n:"Crystal Ball", e:"\u{1F52E}", q:"Reply hazy, try again.",
     r:[["magic","glass"]] },
   { id:"unicorn", e:"\u{1F984}", q:"Always be yourself. Unless you can be a unicorn, then always be a unicorn.",
@@ -253,7 +286,7 @@ export const ELEMENTS = ([
   { id:"pumpkin", e:"\u{1F383}", q:"Trick or treat!",
     r:[["fruit","orange"]] },
   { id:"wood", e:"\u{1FAB5}", q:"Chop your own wood and it will warm you twice.",
-    r:[["tree","knife"],["axe","tree"]] },
+    r:[["tree","tool"]] },
   { id:"charcoal", c:"#8a3a14", q:"Charcoal never forgets that it was once wood.",
     bg:"radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%)," +
        "radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%)," +
@@ -286,7 +319,7 @@ export const ELEMENTS = ([
   { id:"black", c:"#5b6472", q:"Only in the darkness can you see the stars.",
     bg:"radial-gradient(circle at 30% 26%, #2a2f3a 0 18%, transparent 42%)," +
        "linear-gradient(155deg, #17191f 0%, #0a0b0e 55%, #000000 100%)",
-    r:[["charcoal","stone"]] },
+    r:[["charcoal","stone"],["charcoal","tool"]] },
   { id:"grey", c:"#7f8894", q:"A gray day provides the best light.",
     r:[["black","white"]] },
   { id:"diamond", e:"\u{1F48E}", q:"Life tries to crush you, but you choose whether to become dust or a diamond.",

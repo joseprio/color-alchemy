@@ -80,8 +80,13 @@ const reset = async () => {
 // build that mangled the map would still pass these. Accepted knowingly, as
 // the price of shipping no hooks — everything else here is the real thing.
 const ELSRC = readFileSync(new URL("./src/elements.ts", import.meta.url), "utf8");
+// The element count is DERIVED, not written down: the table grows, and a test
+// that has to be edited every time one is added is a test that gets edited
+// carelessly. Everything below counts from the source of truth instead.
 const RECIPE = {};
-for (const chunk of ELSRC.split('\n  { id:\"').slice(1)) {
+const ENTRIES = ELSRC.split('\n  { id:\"').slice(1);
+const COUNT = ENTRIES.length;
+for (const chunk of ENTRIES) {
   const id = chunk.slice(0, chunk.indexOf('\"'));
   const r = chunk.match(/\br:\[([\s\S]*?)\]\s*\},/);
   if (r) {
@@ -283,15 +288,82 @@ const drag = (fromId, toTarget) =>
     ev('pointermove', x2, y2);
     ev('pointerup', x2, y2);
   })()`);
+// A first discovery puts the full-screen layer up for 2.75s, and it is what
+// elementFromPoint hits — so every drop while it is there reads as "on
+// nothing". A real pointer dismisses it with the same press that would have
+// started the drag; these events are dispatched straight at the tile and skip
+// that hit test, so the layer has to be closed by hand or the drag tests below
+// all pass for the wrong reason.
+const skipDiscovery = () => evalJs(`document.getElementById('ds')
+  .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))`);
 await drag("red", "blue");
 await sleep(100);
 s = await state();
 check("drag: red onto blue forges Magenta",
   s.found.includes("magenta") && s.moves === 5 && s.phase === "play");
+await skipDiscovery();
 await release();
 await drag("red", null);
 s = await state();
 check("drag: dropping on nothing costs no move", s.moves === 5 && s.sel === -1);
+// Dropping a tile back where it started is not a drag, it is a tap that
+// changed its mind — so it runs the same three states a tap does, and the
+// pick the lift suspended has to survive to make that possible.
+await release();
+await drag("red", "red");            // nothing picked -> picks it
+s = await state();
+// .E is a loose pick (cyan), .e a locked one (gold) — state() calls them pick and sel
+check("self-drop: with nothing picked, it picks the element, loose",
+  s.pick === 0 && s.sel === -1 && s.moves === 5);
+await drag("red", "red");            // already picked -> locks it
+s = await state();
+check("self-drop: on the element already picked, it locks it",
+  s.sel === 0 && s.pick === -1 && s.moves === 5);
+await drag("red", "red");            // locked -> lets go
+s = await state();
+check("self-drop: on the locked element, it lets go",
+  s.sel === -1 && s.pick === -1 && s.moves === 5);
+// and with a DIFFERENT element picked, the self-drop is the second half of a mix.
+// Blue is picked with a self-drop rather than a click, because the drag above
+// just armed clickGuard and a click inside 350ms of a drag is deliberately
+// swallowed — the guard exists so the click a real drag ends with is not read
+// as a select.
+await drag("blue", "blue");          // pick blue, loose
+await drag("red", "red");            // blue + red -> Magenta, already discovered
+s = await state();
+check("self-drop: with another element picked, it mixes with it",
+  s.moves === 6 && s.sel === -1 && s.pick === -1);
+// A lock survives every mix. Tapping already honoured that; dragging has to
+// too, from either end of the gesture — and the locked element keeps the
+// altar's A slot, so dragging ONTO it must not put it in both slots.
+const altar = () => evalJs(`JSON.stringify([
+  document.getElementById('ca').textContent,
+  document.getElementById('cb').textContent,
+  document.getElementById('ca').classList.contains('y')])`).then(JSON.parse);
+await drag("red", "red");            // pick red
+await drag("red", "red");            // lock red
+s = await state();
+check("drag-lock: the self-drop locked it", s.sel === 0 && s.pick === -1);
+await drag("red", "green");          // drag the LOCKED one onto another
+await sleep(120);
+s = await state();
+let cd = await altar();
+check("drag-lock: dragging the locked element onto another keeps it locked",
+  s.sel === 0 && s.moves === 7 && cd[2] === true &&
+  cd[0].includes("Red") && cd[1].includes("Green"));
+await skipDiscovery();
+await drag("blue", "red");           // drag another ONTO the locked one
+await sleep(120);
+s = await state();
+cd = await altar();
+check("drag-lock: dragging onto the locked element keeps it locked, and it stays slot A",
+  s.sel === 0 && s.moves === 8 && cd[2] === true &&
+  cd[0].includes("Red") && cd[1].includes("Blue"));
+await skipDiscovery();
+await evalJs(`document.getElementById('ca').click()`);   // the X lets it go
+s = await state();
+check("drag-lock: the altar X still lets go of a lock a drag restored",
+  s.sel === -1 && s.pick === -1);
 
 // --- gamepad: stubbed pad through the real poll loop ----------------------
 await evalJs(`
@@ -364,20 +436,26 @@ await evalJs("__pad.buttons[2].pressed = false");
 await sleep(80);
 check("mute: pad Ⓧ turns the sound back on",
   (await toastText()) === "Sound on" && (await muteKey()) === "0");
-check("hud: the Sound button names both shortcuts",
-  (await evalJs(`document.getElementById('sn').textContent`)) === "SoundM / Ⓧ");
+// The pad press above left it unmuted, so the button offers the action it would
+// take next: Mute.
+check("hud: the mute button names the ACTION and both shortcuts",
+  (await evalJs(`document.getElementById('sn').textContent`)) === "MuteM / Ⓧ");
 const sndLabel = () => evalJs(`document.getElementById('sn').firstChild.textContent`);
 // click() above finds TILES by data-id; the HUD buttons go by element id
 const clickBtn = (id) => evalJs(`document.getElementById('${id}').click()`);
 await clickBtn("sn");
-check("hud: the Sound button mutes, and its label follows",
-  (await toastText()) === "Sound off" && (await sndLabel()) === "Muted" &&
+// The WORD swaps, the LOOK does not: no dim class, no second border, so it still
+// sits with Hint and Menu. classList staying empty through both presses is what
+// catches a reintroduced Muted styling.
+check("hud: it mutes and then offers to Unmute",
+  (await toastText()) === "Sound off" && (await sndLabel()) === "Unmute" &&
   (await muteKey()) === "1" &&
-  await evalJs(`document.getElementById('sn').classList.contains('Y')`));
+  !(await evalJs(`document.getElementById('sn').classList.length`)));
 await clickBtn("sn");
-check("hud: clicking it again brings the sound back",
-  (await toastText()) === "Sound on" && (await sndLabel()) === "Sound" &&
-  (await muteKey()) === "0");
+check("hud: unmuting brings the music back and offers to Mute again",
+  (await toastText()) === "Sound on" && (await sndLabel()) === "Mute" &&
+  (await muteKey()) === "0" &&
+  !(await evalJs(`document.getElementById('sn').classList.length`)));
 
 // --- hint: one standing hint, bought once ---------------------------------
 // Read the toast back and verify the pair it names is genuinely useful right
@@ -474,118 +552,82 @@ s = await state();
 check("hint: menu backs out to the game", s.phase === "play");
 await shot("play");
 
-// --- drive a full quest, then the full clear ------------------------------
-// unicorn via the Sun + Rain rainbow; assumes yellow, white and magenta exist.
-// The Prism route is no longer viable here: Prism needs a Diamond, which is the
-// deepest thing in the game, so Prism belongs to the endgame list below.
-// Night is Black + Sky now, and Black is the end of the wood chain, so the
-// route drags in Knife, Tree, Wood and Charcoal on its way to a Star - and Magic
-// spends that same Wood again. Violet + Sky would reach the same Night for the
-// same two moves (Magenta, then Violet), and this run takes the Black. The Unicorn takes that long way round on
-// purpose: Animal + Magic would close the quest two moves sooner, skipping the
-// Field and the Horse, and PERFECT_QUEST below is where the minimum is checked
-// - this run is here for coverage, not economy.
-const QUEST = [
-  ["red","yellow"],       // orange
-  ["blue","white"],       // air
-  ["red","air"],          // fire
-  ["air","blue"],         // sky
-  ["fire","sky"],         // sun
-  ["green","blue"],       // cyan
-  ["blue","cyan"],        // water
-  ["sky","water"],        // cloud
-  ["cloud","water"],      // rain
-  ["sun","rain"],         // rainbow
-  ["green","orange"],     // earth
-  ["green","water"],      // acid
-  ["earth","fire"],       // lava
-  ["lava","water"],       // stone
-  ["fire","stone"],       // metal
-  ["acid","metal"],       // electricity
-  ["cloud","electricity"],// lightning
-  ["lightning","water"],  // life
-  ["earth","life"],       // animal
-  ["life","sun"],         // plant
-  ["earth","plant"],      // field
-  ["animal","field"],     // horse
-  ["fire","metal"],       // knife
-  ["water","plant"],      // tree
-  ["tree","knife"],       // wood
-  ["wood","fire"],        // charcoal
-  ["charcoal","stone"],   // black
-  ["black","sky"],        // night
-  ["night","white"],      // star
-  ["wood","star"],        // magic
-  ["horse","magic"],      // unicorn
-];
-// everything the quest route does NOT need: the colors past Magenta (Violet
-// and Indigo left the critical path when Night stopped needing them), the
-// mineral tail, the weather leftovers, and the flowers
-const EXTRA = [
-  ["blue","magenta"],     // violet
-  ["blue","violet"],      // indigo
-  ["red","white"],        // pink
-  ["yellow","orange"],    // gold
-  ["gold","water"],       // beer
-  ["red","water"],        // wine
-  ["earth","sun"],        // sand
-  ["sand","fire"],        // glass
-  ["glass","sand"],       // hourglass
-  ["glass","electricity"],// light bulb
-  ["plant","sand"],       // cactus
-  ["night","sun"],        // moon
-  ["lightning","rain"],   // storm
-  ["air","storm"],        // tornado
-  ["water","night"],      // ice
-  ["cloud","ice"],        // snow
-  ["wood","charcoal"],    // pencil
-  ["charcoal","fire"],   // ash
-  ["rain","wood"],        // mushroom
-  ["stone","tree"],       // paper
-  ["paper","rainbow"],    // palette
-  ["air","paper"],        // kite
-  ["paper","pencil"],     // book
-  ["earth","water"],      // clay
-  ["field","water"],      // park
-  ["stone","life"],       // egg
-  ["stone","animal"],     // lizard
-  ["clay","fire"],        // pottery
-  ["earth","lava"],       // volcano
-  ["charcoal","lava"],    // diamond
-  ["metal","diamond"],    // ring
-  ["diamond","glass"],    // prism
-  ["plant","pink"],       // flower
-  ["sun","flower"],       // sunflower
-  ["flower","red"],       // rose
-  ["air","animal"],       // bird
-  ["egg","bird"],         // chick
-  ["bird","ice"],         // penguin
-  ["animal","water"],     // fish
-  ["bird","water"],       // duck
-  ["bird","night"],       // owl
-  ["bird","pink"],        // flamingo
-  ["bird","rainbow"],     // peacock
-  ["horse","water"],      // hippo
-  ["animal","moon"],      // wolf
-  ["orange","wolf"],      // fox
-  ["horse","fire"],       // bone
-  ["wolf","bone"],        // dog
-  ["animal","plant"],     // cow
-  ["cow","water"],        // milk
-  ["acid","milk"],        // cheese
-  ["animal","tree"],      // squirrel
-  ["sun","tree"],         // fruit
-  ["fruit","orange"],     // pumpkin
-  ["animal","flower"],    // bee
-  ["bee","flower"],       // honey
-  ["animal","honey"],     // bear
-  ["bear","ice"],         // polar bear
-  ["black","white"],      // grey
-  ["glass","magic"],      // crystal ball
-  ["wood","metal"],       // axe
-  ["glass","metal"],      // mirror
-  ["bird","fire"],        // phoenix
-];
+
+/* ------------------------------------------------------- solving the tree
+   Four hand-written solve paths used to live below this line, each with its
+   move count copied into the assertions (31, 97, 35, 11). Every edit to a
+   recipe invalidated all four at once, silently — the runs would simply stop
+   completing, and the failure told you nothing about which pair had moved.
+   For a table that is edited as often as this one, that is a bad trade, so
+   the paths are DERIVED now, from the same RECIPE map every other check
+   reads. The assertions kept below are the ones that are actually about
+   behaviour: that a leaner run lowers the stored best and a sloppier one does
+   not. The absolute move counts are whatever the current tree happens to
+   cost, and are reported rather than asserted. */
+const STARTERS = ["red", "green", "blue"];
+const MAKES = {};   // id -> every pair that makes it
+for (const [k, id] of Object.entries(RECIPE)) (MAKES[id] ||= []).push(k.split("+"));
+
+// The smallest set of elements that has to be made to reach `id`, itself
+// included. Recipes may be cyclic (Fire + Ice remakes the Water Ice needs), so
+// a route that re-enters an element still being solved is simply unusable.
+const solving = new Set(), CLOSURE = {};
+function closure(id) {
+  if (STARTERS.includes(id)) return new Set();
+  if (CLOSURE[id]) return CLOSURE[id];
+  if (solving.has(id)) return null;
+  solving.add(id);
+  let best = null;
+  for (const [a, b] of MAKES[id] || []) {
+    const ca = closure(a), cb = closure(b);
+    if (!ca || !cb) continue;
+    const set = new Set([id, ...ca, ...cb]);
+    if (!best || set.size < best.size) best = set;
+  }
+  solving.delete(id);
+  return (CLOSURE[id] = best);
+}
+const union = (...ids) => new Set(ids.flatMap((id) => [...closure(id)]));
+
+// Turn a set of elements into a legal move order: repeatedly play whatever is
+// makeable from what is already on the board. `last` is held back to the end,
+// which is how a quest run is made to finish ON the move that completes it —
+// anything played after that lands while the overlay is up.
+function order(set, last = [], already = []) {
+  const left = new Set([...set].filter((id) => !last.includes(id)));
+  const have = new Set([...STARTERS, ...already]), out = [];
+  while (left.size) {
+    const before = left.size;
+    for (const id of [...left]) {
+      const pair = (MAKES[id] || []).find(([a, b]) => have.has(a) && have.has(b));
+      if (pair) { out.push(pair); have.add(id); left.delete(id); }
+    }
+    if (left.size === before) throw new Error("unorderable: " + [...left].join(","));
+  }
+  for (const id of last) {
+    const pair = (MAKES[id] || []).find(([a, b]) => have.has(a) && have.has(b));
+    if (!pair) throw new Error("cannot finish on " + id);
+    out.push(pair); have.add(id);
+  }
+  return out;
+}
+const GOALS = ["rainbow", "unicorn"];
+const everything = new Set(ENTRIES.map((c) => c.slice(0, c.indexOf('"'))).filter((id) => !STARTERS.includes(id)));
+const rest = (used) => new Set([...everything].filter((id) => !used.has(id)));
+/* The COVERAGE run: everything the quest needs, plus Night and Black, whose
+   swatches are inspected between the two runs and so have to be on the board
+   by then. That makes it a strict superset of the lean run below, which is
+   the property the best-score checks depend on. */
+const COVER_SET = union(...GOALS, "night", "black");
+const QUEST = order(COVER_SET, GOALS);
+// EXTRA plays on the board QUEST left behind, not on a fresh one
+const EXTRA = order(rest(COVER_SET), [], COVER_SET);
+/* The LEAN run: the goals and nothing else. */
+const LEAN_SET = union(...GOALS);
+const PERFECT_QUEST = order(LEAN_SET, GOALS);
+const PERFECT_EXTRA = order(rest(LEAN_SET), [], LEAN_SET);
+/* Sun + Rain reaches a Rainbow with no Prism anywhere near it. */
+const RAINBOW_ONLY = order(closure("rainbow"), ["rainbow"]);
 const run = async (pairs) => {
   for (const [a, b] of pairs) {
     await attempt(a, b);
@@ -606,7 +648,7 @@ await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textConte
 s = await state();
 check("quest: Keep playing returns to the game", s.phase === "play" && !s.fullDone);
 check("quest: goal line switches to find-all",
-  await evalJs(`document.getElementById('gl').textContent.includes('all 100')`));
+  await evalJs(`document.getElementById('gl').textContent.includes('all ${COUNT}')`));
 check("night: icon is a starry violet-to-black swatch, not an emoji",
   await evalJs(`!!document.querySelector('[data-id=night] .s')
     && document.querySelector('[data-id=night] .s').style.background.includes('gradient')`));
@@ -640,7 +682,7 @@ check("highscore: back to the game", s.phase === "play");
 await run(EXTRA);
 await sleep(100);
 s = await state();
-check("full: completion overlay after all 100", s.fullDone && s.phase === "overlay");
+check(`full: completion overlay after all ${COUNT}`, s.fullDone && s.phase === "overlay");
 const fullMoves = s.moves;
 check("full: hidden best stored", (await best("bestFull")) === fullMoves);
 check("indigo: Newton's seventh band, between Blue and Violet",
@@ -665,128 +707,23 @@ check("reset: quest best survives in the HUD",
 check("reset: hidden best appears nowhere outside the completion screen",
   !(await evalJs(`document.body.innerText.includes('complete run')`)));
 
-// --- a perfect run must lower both bests ----------------------------------
-// The true minimum, 31 moves. The Rainbow half is still cheap (Sun + Rain, and
-// the Prism routes stay a scenic detour). What dominates is everything else:
-// the Unicorn needs an Animal, which puts the whole life branch on the critical
-// path, and Magic needs Wood + Star, which puts the whole wood chain there
-// twice over — Wood itself, and Black at the end of it for the Night the Star
-// needs. Both run off one Earth/Lava/Stone/Metal spine, and the Cloud does
-// double duty for Rain and for Lightning. The Horse is what the Animal saves:
-// it is the same Unicorn two moves dearer, so it belongs to the run above.
-const PERFECT_QUEST = [
-  ["red","green"],        // yellow
-  ["red","yellow"],       // orange
-  ["blue","yellow"],      // white
-  ["blue","white"],       // air
-  ["red","air"],          // fire
-  ["air","blue"],         // sky
-  ["fire","sky"],         // sun
-  ["green","blue"],       // cyan
-  ["blue","cyan"],        // water
-  ["sky","water"],        // cloud
-  ["cloud","water"],      // rain
-  ["sun","rain"],         // rainbow
-  ["green","orange"],     // earth
-  ["green","water"],      // acid
-  ["earth","fire"],       // lava
-  ["lava","water"],       // stone
-  ["fire","stone"],       // metal
-  ["acid","metal"],       // electricity
-  ["cloud","electricity"],// lightning
-  ["lightning","water"],  // life
-  ["earth","life"],       // animal
-  ["life","sun"],         // plant
-  ["fire","metal"],       // knife
-  ["water","plant"],      // tree
-  ["tree","knife"],       // wood
-  ["wood","fire"],        // charcoal
-  ["charcoal","stone"],   // black
-  ["black","sky"],        // night
-  ["night","white"],      // star
-  ["wood","star"],        // magic
-  ["animal","magic"],     // unicorn
-];
-const PERFECT_EXTRA = [
-  ["red","blue"],         // magenta
-  ["blue","magenta"],     // violet
-  ["blue","violet"],      // indigo
-  ["red","white"],        // pink
-  ["yellow","orange"],    // gold
-  ["gold","water"],       // beer
-  ["red","water"],        // wine
-  ["earth","air"],        // sand
-  ["sand","fire"],        // glass
-  ["glass","sand"],       // hourglass
-  ["glass","electricity"],// light bulb
-  ["plant","sand"],       // cactus
-  ["night","sun"],        // moon
-  ["lightning","rain"],   // storm
-  ["air","storm"],        // tornado
-  ["water","night"],      // ice
-  ["cloud","ice"],        // snow
-  ["wood","charcoal"],    // pencil
-  ["charcoal","fire"],   // ash
-  ["rain","wood"],        // mushroom
-  ["earth","water"],      // clay
-  ["earth","plant"],      // field
-  ["field","water"],      // park
-  ["stone","life"],       // egg
-  ["stone","animal"],     // lizard
-  ["clay","fire"],        // pottery
-  ["earth","lava"],       // volcano
-  ["charcoal","lava"],    // diamond
-  ["metal","diamond"],    // ring
-  ["diamond","glass"],    // prism
-  ["plant","pink"],       // flower
-  ["flower","yellow"],    // sunflower
-  ["flower","red"],       // rose
-  ["air","animal"],       // bird
-  ["egg","bird"],         // chick
-  ["bird","ice"],         // penguin
-  ["animal","water"],     // fish
-  ["bird","water"],       // duck
-  ["bird","night"],       // owl
-  ["bird","pink"],        // flamingo
-  ["bird","rainbow"],     // peacock
-  ["animal","field"],     // horse
-  ["horse","water"],      // hippo
-  ["animal","moon"],      // wolf
-  ["orange","wolf"],      // fox
-  ["animal","fire"],      // bone
-  ["wolf","bone"],        // dog
-  ["animal","plant"],     // cow
-  ["cow","water"],        // milk
-  ["acid","milk"],        // cheese
-  ["animal","tree"],      // squirrel
-  ["sun","tree"],         // fruit
-  ["fruit","orange"],     // pumpkin
-  ["animal","flower"],    // bee
-  ["bee","flower"],       // honey
-  ["animal","honey"],     // bear
-  ["bear","ice"],         // polar bear
-  ["black","white"],      // grey
-  ["glass","magic"],      // crystal ball
-  ["wood","metal"],       // axe
-  ["glass","metal"],      // mirror
-  ["bird","fire"],        // phoenix
-  ["stone","tree"],       // paper
-  ["paper","rainbow"],    // palette
-  ["air","paper"],        // kite
-  ["paper","pencil"],     // book
-];
 await run(PERFECT_QUEST);
 await sleep(100);
 s = await state();
-check("perfect: quest done in 31 moves", s.questDone && s.moves === 31);
-check("perfect: quest best lowered to 31", (await best("bestQuest")) === 31);
+check(`perfect: quest done in ${PERFECT_QUEST.length} moves, against the coverage run's ${QUEST.length}`,
+  s.questDone && s.moves === PERFECT_QUEST.length && PERFECT_QUEST.length < QUEST.length);
+check("perfect: the leaner run lowers the stored quest best",
+  (await best("bestQuest")) === PERFECT_QUEST.length);
 check("perfect: overlay celebrates the new best",
   await evalJs(`document.getElementById('oc').textContent.includes('NEW BEST')`));
 await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
 await run(PERFECT_EXTRA);
 s = await state();
-check("perfect: full clear in 97 moves", s.fullDone && s.moves === 97);
-check("perfect: hidden best lowered to 97", (await best("bestFull")) === 97);
+check(`perfect: full clear in ${PERFECT_QUEST.length + PERFECT_EXTRA.length} moves, all ${COUNT} found`,
+  s.fullDone && s.moves === PERFECT_QUEST.length + PERFECT_EXTRA.length &&
+  s.found.length === COUNT);
+check("perfect: the hidden full-clear best comes down with it",
+  (await best("bestFull")) === PERFECT_QUEST.length + PERFECT_EXTRA.length);
 
 // --- a sloppier run must NOT overwrite them -------------------------------
 await reset();
@@ -794,27 +731,33 @@ await reset();
 await run([["red","green"], ["red","green"], ["blue","yellow"], ["red","blue"], ...QUEST]);
 await sleep(100);
 s = await state();
-check("sloppy: quest done in 35 moves", s.questDone && s.moves === 35);
-check("sloppy: best stays 31", (await best("bestQuest")) === 31);
+check(`sloppy: the same quest, four moves worse (${QUEST.length + 4})`,
+  s.questDone && s.moves === QUEST.length + 4);
+check("sloppy: a worse run does NOT overwrite the best",
+  (await best("bestQuest")) === PERFECT_QUEST.length);
 
 // --- persistence: reload restores the run ---------------------------------
 await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
+// mute first, so the reload below also proves the button paints its word from
+// the stored preference rather than from whatever the HTML shipped with
+await evalJs(`document.getElementById("sn").click()`);
 await send("Page.navigate", { url: "file:///" + page.replace(/\\/g, "/") });
 await sleep(900);
 s = await state();
 check("reload: run restored, back on the title",
-  s.moves === 35 && s.questDone && s.found.includes("rainbow") && s.phase === "menu");
+  s.moves === QUEST.length + 4 && s.questDone && s.found.includes("rainbow") && s.phase === "menu");
+check("reload: the mute button paints its word from the stored preference",
+  (await evalJs(`document.getElementById('sn').firstChild.textContent`)) === "Unmute" &&
+  (await evalJs(`localStorage.getItem('colorAlchemy.mute')`)) === "1");
+await evalJs(`document.getElementById("sn").click()`);   // unmute for what follows
 
 // --- alternate recipe: Sun + Rain is also a Rainbow -----------------------
 await reset();
-await run([
-  ["red","green"], ["blue","yellow"], ["blue","white"], ["red","air"],
-  ["air","blue"], ["fire","sky"], ["green","blue"],
-  ["blue","cyan"], ["sky","water"], ["cloud","water"], ["sun","rain"],
-]);
+await run(RAINBOW_ONLY);
 s = await state();
-check("alt: Sun+Rain forges the Rainbow, no Prism involved",
-  s.found.includes("rainbow") && !s.found.includes("prism") && s.moves === 11);
+check(`alt: Sun+Rain forges the Rainbow in ${RAINBOW_ONLY.length}, no Prism involved`,
+  s.found.includes("rainbow") && !s.found.includes("prism") &&
+  s.moves === RAINBOW_ONLY.length);
 check("alt: the intuitive pairs resolve too",
   JSON.stringify(['air+water', 'air+stone', 'fire+ice', 'air+penguin',
     'dog+wolf', 'charcoal+fire', 'air+fire', 'grey+sky'].map((k) => RECIPE[k])) ===
@@ -822,9 +765,38 @@ check("alt: the intuitive pairs resolve too",
 check("alt: a Volcano has the same Diamond in it as the Lava it pours",
   RECIPE['charcoal+lava'] === "diamond" &&
   RECIPE['charcoal+volcano'] === "diamond");
-check("alt: Diamond cuts Glass into a Prism, the only route to one",
+// Glass takes an edge from a Diamond or from a Tool. Unlike the Tool's other
+// recipes this one is a genuine SHORTCUT, not a tie: it puts a Prism within
+// reach at depth 10 where the Diamond route needs 16. Both still resolve, and
+// White through Glass is still not a way in.
+check("alt: a Diamond or a Tool cuts Glass into a Prism, and nothing else does",
   RECIPE['diamond+glass'] === "prism" &&
+  RECIPE['glass+tool'] === "prism" &&
   RECIPE['glass+white'] === undefined);
+// Sand fuses three ways, and the two new ones are fulgurite: a strike, or the
+// current behind it, does what the fire does. Both land far later than Sand +
+// Fire (10 and 11 deep against 6), so they are flavour, never a shortcut.
+check("alt: Sand becomes Glass under a Fire, a current, or a strike",
+  RECIPE['fire+sand'] === "glass" &&
+  RECIPE['electricity+sand'] === "glass" &&
+  RECIPE['lightning+sand'] === "glass");
+// Lava cools into Stone three ways, all of them at the same depth — an exact
+// tie, like Night's two routes, rather than a shortcut. And Lava + Stone is the
+// sixth cyclic pair: the Stone melts straight back into the Lava that made it.
+check("alt: Lava sets into Stone against Water, Rain or Air",
+  RECIPE['lava+water'] === "stone" &&
+  RECIPE['lava+rain'] === "stone" &&
+  RECIPE['air+lava'] === "stone");
+check("alt: Lava + Stone melts back into Lava, a cyclic pair that costs a move",
+  RECIPE['lava+stone'] === "lava");
+// The Tool is the other half of three recipes, and none of them is a shortcut:
+// Charcoal + Tool ties Charcoal + Stone exactly (both 15 deep), and Stone + Tool
+// is 10 against a Sand that is already reachable at 5.
+check("alt: a Tool cuts Wood, grinds Stone into Sand, and works Charcoal into Black",
+  RECIPE['tool+tree'] === "wood" &&
+  RECIPE['stone+tool'] === "sand" &&
+  RECIPE['charcoal+tool'] === "black" &&
+  RECIPE['charcoal+stone'] === "black");
 check("alt: Prism + Sun is also a Rainbow",
   RECIPE['prism+sun'] === "rainbow");
 check("alt: a Light Bulb through a Prism is a Rainbow too",
@@ -841,10 +813,10 @@ check("alt: the Sky is blue Air now, and the Sun is lit from it",
 check("alt: Fire needs Air to catch, and Orange no longer lights it",
   RECIPE['air+red'] === "fire" &&
   RECIPE['orange+red'] === undefined);
-check("alt: the tool chain reversed - Fire + Metal is a Knife, and the Axe needs Wood",
-  RECIPE['fire+metal'] === "knife" &&
-  RECIPE['knife+tree'] === "wood" &&
-  RECIPE['metal+wood'] === "axe");
+check("alt: the tool chain - Fire + Metal is a Tool, and a Tool is what cuts Wood",
+  RECIPE['fire+metal'] === "tool" &&
+  RECIPE['tool+tree'] === "wood" &&
+  RECIPE['metal+wood'] === undefined);
 check("alt: a whole Tree burns to Charcoal, no Wood in between",
   RECIPE['fire+tree'] === "charcoal" &&
   RECIPE['fire+wood'] === "charcoal");
@@ -898,12 +870,13 @@ check("unlock: the first press only arms the button",
 await menuBtn("Sure? (ends");
 s = await state();
 check("unlock: the second press hands over every element",
-  s.found.length === 100 && s.phase === "play" && s.moves === 0);
+  s.found.length === COUNT && s.phase === "play" && s.moves === 0);
 check("unlock: an unlocked run stops scoring, and says so",
   await evalJs(`document.getElementById('gl').textContent.includes('does not score')`) &&
   s.phase === "play" && !s.fullDone);
 check("unlock: no best was written from it",
-  (await best("bestFull")) === 97 && (await best("bestQuest")) === 31);
+  (await best("bestFull")) === PERFECT_QUEST.length + PERFECT_EXTRA.length &&
+  (await best("bestQuest")) === PERFECT_QUEST.length);
 await key("Escape");
 await menuBtn("Reset everything");
 check("wipe: the first press only arms the button",

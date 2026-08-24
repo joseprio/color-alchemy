@@ -36,12 +36,8 @@ body {
     radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
 }
 
+/* <h> is the goal line's own band now that the in-game title is gone */
 h { margin: 14px 0 0; text-align: center; }
-h1 {
-  margin: 0; font-size: 26px; letter-spacing: .18em; font-weight: 700;
-  background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
 #gl { margin: 4px 0 0; color: #8fb4d8; font-size: 13px; }
 
 #hd {
@@ -54,7 +50,11 @@ h1 {
 #ht, #mn, #sn {
   background: #101528; color: #7f9fc0; border: 1px solid #2a3555;
   font: inherit; font-size: 12px; padding: 2px 10px; cursor: pointer; border-radius: 6px;
+  transition: border-color .12s;   /* the same easing the tiles lighten on */
 }
+/* Hover lightens the border to the tiles' #3d5584, so the whole board and the
+   row above it answer a pointer the same way. */
+#ht:hover, #mn:hover, #sn:hover { border-color: #3d5584; }
 /* Touch: the HUD buttons are 23px tall, which a mouse hits and a thumb does
    not. Only coarse pointers pay for the extra height. */
 @media (pointer: coarse) {
@@ -64,8 +64,6 @@ h1 {
 }
 /* the keys that do the same thing, dimmer than the label */
 #ht i, #mn i, #sn i { font-style: normal; color: #55708e; margin-left: 6px; }
-/* muted: the button reads "Muted" and goes as quiet as it sounds */
-#sn.Y { color: #55708e; border-color: #1b2540; }
 
 /* ------------------------------------------------------------------ cauldron
    Always on screen, directly under the HUD: two slots and a result well. #ca
@@ -213,15 +211,33 @@ f {
 
 /* ------------------------------------------------ first-ever discovery
    The one moment the game saves up for: an element never seen in ANY previous
-   run takes the whole screen. The pair wind in at full size, spinning faster
-   as they close, overlap and spin down to nothing — then the screen breaks and
-   the new element arrives on the crack, fourteen rays stepping round the
-   spectrum. Rediscoveries never see it; the cauldron handles those.
-   Skippable (a tap anywhere) and self-clearing after 2.4s. */
+   run takes the whole screen. The pair LIFTS OFF THE ALTAR — out of the two
+   slots the player actually filled, at the size those slots draw it — and is
+   carried wide to the sides, growing the whole way and not rotating at all,
+   because that is the one moment the player gets a clear look at what went in.
+   From there it is a single run inward with the spin winding up under it, the
+   two of them shrinking as they close; they land on the same spot with a beat
+   to spare, and only then does the screen break and the new element arrive on
+   the crack, fourteen rays stepping round the spectrum. Rediscoveries never
+   see it; the cauldron handles those. Skippable (a tap anywhere) and
+   self-clearing after 2.4s.
+   Chosen in experiments/discovery-approach.html, which compares nine ways to
+   cross that first second against this exact ending. */
 #ds { position: fixed; inset: 0; z-index: 10; display: none; overflow: hidden; background: #04060ce8; }
-/* the last 350ms are a fade, so it leaves rather than blinks out; the JS timer
-   fires at 2.7s, when this has already taken it to zero */
-#ds.y { display: block; animation: dout .35s 2.4s ease-in forwards; }
+/* Two fades on the layer itself, and they are the first and last things that
+   happen. IN: the veil is not there when the layer arrives — it darkens from
+   nothing over .47s, which is exactly how long the pair takes to reach the
+   sides, on the pair's own easing curve, so the board dims at the speed the
+   ingredients climb rather than being switched off under them. Dropping a
+   black sheet on frame one is a cut; this is the lights going down.
+   OUT: the last 350ms, so it leaves rather than blinks out; the JS timer fires
+   at 2.7s, when this has already taken it to zero.
+   The from-colour is the background's own, at zero alpha, rather than the
+   keyword transparent — same thing in every engine that interpolates colour
+   premultiplied, and no argument with the ones that might not. */
+#ds.y { display: block;
+  animation: din .47s cubic-bezier(.18, .62, .28, 1), dout .35s 2.4s ease-in forwards; }
+@keyframes din { from { background-color: #04060c00; } }
 @keyframes dout { to { opacity: 0; } }
 #ds .m { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); }
 #ds .g { display: flex; line-height: 1; font-size: 62px; }
@@ -230,23 +246,39 @@ f {
   animation: dr .55s 1.05s cubic-bezier(.2, 1.4, .4, 1) forwards; }
 #ds .r .s { width: 110px; height: 110px; border-radius: 22px; }
 @keyframes dr { to { transform: scale(1); opacity: 1; filter: blur(0); } }
-#ds .a { animation: dA 1.25s linear both; }
-#ds .b { animation: dB 1.25s linear both; }
+/* ONE flight, not two. The pair differ in exactly three numbers, so they are
+   custom properties rather than a second copy of the keyframes: --o is the
+   altar slot each one starts in, --w how far out to the side it goes and which
+   side, --d which way it spins. --o is NOT symmetric (-122 and -6) because the
+   altar is not: two 84px slots, a 96px result well and the + and = between
+   them, centred as a group, so the left slot sits 122px left of the screen
+   centre and the right one only 6. Both measured off the real dock rather than
+   worked out — the separators are easy to forget, and forgetting them puts A
+   20px adrift. --w is clamped against the viewport: 205px is right on a laptop
+   and off both edges of a 320px phone.
+   The vertical start is the altar too, and it moves with the dock: the slot
+   centre is 51px above the dock's own top, the animation is centred at 44vh,
+   and 100vh - dock + 51 - 44vh is the 56vh - dock + 51 below. */
+#ds .a { --o: -122px; --w: max(-205px, -30vw); --d: -1; }
+#ds .b { --o: -6px; --w: min(205px, 30vw); --d: 1; }
+/* Every stop carries the SAME three transform functions in the same order.
+   Mismatched lists make the browser interpolate the matrix instead, and a
+   decomposed matrix takes the short way round — three turns would become
+   nothing at all. The stops themselves carry the acceleration (about 9, 20, 26
+   then 30 degrees per percent), which is why only the first declares an easing.
+   They meet at 66.9% and the last third is the two of them stacked on the spot
+   winding down, so the burst at 1.05s lands on a pair that has visibly touched
+   rather than one still closing. */
+#ds .a, #ds .b { animation: dA 1.35s linear both; }
 @keyframes dA {
-  from { transform: translateX(-108px) rotate(0) scale(1); }
-  30% { transform: translateX(-84px) rotate(200deg) scale(1); }
-  47% { transform: translateX(-52px) rotate(480deg) scale(1); }
-  60% { transform: translateX(0) rotate(820deg) scale(1); opacity: 1; }
-  80% { transform: translateX(0) rotate(1150deg) scale(.5); opacity: 1; }
-  to { transform: translateX(0) rotate(1400deg) scale(.08); opacity: 0; }
-}
-@keyframes dB {
-  from { transform: translateX(108px) rotate(0) scale(1); }
-  30% { transform: translateX(84px) rotate(-200deg) scale(1); }
-  47% { transform: translateX(52px) rotate(-480deg) scale(1); }
-  60% { transform: translateX(0) rotate(-820deg) scale(1); opacity: 1; }
-  80% { transform: translateX(0) rotate(-1150deg) scale(.5); opacity: 1; }
-  to { transform: translateX(0) rotate(-1400deg) scale(.08); opacity: 0; }
+  from { transform: translate(var(--o), calc(56vh - var(--dock) + 51px)) scale(.5) rotate(0);
+    animation-timing-function: cubic-bezier(.18, .62, .28, 1); }
+  35% { transform: translate(var(--w), 0) scale(1.15) rotate(0); }
+  50.6% { transform: translate(calc(var(--w) * .732), 0) scale(.98) rotate(calc(var(--d) * -185deg)); }
+  60.7% { transform: translate(calc(var(--w) * .4), 0) scale(.8) rotate(calc(var(--d) * -450deg)); }
+  66.9% { transform: translate(0, 0) scale(.62) rotate(calc(var(--d) * -660deg)); }
+  77.8% { transform: translate(0, 0) scale(.42) rotate(calc(var(--d) * -1080deg)); opacity: 1; }
+  to { transform: translate(0, 0) scale(.025) rotate(calc(var(--d) * -1080deg)); opacity: 0; }
 }
 #ds .k {
   position: absolute; left: 50%; top: 44%; width: 2px; height: 0; transform-origin: 50% 0;

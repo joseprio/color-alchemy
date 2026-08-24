@@ -92,17 +92,19 @@ function hud(): void {
 }
 
 let toastTimer = 0;
-// The one mute path: the key, the pad button and the HUD button all land here,
-// so the label can never disagree with the state. Called at boot too, since the
-// preference outlives the run.
-function paintSound(): void {
-  (sn.firstChild as Text).textContent = muted ? "Muted" : "Sound";
-  sn.classList.toggle("Y", muted);
+// The label names the ACTION, not the state: Mute while there is something to
+// mute, Unmute once there is not. It still wears one LOOK — no dim class, no
+// second border — so it sits with Hint and Menu; only the word changes.
+// Called at boot too, since the preference outlives the run.
+function paintMute(): void {
+  (sn.firstChild as Text).textContent = muted ? "Unmute" : "Mute";
 }
 
+// The one mute path: the key, the pad button and the HUD button all land here,
+// so the word can never disagree with the state.
 export function muteToggle(): void {
   toast(toggleMute() ? "Sound off" : "Sound on");
-  paintSound();
+  paintMute();
 }
 
 export function toast(msg: string): void {
@@ -211,6 +213,11 @@ let ghost: HTMLElement | null = null;
 let dropEl: HTMLElement | null = null;
 let pressTimer = 0;
 let clickGuard = 0;         // clicks before this timestamp ended a drag, not a select
+// The pick a lift suspended. A drag has to clear sel/held to keep the board
+// readable while the ghost is out, but a drag that comes back to where it
+// started is not a drag at all — the player changed their mind — so the pick
+// is put back and the drop is handled as the tap it turned out to be.
+let dragSel = -1, dragHeld = false;
 
 function startPress(e: PointerEvent, i: number): void {
   if (phase() !== "play" || pressIdx >= 0) return;
@@ -224,11 +231,28 @@ function startPress(e: PointerEvent, i: number): void {
 function lift(): void {
   if (pressIdx < 0 || dragging || phase() !== "play") return;
   dragging = true;
+  dragSel = sel;            // remembered, in case the drop lands back on the source
+  dragHeld = held;
   sel = -1;                 // a pending click-selection mid-drag would confuse; clear silently
   held = false;
   renderFocus();
   const src = tiles[pressIdx];
   src.classList.add("d");
+  // The lift clears the pick so the drop can decide what it becomes, but the
+  // board must not look like the pick evaporated: put the ring straight back on
+  // the tile it belongs to. .d fades the source because it is in the air; the
+  // ring is what still says whether it was LOCKED (gold, with its padlock) or
+  // merely picked (cyan). Added before the clone on purpose, so when the tile in
+  // the air is the picked one the ghost carries the ring too — .t.G comes later
+  // in the sheet and keeps its own opacity and transform, so only the border,
+  // background and badge come across. cancelPress() renders it away again.
+  if (dragSel >= 0) tiles[dragSel].classList.add(dragHeld ? "e" : "E");
+  // The tile in the air ALWAYS wears a ring, even when it was picked up cold:
+  // cyan, the same mark the board puts on a second element, so a drag off an
+  // untouched tile still shows what is being carried instead of a grey gap.
+  // Skipped when it is the picked one, which already has its own ring above —
+  // gold if it is locked, and gold must win.
+  if (dragSel !== pressIdx) src.classList.add("E");
   ghost = src.cloneNode(true) as HTMLElement;
   ghost.classList.add("G");
   document.body.appendChild(ghost);
@@ -271,12 +295,35 @@ function onPressUp(e: PointerEvent): void {
   lastX = e.clientX;
   lastY = e.clientY;
   const t = tileAt(lastX, lastY);
-  const srcId = order[pressIdx];
+  const idx = pressIdx;     // cancelPress() clears it, and the self-drop needs it
+  const srcId = order[idx];
   const dstId = t ? t.dataset.id : undefined;
   clickGuard = performance.now() + 350;
   cancelPress();
-  if (dstId && dstId !== srcId) attempt(srcId, dstId);
-  else SFX.cancel();        // dropped on nothing / on itself: no move
+  if (dstId && dstId !== srcId) {
+    // A LOCK SURVIVES EVERY MIX — that is the whole thing a lock buys, and it
+    // has to hold whether the mix was tapped or dragged. Put it back before the
+    // attempt, because attempt() paints the altar and paintCauldron() gives the
+    // A slot to the locked element.
+    // Only when the locked element is actually IN this mix, though. Dragging two
+    // other tiles together while something else is locked is a different pair,
+    // and showing the locked one in the A slot would be a lie about what was
+    // just combined.
+    const lockId = dragHeld && dragSel >= 0 ? order[dragSel] : null;
+    if (lockId === srcId || lockId === dstId) {
+      sel = dragSel;
+      held = true;
+      // the locked one goes in first whichever end of the drag it was, or the
+      // altar would show it in A and the other in B when it was the target
+      attempt(lockId, lockId === srcId ? dstId : srcId);
+    } else attempt(srcId, dstId);
+  }
+  else if (dstId) {         // back on the source: exactly the tap it turned out to be
+    padMode = false;        // it was a pointer, so the focus ring stays down
+    sel = dragSel;
+    held = dragHeld;
+    selectAt(idx);          // pick it, lock it, let it go, or mix it — selectAt owns that
+  } else SFX.cancel();      // dropped on nothing: no move, and the pick is spent
 }
 function cancelPress(): void {
   clearTimeout(pressTimer);
@@ -285,6 +332,7 @@ function cancelPress(): void {
   if (ghost) { ghost.remove(); ghost = null; }
   pressIdx = -1;
   dragging = false;
+  renderFocus();   // drops the ring lift() put back by hand
 }
 
 /* --------------------------------------------------------------- gameplay */
@@ -766,7 +814,7 @@ export function reset(): void {
 export function boot(): void {
   mn.onclick = openMenu;
   sn.onclick = muteToggle;
-  paintSound();
+  paintMute();
   ht.onclick = hint;
   ca.onclick = unlock;                  // the X empties the locked slot
   ds["onpointerdown"] = closeDisc;      // a tap anywhere skips it

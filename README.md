@@ -23,7 +23,7 @@ npm run audio-bench       # what a sample costs, against the callback budget
 - **Play:** open `dist/bundle.html` — the whole game in one file.
 - The pipeline is galaxy-raid's, size-golf tail included. `prebuild` runs the
   `tsc` type check, then rollup bundles `src/index.ts` and — in production only
-  — puts it through **closure ADVANCED → eslint `no-var` → terser → the
+  — puts it through **closure ADVANCED → eslint `no-var` → `const`→`let` → terser → the
   roadroller fork**;
   `postbuild` inlines the packed script into the `src/index.html` template,
   minifies the page with **html-minifier-next**, zips it with fixed DOS-epoch
@@ -42,7 +42,7 @@ npm run audio-bench       # what a sample costs, against the callback budget
   → **9651 bytes, 72.50% of the budget.**
   `src/style.css` is read ONCE, at config load: after editing it during
   `npm start`, restart the watcher.
-- **The element table omits the names it can derive.** For 97 of the 100, `n`
+- **The element table omits the names it can derive.** For 98 of the 101, `n`
   is just the id with a capital, so the table leaves it out and
   `src/elements.ts` fills it in; only Polar Bear, Crystal Ball and Light Bulb
   are written out. Worth **-162 B** end to end, and it is the
@@ -198,8 +198,34 @@ npm run audio-bench       # what a sample costs, against the callback budget
   declarations. It converts 11 of 15; the 4 survivors are global-scope, where the
   fixer correctly refuses (a top-level `var` makes a global-object property and
   `let` does not). Worth 12 bytes here.
+- **`const` → `let` runs for the same reason, and pays 9 bytes.** Seven `const`s
+  survive terser; respelling them leaves one declaration keyword in the whole
+  chunk. Byte-neutral before compression, like the `var` swap — the win is
+  roadroller's context model, plus `join_vars` merges that only fire between
+  adjacent declarations *of the same kind*. It is a text pass, which is safe
+  here because all seven are real declarations (none inside a string literal)
+  and dropping immutability cannot change behaviour in code that never
+  reassigns — which is exactly what the `const` was asserting.
+- **Two more galaxy-raid passes were ported, measured, and rejected.** Both
+  numbers are exact rather than averaged: this build is byte-deterministic, so
+  one build per configuration settles it.
+  - **oxc compress-only after terser: +22 bytes.** It is a −7.7 win in
+    galaxy-raid (its OPTIMIZATIONS.md #44), where it feeds `paver`; there is no
+    `paver` here, so the chain is just terser → oxc → roadroller and oxc's
+    house style — backtick delimiters, `0===t` flips, literal unicode — costs
+    more than it saves against this chunk. Not a stale-parameter artifact: a
+    fresh `roadroller-optimize` search afterwards kept the incumbent params
+    (27 B better than anything it found), so the pinned config genuinely fits.
+  - **`globalVarToLet` (their #12): a no-op, and for a structural reason.** It
+    recovers the vars eslint refuses at global scope by running the same fixer
+    on function-wrapped code, so the `isGlobal` bail cannot fire. Run here,
+    wrapped and unwrapped give *identical* results — 12 reports, zero fixes.
+    The 27 `var`s left in this chunk are already function-scoped (`for(var r=0`
+    …) and unconvertible for real reasons: closure's name coalescing declares
+    in a block and uses outside, plus loop-with-closure capture. galaxy-raid's
+    precondition — top-level `var`s in bare script code — does not hold here.
 - Still *not* carried over from galaxy-raid, being fitted to that game's chunk:
-  the oxc/swc re-minifies, `paver`, `fn-order.json`. Its `web-resource-inliner`
+  the swc re-minify, `paver`, `fn-order.json`. Its `web-resource-inliner`
   step is not needed either — there is one script to inline, and one string
   replace does it.
 - **The build is byte-deterministic.** Two things buy that: the pinned DOS-epoch
@@ -254,10 +280,16 @@ tools/responsive-probe.mjs the page at seven viewports, phone to laptop
 tools/audio-bench.mjs      ns per sample vs. the render-ahead budget
 tools/build-visualizer.mjs splices src/music.ts into the visualizer experiment
 
-experiments/menu-typography.html   the seven title settings the current one
-                                   was chosen from
-experiments/visualizer.html        six spectrum-analyser options, on the game's
-                                   own music — not wired into the game yet
+experiments/menu-typography.html       the seven title settings the current one
+                                       was chosen from
+experiments/visualizer.html            six spectrum-analyser options, on the
+                                       game's own music — not wired in yet
+experiments/discovery-animation.html   the six first-discovery sequences the
+                                       shipped one (FRACTURE) was chosen from
+experiments/discovery-approach.html    nine ways for the pair to reach the
+                                       middle, on one duration slider that
+                                       re-times all nine at once — card 5,
+                                       FROM THE ALTAR, is the one that ships
 ```
 
 ## Title screen
@@ -336,7 +368,7 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 - **The quest:** forge the 🌈 **Rainbow** (White + Prism, or Sun + Rain)
   and the 🦄 **Unicorn**. When you hold both, your move count is compared with
   the stored best and kept if lower. You can then keep playing.
-- **The endgame:** discover all 100 elements. The total move count of a full
+- **The endgame:** discover all 101 elements. The total move count of a full
   clear is the *hidden highscore* — it is only ever compared and shown on the
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
@@ -375,8 +407,8 @@ notched phone in landscape the footer can sit under the home indicator.
 
 | Input    | Combine | Hint | Let go of the pick | Mute |
 |----------|---------|------|----------------------------|------|
-| Mouse    | click one element to pick it, then another to mix — or drag one onto another | the HUD **Hint** button | click it twice more (lock, then let go), or the **X** on the cauldron | the HUD **Sound** button |
-| Touch    | tap one element to pick it, then another to mix — or long-press (~¼s) to lift, then drag onto another | the HUD **Hint** button | tap it twice more (lock, then let go), or the **X** on the cauldron | the HUD **Sound** button |
+| Mouse    | click one element to pick it, then another to mix — or drag one onto another; dropping it back where it started acts as a click | the HUD **Hint** button | click it twice more (lock, then let go), or the **X** on the cauldron | the HUD **Mute** button |
+| Touch    | tap one element to pick it, then another to mix — or long-press (~¼s) to lift, then drag onto another; dropping it back where it started acts as a tap | the HUD **Hint** button | tap it twice more (lock, then let go), or the **X** on the cauldron | the HUD **Mute** button |
 | Keyboard | arrows / WASD move, Enter or Space holds / mixes | **H** | Escape (lets go, else opens the menu) | **M** |
 | Gamepad  | d-pad or left stick move, Ⓐ holds / mixes | Ⓨ | Ⓑ (lets go, else opens the menu); Start opens/closes the menu; overlays: ←/→ + Ⓐ | Ⓧ |
 
@@ -387,18 +419,50 @@ action that costs nothing and is wanted in any phase. Indices 0-3 are also the
 ones every Standard Gamepad agrees on, unlike the triggers, which some drivers
 report as axes instead.
 
-**M**, Ⓧ and the HUD **Sound** button all mute *everything* — music and
-interface sounds — and the key and pad button work from any phase, including the
-title screen. The choice is remembered across runs and
-reloads. The button is the state as well as the switch: it reads **Sound**, and
-**Muted** dimmed to match, which is why all three routes go through one
-`muteToggle` in `game.ts` — a second path that skipped the repaint would leave
-the label lying. Muting disconnects the music node rather than turning its volume
-down, so it also stops the ~8% of a core the engine costs, and unmuting resumes
-the song where it stopped instead of restarting it.
+**M**, Ⓧ and the HUD mute button all mute *everything* — music and interface
+sounds — and the key and pad button work from any phase, including the title
+screen. The choice is remembered across runs and reloads.
+
+**The button's label names the action, not the state.** It reads **Mute** while
+there is something to mute and **Unmute** once there is not, so the word is
+always what pressing it will do. It wears one *look* either way — no dim class,
+no second border — so it still sits with **Hint** and **Menu** beside it; only
+the word changes. That is the middle of two earlier tries: naming the state
+(**Sound** / **Muted**, dimmed to match) made the button argue with itself about
+whether it was a readout or a control, and naming neither left nothing on screen
+saying the sound was off once the toast had faded.
+
+All three routes land on one `paintMute` in `game.ts`, called from `muteToggle`
+and again at boot — the preference outlives the run, so a reload has to paint the
+word from storage rather than trust whatever the HTML shipped with. A test asserts
+exactly that, because it is the case a second mute path would silently break.
+
+Muting disconnects the music node rather than turning its volume down, so it
+also stops the ~8% of a core the engine costs, and unmuting resumes the song
+where it stopped instead of restarting it.
 
 On touch the long-press is what keeps page scrolling working: a swipe scrolls,
 a hold lifts the tile for dragging.
+
+**A drag that comes back to where it started is a tap.** Lifting a tile clears
+the current pick, because leaving a gold ring on the board while a ghost is out
+reads as two things being picked at once — but that pick is remembered, and a
+drop back on the source puts it back and runs the same three states a tap does:
+pick it, lock it, let it go, or mix it with whatever was already picked. So a
+player who lifts a tile and changes their mind loses nothing, and a drag that
+never found a target costs no move. Dropping on *nothing* still spends the
+pick — that gesture already sounds like a cancel and reads as one.
+
+**A lock survives a dragged mix, the same as a tapped one.** That is the whole
+thing a lock buys — trying Fire against ten things is ten gestures, not twenty —
+and it would be a strange rule if it held for taps and quietly broke the moment
+you dragged. It holds from either end: drag the locked tile onto another, or
+another onto it. The locked element keeps the altar's **A** slot in both cases,
+so a drag *onto* it feeds the pair in the other order rather than showing the
+same element in both slots. One case is deliberately left out: dragging two
+other tiles together while something else is locked drops the lock, because the
+altar would otherwise show a locked element that had nothing to do with the
+pair just combined.
 
 ## Music
 
@@ -529,19 +593,20 @@ stops the whole game from loading.)
 
 ## Recipe tree — SPOILERS
 
-A perfect quest is **31 moves**, through the Sun + Rain rainbow; the cheapest
+A perfect quest is **32 moves**, through the Sun + Rain rainbow; the cheapest
 Prism route costs **33**, and Prism + Sun or a Light Bulb through a Prism cost
-**34**. It was 33 until the Unicorn learned to take a plain **Animal + Magic**:
-the Horse it used to insist on was two moves of its own — the Field it stands
-in, and then the Horse — and nothing else in the tree needs either of them.
-The Prism gap narrowed with it, from three moves to two: the quest still has to
-reach Charcoal on its way to Black, and a Diamond is only a Lava away from
-there, so the Prism is a much shorter detour than it looks. A Light Bulb
-through a Prism is a third Prism route and never a cheaper one: the Prism
-already needed the Glass and the Unicorn's life branch already needed the
-Electricity, so the bulb itself is the only move it adds — flavour for a
-player holding both, never a cheaper way in.
-A perfect full clear is **97** - one move per element, since nothing can be
+**34**. The Prism detour is **one move**, and the reason is worth knowing before
+anything reprices it: a Prism takes its edge from a Diamond *or from a Tool*,
+and the quest already makes a Tool, because Magic needs Wood and Wood is what a
+Tool cuts. So the Prism costs only the Glass and the Sand under it — two moves,
+against the one the Sun + Rain rainbow saves. On its own a Prism is **15 moves**
+through the Tool where the Diamond route needs **24**, which is why that route
+is the one route on the Tool that is a genuine shortcut rather than a tie.
+A Light Bulb through a Prism is a third Prism route and never a cheaper one: the
+Prism already needed the Glass and the Unicorn's life branch already needed the
+Electricity, so the bulb itself is the only move it adds — flavour for a player
+holding both, never a cheaper way in.
+A perfect full clear is **98** - one move per element, since nothing can be
 made twice. Best scores are scoped to the current recipe tree, so all of this
 started fresh records automatically.
 
@@ -551,8 +616,8 @@ remaining halves both bottom out in the same place. The Unicorn needs an
 chain -> Acid + Metal battery -> Electricity -> Lightning -> Life -> Animal).
 Magic needs **Wood + Star**, and the wood chain pays for both halves of that:
 the Wood itself, and the Charcoal -> Black past it that Night - and so the Star
-- is built from (Knife + Tree -> Wood -> Charcoal -> Black). Both branches run
-off one Earth/Lava/Stone/Metal spine, which is what keeps 31 from being far
+- is built from (Tool + Tree -> Wood -> Charcoal -> Black). Both branches run
+off one Earth/Lava/Stone/Metal spine, which is what keeps 32 from being far
 worse, and the Cloud earns its keep twice: once for the Rain, once for the
 Lightning. The Night has a second route, **Violet + Sky**, and it is an exact
 tie rather than a shortcut: Magenta then Violet costs the same two moves as
@@ -572,9 +637,14 @@ Several elements have more than one route, so an intuitive guess tends to land
 somewhere. Six of them are deliberately cyclic - Fire + Ice remakes Water,
 which Ice itself needs; Penguin + Air hands back the Bird the Penguin came from;
 Wolf + Dog is just another Dog; Fire + Air is a fanned fire and nothing more;
-Lizard + Egg hatches another Lizard; and Axe + Tree makes the Wood the Axe
-itself was cut from - flavor for a pair players try, never a
-cheaper path.
+Lizard + Egg hatches another Lizard; and Lava + Stone melts the Stone straight
+back into Lava - flavor for a pair players try, never a cheaper path.
+
+**Matter is the throat of the tree.** Earth, Air and Water each have exactly
+one route and all three run through it, so 88 of the 101 elements are out of
+reach until it is found. What is reachable without it is the pure colours and
+Gold, thirteen in all. Matter itself comes from either of two complementary
+pairs - Violet + Yellow, Orange + Blue.
 
 | Element | Recipe |
 |---|---|
@@ -584,38 +654,35 @@ cheaper path.
 | White | Blue + Yellow · Red + Cyan · Green + Magenta |
 | Orange | Red + Yellow |
 | Violet | Blue + Magenta |
-
 | Indigo | Blue + Violet |
 | Pink | Red + White |
-| Air | Blue + White |
-| Sky | Air + Blue |
+| Brown | Green + Orange |
+| Matter | Violet + Yellow · Blue + Orange |
+| Air | White + Matter |
+| Sky | Air + Blue · Air + Cyan |
 | Gold | Yellow + Orange |
-| Water | Blue + Cyan · Fire + Ice |
+| Water | Blue + Matter · Fire + Ice |
 | Fire | Red + Air · Fire + Air |
-| Earth | Green + Orange |
+| Earth | Brown + Matter |
 | Clay | Earth + Water |
 | Pottery | Clay + Fire |
 | Beer | Gold + Water |
 | Wine | Red + Water |
-| Lava | Earth + Fire |
+| Lava | Earth + Fire · Lava + Stone |
 | Volcano | Lava + Earth |
-| Stone | Lava + Water |
+| Stone | Lava + Water · Lava + Rain · Lava + Air |
 | Metal | Fire + Stone |
-| Knife | Fire + Metal |
-| Axe | Wood + Metal |
-| Sand | Earth + Air · Earth + Sun · Stone + Air |
-| Glass | Sand + Fire |
+| Tool | Fire + Metal |
+| Sand | Earth + Air · Earth + Sun · Stone + Air · Stone + Tool |
+| Glass | Sand + Fire · Sand + Electricity · Sand + Lightning |
 | Mirror | Glass + Metal |
 | Hourglass | Glass + Sand |
 | Sun | Fire + Sky |
 | Night | Black + Sky · Violet + Sky |
 | Star | Night + White |
 | Moon | Night + Sun |
-| Cloud | Sky + Water · Water + Air · Grey + Sky |
+| Cloud | Sky + Water · Water + Air · Grey + Sky · Fire + Water · Sun + Water |
 | Rain | Cloud + Water |
-| Acid | Green + Water |
-| Electricity | Acid + Metal |
-| Light Bulb | Glass + Electricity |
 | Lightning | Cloud + Electricity |
 | Storm | Lightning + Rain · Electricity + Rain |
 | Tornado | Air + Storm |
@@ -646,18 +713,24 @@ cheaper path.
 | Honey | Bee + Flower |
 | Bear | Animal + Honey |
 | Polar Bear | Bear + Ice |
+| Acid | Green + Water |
+| Electricity | Acid + Metal |
+| Light Bulb | Electricity + Glass |
 | Ice | Water + Night |
 | Snow | Cloud + Ice |
-| Prism | Diamond + Glass |
-| **Rainbow** | **White + Prism** · **Sun + Rain** · **Prism + Sun** · **Light Bulb + Prism** |
-| Magic | Wood + Star |
+| Prism | Diamond + Glass · Glass + Tool |
+| Rainbow | White + Prism · Sun + Rain · Prism + Sun · Light Bulb + Prism |
+| Magic | Wood + Star · Pumpkin + Night |
 | Crystal Ball | Magic + Glass |
-| **Unicorn** | **Horse + Magic** · **Animal + Magic** |
-| Plant | Life + Sun · Life + Green |
+| Unicorn | Horse + Magic · Animal + Magic |
+| Plant | Life + Sun · Green + Life |
+| Cactus | Plant + Sand |
+| Field | Earth + Plant |
+| Park | Field + Water |
 | Tree | Water + Plant |
 | Fruit | Tree + Sun |
 | Pumpkin | Fruit + Orange |
-| Wood | Tree + Knife · Axe + Tree |
+| Wood | Tree + Tool |
 | Charcoal | Wood + Fire · Tree + Fire |
 | Ash | Charcoal + Fire · Bone + Fire · Fire + Paper · Book + Fire |
 | Mushroom | Rain + Wood |
@@ -666,14 +739,10 @@ cheaper path.
 | Book | Paper + Pencil |
 | Palette | Paper + Rainbow |
 | Kite | Air + Paper |
-
-| Black | Charcoal + Stone |
+| Black | Charcoal + Stone · Charcoal + Tool |
 | Grey | Black + White |
 | Diamond | Charcoal + Lava · Volcano + Charcoal |
 | Ring | Metal + Diamond |
-| Field | Earth + Plant |
-| Park | Field + Water |
-| Cactus | Plant + Sand |
 | Flower | Plant + Pink |
 | Sunflower | Sun + Flower · Flower + Yellow |
 | Rose | Flower + Red |

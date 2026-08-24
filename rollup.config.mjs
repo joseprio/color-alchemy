@@ -112,6 +112,28 @@ const eslintVarToLet = {
   },
 };
 
+/* -------------------------------------------------- ported from galaxy-raid */
+// The build here is DETERMINISTIC (pinned roadroller params, fixed zip
+// timestamps), so one build per config is an exact measurement — no repeated
+// runs, unlike galaxy-raid where paver's passes added variance. Two of its
+// three candidates were measured and REJECTED; see README "Ported, and not".
+
+// const -> let, for the same reason var -> let pays (#5/#7): the keyword swap is
+// byte-neutral, but one spelling suits roadroller's context model, and running it
+// before terser lets join_vars merge declarations it otherwise cannot (join_vars
+// only merges ADJACENT declarations OF THE SAME KIND). Safe as a text pass here:
+// every `const` in the chunk is a real declaration — checked, none inside a string
+// literal — and dropping immutability cannot change behaviour in code that never
+// reassigns, which is exactly what `const` was asserting.
+const constToLet = {
+  name: "const-to-let",
+  renderChunk(code) {
+    const n = (code.match(/\bconst\b/g) || []).length;
+    if (n) console.log(`const-to-let: ${n} const(s) respelled`);
+    return code.replace(/\bconst\b/g, "let");
+  },
+};
+
 /* ------------------------------------------------------------- roadroller */
 // Params come from rr-config.json when it exists, and from an in-process search
 // when it doesn't. Pinned params are what make the build byte-deterministic —
@@ -213,6 +235,7 @@ export default {
         externs: "closure-externs.js",
       }),
     production && eslintVarToLet,
+    production && constToLet,
     production &&
       terser({
         ecma: 2021,

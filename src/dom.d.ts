@@ -19,7 +19,7 @@ declare const mv: HTMLElement;   // move count
 declare const ct: HTMLElement;   // element count
 declare const bq: HTMLElement;   // best-quest readout
 declare const ht: HTMLElement;   // Hint button
-declare const sn: HTMLElement;   // Sound button
+declare const sn: HTMLElement;   // Music button
 declare const mn: HTMLElement;   // Menu button
 declare const dk: HTMLElement;   // docked cauldron strip
 declare const cd: HTMLElement;   // the cauldron itself
