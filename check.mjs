@@ -878,6 +878,26 @@ check("alt: Red or Orange sets standing Wood alight",
   RECIPE['red+wood'] === "fire" &&
   RECIPE['orange+wood'] === "fire" &&
   RECIPE['fire+wood'] === "charcoal");
+// THE TWINS. Wherever a colour recipe means the same thing on both sides of a
+// pair, the table now carries both: Red and Orange both melt a Stone the way
+// they both light Matter, Air and Wood; Grey and White both hang a Cloud on
+// the Sky. Neither twin is a shortcut — Orange + Stone is 9 against Earth +
+// Fire's 7, White + Sky ties Water + Air at 7 — they are there so the pair a
+// player reaches for resolves.
+check("alt: the warm pair both melt Stone, the pale pair both cloud the Sky",
+  RECIPE['red+stone'] === "lava" &&
+  RECIPE['orange+stone'] === "lava" &&
+  RECIPE['grey+sky'] === "cloud" &&
+  RECIPE['sky+white'] === "cloud");
+// Sun melts Ice back into Water exactly as Fire does — the seventh cyclic
+// pair, and the second one on Water.
+check("alt: Sun on Ice is the same melt as Fire on Ice",
+  RECIPE['ice+sun'] === "water" &&
+  RECIPE['fire+ice'] === "water");
+// Fish was Animal + Water alone; Blue is the water without the water.
+check("alt: a Blue Animal is a Fish, the same as an Animal in Water",
+  RECIPE['animal+blue'] === "fish" &&
+  RECIPE['animal+water'] === "fish");
 check("alt: Prism + Sun is also a Rainbow",
   RECIPE['prism+sun'] === "rainbow");
 check("alt: a Light Bulb through a Prism is a Rainbow too",
@@ -887,9 +907,10 @@ check("alt: Glass + Electricity lights a Light Bulb, the only route to one",
 check("alt: Rain + Electricity is a Storm too, skipping the Lightning",
   RECIPE['electricity+rain'] === "storm" &&
   RECIPE['lightning+rain'] === "storm");
-check("alt: the Sky is blue Air now, and the Sun is lit from it",
+check("alt: the Sky is blue Air, and the Sun is lit from it or painted on it",
   RECIPE['air+blue'] === "sky" &&
   RECIPE['fire+sky'] === "sun" &&
+  RECIPE['sky+yellow'] === "sun" &&
   RECIPE['air+sun'] === undefined);
 check("alt: Fire needs Air to catch, and Orange no longer lights it",
   RECIPE['air+red'] === "fire" &&

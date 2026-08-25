@@ -11,29 +11,34 @@
 // what it caught; fire does not reduce the fish or the bee at all, and a Bird
 // answers it with a Phoenix; the Fire has seven — Matter or Air, taken with
 // either of the two warm colours, those same two colours put to standing Wood,
-// plus a fire fanned by more Air; Ash, Black, Cloud, Polar Bear, Rainbow, Sand
-// and Stone have four, and every one of the Cloud's is still water meeting
-// warmth or height; Charcoal, Chick, Clay, Glass, Ice, Lava, Lightning, Lizard,
-// Plant, Prism and White three; Bee, Bird, Cactus, Cheese, Diamond, Dog, Field,
-// Fox, Gold, Life, Magic, Matter, Mirror, Night, Paper, Penguin, Phoenix, Rose,
-// Sky, Snow, Star, Storm, Sunflower, Unicorn, Water and Wood two
-// each — the Unicorn takes its Magic from a Horse or from a plain
-// Animal, a Diamond comes out of a Lava or the Volcano it came from, and the
-// Night falls out of a Violet sky as readily as a Black one.
+// plus a fire fanned by more Air; the Cloud has five, and every one of them is
+// still water meeting warmth or height; Ash, Black, Lava, Polar Bear, Rainbow,
+// Sand and Stone have four; Charcoal, Chick, Clay, Glass, Ice, Lightning,
+// Lizard, Plant, Prism, Water and White three; Bee, Bird, Cactus, Cheese,
+// Diamond, Dog, Field, Fish, Fox, Gold, Life, Magic, Matter, Mirror, Night,
+// Paper, Penguin, Phoenix, Rose, Sky, Snow, Star, Storm, Sun, Sunflower,
+// Unicorn and Wood two each — the Unicorn takes its Magic from a Horse or from
+// a plain Animal, a Diamond comes out of a Lava or the Volcano it came from,
+// and the Night falls out of a Violet sky as readily as a Black one.
 // A PLAIN COLOUR IS THE CHEAPEST SECOND INGREDIENT there is — every one of the
 // thirteen sits within three moves of the starters — so a colour laid on a
 // thing is the shortcut wherever the table offers one, and that is the
 // through-line of most of the alternates: Yellow on Earth is Sand in 6 against
-// the Air route's 8, Green on Earth a Field in 6 against 12, White on Glass a
-// Prism in 10 against 15, Yellow on a Cloud is Lightning in 7 against 16,
-// White on an Animal a Polar Bear in 13 against 22. The one that runs the
-// other way is deliberate flavour: Grey + Matter is Stone in 17, where
+// the Air route's 8, Green on Earth a Field in 6 against 11, White on Glass a
+// Prism in 10 against 14, Yellow on a Cloud is Lightning in 8 against 17,
+// White on an Animal a Polar Bear in 14 against 23. The one that runs the
+// other way is deliberate flavour: Grey + Matter is Stone in 16, where
 // Lava + Water needs 9.
+// COLOURS COME IN PAIRS, and the table mirrors them wherever the idea is the
+// same on both sides: Red and Orange both light Matter, Air and standing Wood,
+// and both melt a Stone to Lava; Grey and White both hang a Cloud on the Sky;
+// White and Cyan both freeze Water. When a warm or a pale colour gains a
+// recipe, look for the twin before deciding it is finished.
 // A TOOL is the other half of four recipes — it cuts the Wood, it grinds a
 // Stone into Sand, it works a Charcoal into Black, and it cuts a Glass into a
 // Prism — and since the colours arrived NONE of the four is the cheap way any
-// more: the Prism it used to shortcut to in 15 is 10 through White, the Sand
-// 6 through Yellow, the Wood 14 through Brown, the Black 15 through Earth.
+// more: the Prism it used to shortcut to in 14 is 10 through White, the Sand
+// 6 through Yellow, the Wood 13 through Brown, the Black 15 through Earth.
 // The Tool is flavour end to end now; price it that way.)
 // MATTER IS THE THROAT OF THE WHOLE TREE, and that is deliberate rather than
 // accidental — worth knowing before anything is rewired around it. It is made
@@ -45,7 +50,8 @@
 // Matter is found. What is left without it is the 13 pure colours and Gold.
 // Fire is the one classical element it does not make; that is the gap if this
 // ever grows a fourth.
-// An alternate may be cyclic — Fire + Ice remakes Water, which Ice needs,
+// An alternate may be cyclic — Fire + Ice remakes Water, and so does Sun +
+// Ice, which is the same melt by the other warmth; Water is what Ice needs,
 // Penguin + Air hands back the Bird the Penguin came from, Wolf + Dog is just
 // another Dog, Fire + Air is a fanned fire and nothing more, Lizard + Egg
 // hatches another Lizard, and Lava + Stone just melts the Stone back into
@@ -117,7 +123,7 @@ export const ELEMENTS = ([
   { id:"gold", c:"#f7c948", q:"Gold can do much, but love can do all.",
     r:[["yellow","orange"],["metal","yellow"]] },
   { id:"water", e:"\u{1F4A7}", q:"Be like water, my friend.",
-    r:[["blue","matter"],["fire","ice"]] },
+    r:[["blue","matter"],["fire","ice"],["ice","sun"]] },
   { id:"fire", e:"\u{1F525}", q:"Fire transforms all things it touches.",
     r:[["red","matter"],["orange","matter"],["red","air"],["orange","air"],
        ["red","wood"],["orange","wood"],["fire","air"]] },
@@ -145,7 +151,7 @@ export const ELEMENTS = ([
        "linear-gradient(108deg, #2b0e07 0 14%, transparent 14% 27%, #1f0905 27% 35%," +
        "transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%)," +
        "linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)",
-    r:[["earth","fire"],["red","stone"],["lava","stone"]] },
+    r:[["earth","fire"],["red","stone"],["orange","stone"],["lava","stone"]] },
   { id:"volcano", e:"\u{1F30B}", q:"A cannon of immense size.",
     r:[["lava","earth"]] },
   { id:"stone", e:"\u{1FAA8}", q:"Every stone holds a statue; the sculptor merely reveals it.",
@@ -172,7 +178,7 @@ export const ELEMENTS = ([
   { id:"hourglass", e:"⌛", q:"Like sands through the hourglass, so are the days of our lives.",
     r:[["glass","sand"]] },
   { id:"sun", e:"☀️", q:"Even the darkest night will end and the sun will rise.",
-    r:[["fire","sky"]] },
+    r:[["fire","sky"],["yellow","sky"]] },
   // Violet + Sky or Black + Sky, and the gradient is exactly that: the violet
   // at the top edge, falling to the Black the other route mixed in. Stars
   // unchanged.
@@ -190,7 +196,7 @@ export const ELEMENTS = ([
   { id:"moon", e:"\u{1F319}", q:"Everyone is a moon, and has a dark side which he never shows to anybody.",
     r:[["night","sun"]] },
   { id:"cloud", e:"☁️", q:"Resembles the thoughts in our mind! Both change from second to second!",
-    r:[["sky","water"],["water","air"],["grey","sky"],["fire","water"]] },
+    r:[["sky","water"],["water","air"],["grey","sky"],["white","sky"],["fire","water"]] },
   { id:"rain", e:"\u{1F327}️", q:"If you want the rainbow, you have to put up with the rain.",
     r:[["cloud","water"]] },
   { id:"lightning", e:"\u{1F329}️", q:"Never strikes twice.",
@@ -238,7 +244,7 @@ export const ELEMENTS = ([
   { id:"duck", e:"\u{1F986}", q:"If it looks like a duck and quacks like a duck, it's a duck.",
     r:[["bird","water"]] },
   { id:"fish", e:"\u{1F41F}", q:"So long, and thanks for all the fish.",
-    r:[["animal","water"]] },
+    r:[["animal","water"],["animal","blue"]] },
   { id:"owl", e:"\u{1F989}", q:"Spanish or Vanish",
     r:[["bird","night"]] },
   { id:"flamingo", e:"\u{1F9A9}", q:"Be a flamingo in a flock of pigeons.",
