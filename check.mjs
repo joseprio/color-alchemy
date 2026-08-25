@@ -126,6 +126,20 @@ check("boot: 3 starter elements", s.found.length === 3 && s.moves === 0);
 check("boot: goal line names Rainbow and Unicorn",
   await evalJs(`document.getElementById('gl').textContent.includes('Rainbow')`));
 
+// The help line is NOT in the template any more — src/css.ts appends it as a
+// text node with gl.after(), so it rides in the roadroller payload instead of
+// the zip's deflate stream (worth -17 B; the wordmark's seven spans were tried
+// the same way and cost +5, because repeated markup deflates better than the
+// code to generate it). It has no element of its own, so nothing but this
+// check would notice if it stopped being written.
+check("boot: the help line is appended into <f>, after the goal line",
+  await evalJs(`(() => {
+    const f = document.querySelector("f");
+    const t = f.textContent.replace(gl.textContent, "");
+    return t.includes("tap one to pick") && t.includes("costs a move")
+      && f.lastChild.nodeType === 3;
+  })()`));
+
 // --- title screen ---------------------------------------------------------
 check("boot: title screen shows COLOR / AlchemY, locked to one width",
   s.phase === "menu" &&

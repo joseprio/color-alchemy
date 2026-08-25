@@ -47,6 +47,10 @@ if (!html.includes("<script>")) {
 html = await minify(html, {
   collapseWhitespace: true,
   collapseInlineTagWhitespace: true,
+  decodeEntities: true,
+  sortAttributes: true,
+  collapseBooleanAttributes: true,
+  removeEmptyAttributes: true,
   removeAttributeQuotes: true,
   removeComments: true,
   removeOptionalTags: true,

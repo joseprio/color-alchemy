@@ -16,4 +16,16 @@ declare const __MARKUP__: string;
 
 st.innerHTML = __MARKUP__;
 
+// The help line rides in the PACKED PAYLOAD, not the template. It is the
+// biggest block of prose left in the markup, and the markup is deflated by the
+// zip while this is modelled by roadroller alongside the 101 quotes it already
+// carries — the same trade as the stylesheet above (galaxy-raid #18).
+// gl.after() drops a TEXT NODE exactly where the template had one — inside
+// <f>, straight after #gl — so `f` styles it as before and no wrapper element
+// (and no font-style reset for it) is needed.
+gl.after(
+  "tap one to pick, another to mix · tap the pick again to lock it — " +
+  "a locked one stays, a third tap drops it · arrows or d-pad + " +
+  "Enter/Ⓐ · Esc/Ⓑ drops · H/Ⓨ hints, costs a move");
+
 export {};

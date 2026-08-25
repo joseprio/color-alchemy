@@ -11,7 +11,7 @@ primaries.
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
-npm test                  # 145 headless checks against dist/bundle.html
+npm test                  # 146 headless checks against dist/bundle.html
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fouc-check        # is the sheet in place before the first paint?
@@ -43,6 +43,26 @@ npm run audio-bench       # what a sample costs, against the callback budget
   → **9651 bytes, 72.50% of the budget.**
   `src/style.css` is read ONCE, at config load: after editing it during
   `npm start`, restart the watcher.
+- **Only UNIQUE PROSE is worth moving into the payload.** The same trade as the
+  stylesheet above, applied to what markup was left, and the rule that came out
+  of measuring it: the zip DEFLATES the markup, roadroller MODELS the payload,
+  so text that repeats is already cheap in the HTML and text that does not is
+  cheap in the payload. The help line under the board — the biggest block of
+  unique prose in the template — moved into `src/css.ts`, appended with
+  `gl.after()` as a text node in exactly the place the template had one, for
+  **−17 B**. The wordmark's seven `<span>`s were tried the same way
+  (`"AlchemY".replace(/./g, ...)`) and cost **+5 B**: seven identical tags are a
+  handful of deflate backreferences, and the code to generate them is not.
+  Nothing but a check would notice the help line vanishing, since it has no
+  element of its own — `boot: the help line is appended into <f>` is that check.
+- **Three smaller ones, measured together (−34 B).** `decodeEntities` in the
+  html-minifier options ships `·` and `Ⓐ` as UTF-8 rather than `&middot;` and
+  `&#9398;`, 2–3 bytes where the entity was 7–8 (**−5 B**, and it takes the
+  `<f>` block from 250 bytes to 198). The two `@media (pointer: coarse)` blocks
+  became one: cssnano does not merge same-condition queries across the rules
+  that sit between them, so the query string was paid for twice (**−6 B**;
+  `npm run mobile-check` confirms the 44px tap targets survived). And `<title>`
+  is gone (**−18 B**) — the tab falls back to the filename, which is the price.
 - **The element table omits the names it can derive.** For 98 of the 101, `n`
   is just the id with a capital, so the table leaves it out and
   `src/elements.ts` fills it in; only Polar Bear, Crystal Ball and Light Bulb

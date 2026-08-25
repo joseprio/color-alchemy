@@ -54,13 +54,6 @@ body {
 /* Hover lightens the border to the tiles' #3d5584, so the whole board and the
    row above it answer a pointer the same way. */
 #ht:hover, #mn:hover, #sn:hover { border-color: #3d5584; }
-/* Touch: the HUD buttons are 23px tall, which a mouse hits and a thumb does
-   not. Only coarse pointers pay for the extra height. */
-@media (pointer: coarse) {
-  /* min-height rather than padding arithmetic: the target is 44px, not
-     whatever the font metrics happen to add up to. */
-  #ht, #mn, #sn { min-height: 44px; padding: 10px 14px; }
-}
 /* the keys that do the same thing, dimmer than the label */
 #ht i, #mn i, #sn i { font-style: normal; color: #55708e; margin-left: 6px; }
 
@@ -121,7 +114,14 @@ body {
 /* the new element arrives in the well with the pop the merge card used to own */
 #cr.P { animation: cpop .45s cubic-bezier(.2, 1.9, .4, 1); }
 @keyframes cpop { from { transform: scale(.3); } }
+/* The ONE coarse-pointer block. The HUD buttons are 23px tall, which a mouse
+   hits and a thumb does not, and the cauldron slots want a thumb's width too.
+   Kept together rather than beside the rules they override: cssnano does not
+   merge same-condition @media across the rules sitting between them, so two
+   blocks pay for the query string twice. min-height rather than padding
+   arithmetic — the target is 44px, not whatever the font metrics add up to. */
 @media (pointer: coarse) {
+  #ht, #mn, #sn { min-height: 44px; padding: 10px 14px; }
   :root { --dock: 126px; }
   .l { width: 76px; height: 76px; }
   .W { width: 88px; height: 88px; }
