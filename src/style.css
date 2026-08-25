@@ -149,7 +149,7 @@ body {
    picking a hinted tile must still read as picked, and a repeat combination's
    .h pulse still wins while it plays. Violet is neither pick colour, so the
    glow and the picks never say the same thing. */
-.t.g { border-color: #9a4dff; box-shadow: 0 0 14px #9a4dff66; }
+.t.g { border-color: #9a4dff; box-shadow: 0 0 14px #9a4dff66; }   /* the resting state; it breathes below */
 .t.e { border-color: #ffd75e; background: #1a1a10cc; transform: scale(1.06); box-shadow: 0 0 14px #ffd75e33; }
 /* the second element, marked on the board while it sits in the cauldron's
    second slot — cyan, to match that slot, so it never reads as the gold lock */
@@ -169,6 +169,15 @@ body {
   30%, 50%, 70% { transform: translateX(-7px); }
   40%, 60% { transform: translateX(7px); }
 }
+/* The standing hint BREATHES. This has to sit after .t.z — every tile gets .z
+   when its arrival pop ends, and .t.z { animation: none } would otherwise stop
+   this before it started — and before .t.h, so a known-pair pulse still wins
+   for the half second it plays. Only the 50% frame is written: 0% and 100% are
+   taken from .t.g's own box-shadow above, so the glow swells and settles back
+   to exactly its resting value with nothing to keep in sync. 2.6s because a
+   hint can stand for a long time and this must never become nagging. */
+.t.g { animation: breathe 2.6s ease-in-out infinite; }
+@keyframes breathe { 50% { box-shadow: 0 0 22px 3px #9a4dff88; } }
 /* a combination you already know: the element it makes pulses, so the toast
    is not the only thing pointing at it */
 .t.h { border-color: #33e9e9; animation: pulse .5s ease-out; }
@@ -304,6 +313,10 @@ f {
 @media (prefers-reduced-motion: reduce) {
   #ds .a, #ds .b, #ds .k, #ds .f { display: none; }
   #ds .r, #ds .c { animation: none; opacity: 1; transform: none; filter: none; }
+  /* the hint keeps its glow and just stops breathing: .t.g's own box-shadow is
+     the resting state the animation departs from, so switching the animation
+     off leaves exactly the steady glow, not an unmarked tile */
+  .t.g { animation: none; }
 }
 
 .v {

@@ -595,6 +595,18 @@ check("hint: the HUD button repeats it too, still free",
 // gone in seconds and the answer has to stay readable until it is used, so
 // this clears the toast and looks again rather than trusting the same frame.
 await clearToast();
+// The glow BREATHES, and that is a cascade trap worth a check of its own:
+// every tile carries .z once its arrival pop has ended, and .t.z sets
+// animation: none. The breathe rule has to sit after it or the hint would
+// simply not move, with nothing else to show for it. These tiles have long
+// since settled, so this asserts against a real .z, not a fresh tile.
+check("hint: the glowing tiles breathe, and .z does not switch it off",
+  await evalJs(`(() => {
+    const lit = [...document.querySelectorAll('.t.g')];
+    return lit.length === 2 && lit.every(t => t.classList.contains('z')
+      && getComputedStyle(t).animationName !== 'none'
+      && getComputedStyle(t).animationIterationCount === 'infinite');
+  })()`));
 check("hint: the glow outlives the toast that announced it",
   await evalJs(`[...document.querySelectorAll('.t.g')].map(t => t.dataset.id).sort().join()`)
     === [...standing].sort().join());
