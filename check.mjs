@@ -672,8 +672,12 @@ const EXTRA = order(rest(COVER_SET), [], COVER_SET);
 const LEAN_SET = union(...GOALS);
 const PERFECT_QUEST = order(LEAN_SET, GOALS);
 const PERFECT_EXTRA = order(rest(LEAN_SET), [], LEAN_SET);
-/* Sun + Rain reaches a Rainbow with no Prism anywhere near it. */
-const RAINBOW_ONLY = order(closure("rainbow"), ["rainbow"]);
+/* Sun + Rain reaches a Rainbow with no Prism anywhere near it. Built from the
+   two ingredients rather than from closure("rainbow"): now that White cuts a
+   Glass into a Prism, the CHEAPEST rainbow runs through the Prism, and a set
+   derived from the closure would carry one onto the board. This one names the
+   route it is about. */
+const RAINBOW_ONLY = order(new Set(["rainbow", ...union("sun", "rain")]), ["rainbow"]);
 const run = async (pairs) => {
   for (const [a, b] of pairs) {
     await attempt(a, b);
@@ -811,14 +815,14 @@ check("alt: the intuitive pairs resolve too",
 check("alt: a Volcano has the same Diamond in it as the Lava it pours",
   RECIPE['charcoal+lava'] === "diamond" &&
   RECIPE['charcoal+volcano'] === "diamond");
-// Glass takes an edge from a Diamond or from a Tool. Unlike the Tool's other
-// recipes this one is a genuine SHORTCUT, not a tie: it puts a Prism within
-// reach at depth 10 where the Diamond route needs 16. Both still resolve, and
-// White through Glass is still not a way in.
-check("alt: a Diamond or a Tool cuts Glass into a Prism, and nothing else does",
+// Glass takes an edge from a Diamond, from a Tool, or from plain White light.
+// The Tool used to be the shortcut here — 15 against the Diamond's 19 — but
+// White is now the cheap way in at 10, which is the colour rule the rest of
+// the table follows too. All three still resolve.
+check("alt: a Diamond, a Tool or White light cuts Glass into a Prism",
   RECIPE['diamond+glass'] === "prism" &&
   RECIPE['glass+tool'] === "prism" &&
-  RECIPE['glass+white'] === undefined);
+  RECIPE['glass+white'] === "prism");
 // Sand fuses three ways, and the two new ones are fulgurite: a strike, or the
 // current behind it, does what the fire does. Both land far later than Sand +
 // Fire (10 and 11 deep against 6), so they are flavour, never a shortcut.
@@ -835,14 +839,45 @@ check("alt: Lava sets into Stone against Water, Rain or Air",
   RECIPE['air+lava'] === "stone");
 check("alt: Lava + Stone melts back into Lava, a cyclic pair that costs a move",
   RECIPE['lava+stone'] === "lava");
-// The Tool is the other half of three recipes, and none of them is a shortcut:
-// Charcoal + Tool ties Charcoal + Stone exactly (both 15 deep), and Stone + Tool
-// is 10 against a Sand that is already reachable at 5.
+// The Tool is the other half of four recipes and, since the colours arrived,
+// the cheap way to none of them: the Wood is 14 through Brown against the
+// Tool's 18, the Sand 6 through Yellow against 13, the Black 15 through Earth
+// against 19, the Prism 10 through White against 15. The Tool is flavour now.
 check("alt: a Tool cuts Wood, grinds Stone into Sand, and works Charcoal into Black",
   RECIPE['tool+tree'] === "wood" &&
   RECIPE['stone+tool'] === "sand" &&
   RECIPE['charcoal+tool'] === "black" &&
   RECIPE['charcoal+stone'] === "black");
+// The COLOUR SHORTCUTS. A plain colour is within three moves of the starters,
+// so laying one on a thing is the cheapest route the table has, and these are
+// the ones that MOVE a depth rather than tie it: Sand 6 against 8, Field 6
+// against 12, Lightning 7 against 16, Polar Bear 13 against 22, Fox 12
+// against 21. Grey + Matter is the deliberate exception, a Stone at 17 where
+// Lava + Water is 9 — flavour for a pair players try, not a way in.
+check("alt: a plain colour is the short way in, on Earth, Cloud, Animal and Glass",
+  RECIPE['earth+yellow'] === "sand" &&
+  RECIPE['earth+green'] === "field" &&
+  RECIPE['cloud+yellow'] === "lightning" &&
+  RECIPE['cloud+orange'] === "lightning" &&
+  RECIPE['animal+white'] === "polarbear" &&
+  RECIPE['animal+green'] === "lizard" &&
+  RECIPE['animal+yellow'] === "bee" &&
+  RECIPE['animal+orange'] === "fox" &&
+  RECIPE['grey+matter'] === "stone");
+// Sun + Water was one of the Cloud's five; it is Life's second route now, and
+// the Cloud keeps the other four, every one of them still water meeting
+// warmth or height.
+check("alt: Sun on Water is Life, and the Cloud still has four ways without it",
+  RECIPE['sun+water'] === "life" &&
+  RECIPE['lightning+water'] === "life" &&
+  RECIPE['fire+water'] === "cloud" &&
+  RECIPE['sky+water'] === "cloud");
+// Wood burns as a Charcoal against Fire, but a warm COLOUR lights it instead —
+// the same two colours that light Matter and Air.
+check("alt: Red or Orange sets standing Wood alight",
+  RECIPE['red+wood'] === "fire" &&
+  RECIPE['orange+wood'] === "fire" &&
+  RECIPE['fire+wood'] === "charcoal");
 check("alt: Prism + Sun is also a Rainbow",
   RECIPE['prism+sun'] === "rainbow");
 check("alt: a Light Bulb through a Prism is a Rainbow too",
