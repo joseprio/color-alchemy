@@ -548,14 +548,16 @@ const hintedPair = () => evalJs(`(() => {
     .find(t => t.querySelector('.n').textContent === n) || { dataset: {} }).dataset.id;
   return JSON.stringify(m ? [id(m[1]), id(m[2])] : null);
 })()`).then(JSON.parse);
-// the two tiles the toast names are the two that pulse (one round trip: the
-// pulse is a .5s animation that clears itself)
-const hintPulsesItsPair = () => evalJs(`(() => {
+// The two tiles the toast names are the two that GLOW. Not a pulse any more:
+// .t.g is a steady state derived from the standing hint, so unlike the old .h
+// animation it is still there on the next round trip, and these helpers do not
+// have to race a .5s window to observe it.
+const hintGlowsItsPair = () => evalJs(`(() => {
   const m = document.getElementById('to').textContent.match(/^Hint: try (.+) [+] (.+) —/);
   if (!m) return false;
   const id = n => ([...document.querySelectorAll('.t')]
     .find(t => t.querySelector('.n').textContent === n) || { dataset: {} }).dataset.id;
-  const lit = [...document.querySelectorAll('.t.h')].map(t => t.dataset.id).sort();
+  const lit = [...document.querySelectorAll('.t.g')].map(t => t.dataset.id).sort();
   return JSON.stringify(lit) === JSON.stringify([id(m[1]), id(m[2])].sort());
 })()`);
 
@@ -566,7 +568,7 @@ await key("h");
 s = await state();
 check("hint: H names a pair within reach and costs a move",
   s.moves === m0 + 1 && await hintNamesAUsefulPair());
-check("hint: the pair it names is the pair that pulses", await hintPulsesItsPair());
+check("hint: the pair it names is the pair that glows", await hintGlowsItsPair());
 const standing = await hintedPair();
 m0 = s.moves;
 await key("h", { repeat: true });
@@ -577,7 +579,7 @@ await evalJs("__pad.buttons[3].pressed = true");    // Ⓨ, without having made 
 await sleep(120);
 await evalJs("__pad.buttons[3].pressed = false");
 await sleep(80);
-const repeatPulses = await hintPulsesItsPair();
+const repeatPulses = await hintGlowsItsPair();
 s = await state();
 check("hint: Y repeats the standing hint, and charges nothing",
   s.moves === m0 &&
@@ -589,9 +591,20 @@ await evalJs(`document.getElementById('ht').click()`);
 s = await state();
 check("hint: the HUD button repeats it too, still free",
   s.moves === m0 && JSON.stringify(await hintedPair()) === JSON.stringify(standing));
+// The glow OUTLIVES the toast. That is the whole point of it — the toast is
+// gone in seconds and the answer has to stay readable until it is used, so
+// this clears the toast and looks again rather than trusting the same frame.
+await clearToast();
+check("hint: the glow outlives the toast that announced it",
+  await evalJs(`[...document.querySelectorAll('.t.g')].map(t => t.dataset.id).sort().join()`)
+    === [...standing].sort().join());
 // make it, and the hint retires: the next one is a different pair, at full price
 await attempt(standing[0], standing[1]);
 await release();
+// and the glow goes out with it, without anything having cleared it: the class
+// is derived from standingHint(), which reads the found set
+check("hint: making the pair puts the glow out",
+  (await evalJs(`document.querySelectorAll('.t.g').length`)) === 0);
 m0 = (await state()).moves;
 await clearToast();
 await key("h");

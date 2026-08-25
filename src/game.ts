@@ -168,7 +168,7 @@ function addTile(id: string): void {
   // a reaction class clears itself; the arrival pop ends here too, and marks
   // the tile settled so no later class change replays it
   d["onanimationend"] = () => {
-    d.classList.remove("x", "h");
+    d.classList.remove("h");
     d.classList.add("z");
   };
   d["onpointerdown"] = e => startPress(e, i);
@@ -179,20 +179,24 @@ function addTile(id: string): void {
   tiles.push(d);
   gd.appendChild(d);
 }
-// One-shot tile reactions: "bad" shakes the pair that produced nothing, "hit"
-// pulses the element a known combination just remade. Dropping both classes
-// and forcing a reflow re-arms the CSS animation, so repeating the same combo
-// reacts every time instead of only the first — and the two never overlap.
-function flash(cls: "x" | "h", ...ids: string[]): void {
+// The one-shot tile reaction, and now the only one: the element a known
+// combination just remade pulses, so the toast is not the only thing pointing
+// at it. Dropping the class and forcing a reflow re-arms the CSS animation, so
+// repeating the same combo reacts every time instead of only the first.
+// A pair that makes NOTHING shakes the CAULDRON rather than the two tiles
+// (#cd.x), so "x" has not reached a tile for some time — it was still being
+// passed and still being cleared here, and both are gone with the parameter.
+function flash(...ids: string[]): void {
   for (const id of ids) {
     const t = tiles[order.indexOf(id)];
     if (!t) continue;
-    t.classList.remove("x", "h");
+    t.classList.remove("h");
     reflow(t);
-    t.classList.add(cls);
+    t.classList.add("h");
   }
 }
 function renderFocus(): void {
+  const h = standingHint();
   tiles.map((t, i) => {
     // one element wears one of the two: gold for a locked pick, cyan for a
     // loose one. Nothing else on the board is marked — a mix leaves the pair
@@ -200,6 +204,9 @@ function renderFocus(): void {
     t.classList.toggle("e", i === sel && held);
     t.classList.toggle("E", i === sel && !held);
     t.classList.toggle("u", padMode && i === cursor);
+    // both halves of an unspent hint glow, and stop glowing the moment
+    // standingHint() goes null — which is why nothing has to clear it
+    t.classList.toggle("g", !!h && h.includes(order[i]));
   });
 }
 function gridCols(): number {
@@ -493,7 +500,7 @@ export function attempt(aId: string, bId: string): void {
     sweep(2200);
   } else if (res) {
     cq.innerHTML = "<b>" + N(res) + "</b> <i>&mdash; already discovered</i>";
-    flash("h", res); // point at the element you already own
+    flash(res); // point at the element you already own
     SFX.dupe();
     sweep(1500);
   } else {
@@ -529,22 +536,33 @@ export function attempt(aId: string, bId: string): void {
 // discovering it the long way, or through an alternate recipe, retires the
 // hint just as well. Not persisted — a reload simply forgets it, which only
 // ever costs the player, never the other way round.
-let lastHint: [string, string] | null = null;
-function showHint([a, b]: [string, string], tail: string): void {
+// [a, b, what it makes]. The result rides along because hint() is holding the
+// element it picked the pair off — re-deriving it through RECIPE[rkey(a, b)] on
+// every render was the same answer at a price.
+let lastHint: [string, string, string] | null = null;
+// The hint still standing, or null once its result exists. DERIVED on every
+// read rather than cleared on discovery, so a pair reached the long way — or
+// through an alternate recipe — retires the glow exactly as it retires the
+// hint, with no second piece of state that could disagree with this one.
+function standingHint() {
+  return lastHint && !found.has(lastHint[2]) ? lastHint : null;
+}
+function showHint([a, b]: [string, string, string], tail: string): void {
   toast("Hint: try " + N(a) + " + " + N(b) + tail);
-  flash("h", a, b); // the same pulse a known combination gets: look here
+  renderFocus();    // the pair lights and STAYS lit; see .t.g in style.css
   SFX.hint();
 }
 export function hint(): void {
   if (phase() !== "play") return;
-  if (lastHint && !found.has(RECIPE[rkey(lastHint[0], lastHint[1])])) {
-    showHint(lastHint, " — already paid for");
+  const std = standingHint();
+  if (std) {
+    showHint(std, " — already paid for");
     return;
   }
-  const picks: [string, string][] = [];
+  const picks: [string, string, string][] = [];
   for (const el of ELEMENTS) {
     if (found.has(el.id)) continue;
-    for (const p of el.r || []) if (found.has(p[0]) && found.has(p[1])) picks.push(p);
+    for (const p of el.r || []) if (found.has(p[0]) && found.has(p[1])) picks.push([p[0], p[1], el.id]);
   }
   // Nothing within reach is free — no move, no score. Defensive: running out of
   // productive pairs means the board is complete, which opens the completion
