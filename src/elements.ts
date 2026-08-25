@@ -24,9 +24,9 @@
 // thirteen sits within three moves of the starters — so a colour laid on a
 // thing is the shortcut wherever the table offers one, and that is the
 // through-line of most of the alternates: Yellow on Earth is Sand in 6 against
-// the Air route's 8, Green on Earth a Field in 6 against 11, White on Glass a
-// Prism in 10 against 14, Yellow on a Cloud is Lightning in 8 against 17,
-// White on an Animal a Polar Bear in 14 against 23. The one that runs the
+// the Air route's 8, Green on Earth a Field in 6 against 12, White on Glass a
+// Prism in 10 against 14, Yellow on a Cloud is Lightning in 7 against 14,
+// White on an Animal a Polar Bear in 13 against 21. The one that runs the
 // other way is deliberate flavour: Grey + Matter is Stone in 16, where
 // Lava + Water needs 9.
 // COLOURS COME IN PAIRS, and the table mirrors them wherever the idea is the
@@ -38,7 +38,7 @@
 // Stone into Sand, it works a Charcoal into Black, and it cuts a Glass into a
 // Prism — and since the colours arrived NONE of the four is the cheap way any
 // more: the Prism it used to shortcut to in 14 is 10 through White, the Sand
-// 6 through Yellow, the Wood 13 through Brown, the Black 15 through Earth.
+// 6 through Yellow, the Wood 12 through Brown, the Black 14 through Earth.
 // The Tool is flavour end to end now; price it that way.)
 // MATTER IS THE THROAT OF THE WHOLE TREE, and that is deliberate rather than
 // accidental — worth knowing before anything is rewired around it. It is made

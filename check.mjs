@@ -816,7 +816,7 @@ check("alt: a Volcano has the same Diamond in it as the Lava it pours",
   RECIPE['charcoal+lava'] === "diamond" &&
   RECIPE['charcoal+volcano'] === "diamond");
 // Glass takes an edge from a Diamond, from a Tool, or from plain White light.
-// The Tool used to be the shortcut here — 15 against the Diamond's 19 — but
+// The Tool used to be the shortcut here — 14 against the Diamond's 18 — but
 // White is now the cheap way in at 10, which is the colour rule the rest of
 // the table follows too. All three still resolve.
 check("alt: a Diamond, a Tool or White light cuts Glass into a Prism",
@@ -840,9 +840,9 @@ check("alt: Lava sets into Stone against Water, Rain or Air",
 check("alt: Lava + Stone melts back into Lava, a cyclic pair that costs a move",
   RECIPE['lava+stone'] === "lava");
 // The Tool is the other half of four recipes and, since the colours arrived,
-// the cheap way to none of them: the Wood is 14 through Brown against the
-// Tool's 18, the Sand 6 through Yellow against 13, the Black 15 through Earth
-// against 19, the Prism 10 through White against 15. The Tool is flavour now.
+// the cheap way to none of them: the Wood is 12 through Brown against the
+// Tool's 17, the Sand 6 through Yellow against 12, the Black 14 through Earth
+// against 18, the Prism 10 through White against 14. The Tool is flavour now.
 check("alt: a Tool cuts Wood, grinds Stone into Sand, and works Charcoal into Black",
   RECIPE['tool+tree'] === "wood" &&
   RECIPE['stone+tool'] === "sand" &&
@@ -851,9 +851,11 @@ check("alt: a Tool cuts Wood, grinds Stone into Sand, and works Charcoal into Bl
 // The COLOUR SHORTCUTS. A plain colour is within three moves of the starters,
 // so laying one on a thing is the cheapest route the table has, and these are
 // the ones that MOVE a depth rather than tie it: Sand 6 against 8, Field 6
-// against 12, Lightning 7 against 16, Polar Bear 13 against 22, Fox 12
-// against 21. Grey + Matter is the deliberate exception, a Stone at 17 where
+// against 12, Lightning 7 against 14, Polar Bear 13 against 21, Fox 12
+// against 21. Grey + Matter is the deliberate exception, a Stone at 16 where
 // Lava + Water is 9 — flavour for a pair players try, not a way in.
+// Depths here are TRUE minima, relaxed to a fixpoint — not what closure()
+// below reports, which is order-sensitive around the cyclic pairs.
 check("alt: a plain colour is the short way in, on Earth, Cloud, Animal and Glass",
   RECIPE['earth+yellow'] === "sand" &&
   RECIPE['earth+green'] === "field" &&
