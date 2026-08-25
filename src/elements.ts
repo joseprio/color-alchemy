@@ -10,10 +10,12 @@
 // (Bone has eleven routes — a four-legged creature and fire, or a predator and
 // what it caught; fire does not reduce the fish or the bee at all, and a Bird
 // answers it with a Phoenix; the Cloud has five, and every one of them is water
-// meeting warmth or height; Ash and Rainbow have four; Chick, Fire, Glass,
-// Plant, Sand, Stone and White three; Bird, Black, Charcoal, Diamond, Dog,
-// Lava, Lizard, Magic, Matter, Night, Phoenix, Prism, Sky, Storm, Sunflower,
-// Unicorn and Water two each — the Unicorn takes its Magic from a Horse or from a plain
+// meeting warmth or height; the Fire has five too — Matter or Air, taken with
+// either of the two warm colours, plus a fire fanned by more Air; Ash and
+// Rainbow have four; Chick, Glass, Ice, Plant, Polar Bear, Sand, Stone and
+// White three; Bird, Black, Charcoal, Diamond, Dog, Lava, Lizard, Magic,
+// Matter, Night, Phoenix, Prism, Sky, Storm, Sunflower, Unicorn and Water two
+// each — the Unicorn takes its Magic from a Horse or from a plain
 // Animal, a Diamond comes out of a Lava or the Volcano it came from, and the
 // Night falls out of a Violet sky as readily as a Black one.
 // A TOOL is the other half of four of those: it cuts the Wood, it grinds a
@@ -105,7 +107,7 @@ export const ELEMENTS = ([
   { id:"water", e:"\u{1F4A7}", q:"Be like water, my friend.",
     r:[["blue","matter"],["fire","ice"]] },
   { id:"fire", e:"\u{1F525}", q:"Fire transforms all things it touches.",
-    r:[["red","air"],["orange","air"],["fire","air"]] },
+    r:[["red","matter"],["orange","matter"],["red","air"],["orange","air"],["fire","air"]] },
   { id:"earth", c:"#a4713f", q:"Keep your feet on the ground and keep reaching for the stars.",
     bg:"radial-gradient(circle at 30% 35%, #7a4a26cc 0 5%, transparent 9%)," +
        "radial-gradient(circle at 62% 60%, #5c3a1e 0 4%, transparent 8%)," +
@@ -239,7 +241,7 @@ export const ELEMENTS = ([
   { id:"bear", e:"\u{1F43B}", q:"Sometimes you eat the bear, and sometimes the bear eats you.",
     r:[["animal","honey"]] },
   { id:"polarbear",n:"Polar Bear", e:"\u{1F43B}\u{200D}\u{2744}\u{FE0F}", q:"The undisputed king of the ice.",
-    r:[["bear","ice"]] },
+    r:[["bear","ice"],["bear","snow"],["bear","white"]] },
   { id:"acid", e:"\u{1F9EA}", q:"Water that bites.",
     r:[["green","water"]] },
   { id:"electricity", e:"⚡", q:"So subtle and powerful that it seems to be the very soul of the universe.",
@@ -247,7 +249,7 @@ export const ELEMENTS = ([
   { id:"lightbulb", n:"Light Bulb", e:"\u{1F4A1}", q:"I have not failed. I've just found 10,000 ways that won't work.",
     r:[["electricity","glass"]] },
   { id:"ice", e:"\u{1F9CA}", q:"Let it go!",
-    r:[["water","night"]] },
+    r:[["cyan","water"],["white","water"],["water","night"]] },
   { id:"snow", e:"\u{1F328}️", q:"Winter is coming.",
     r:[["cloud","ice"]] },
   // the one icon that has to show a mechanism: white light in, spectrum out

@@ -896,9 +896,6 @@ await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textConte
 check("encyclopedia: knowledge persists across runs",
   await evalJs(`document.getElementById('ml').textContent.includes('Unicorn')`) &&
   await evalJs(`document.getElementById('ml').textContent.includes('Glass')`));
-check("encyclopedia: an element lists every route actually performed",
-  await evalJs(`document.getElementById('ml').textContent.includes('Sky + Water')`) &&
-  await evalJs(`document.getElementById('ml').textContent.includes('Water + Air')`));
 
 // --- Unlock all / Reset everything (development builds only) --------------
 // both are destructive, so both take two presses; the second must land within
@@ -972,6 +969,39 @@ await click("yellow");            // the SAME dead end again
 await sleep(500);
 const shake2 = await evalJs(`window.__anim.length`);
 check("animation: a second dead end in a row shakes again", shake2 === shake1 + 1);
+
+// --- the Encyclopedia lists EVERY route performed -------------------------
+// The codex records a recipe when it is USED, so what a row can list depends on
+// which pairs the runs took. The solve paths are derived from a minimum closure
+// now, so every run picks the SAME cheapest route per element and no element is
+// ever reached two ways — which quietly left this feature uncovered once the
+// hand-written paths went. So build the case on purpose: White has three routes
+// and all three are two moves deep, which makes it the cheapest place to prove
+// a row lists more than one.
+await reset();
+await attempt("red", "green");     // Yellow
+await release();
+await attempt("green", "blue");    // Cyan
+await release();
+await attempt("red", "blue");      // Magenta
+await release();
+await attempt("blue", "yellow");   // White, route 1
+await release();
+await attempt("red", "cyan");      // White again, route 2
+await release();
+await attempt("green", "magenta"); // White again, route 3
+await release();
+await key("Escape");
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Encyclopedia').click()`);
+const whiteRoutes = await evalJs(`(() => {
+  const rows = [...document.getElementById('ml').children];
+  const r = rows.find(x => x.textContent.startsWith("White"));
+  return r ? r.querySelector('.X').textContent : '';
+})()`);
+check(`encyclopedia: a row lists every route performed — White: ${whiteRoutes}`,
+  whiteRoutes.split("·").length === 3 &&
+  whiteRoutes.includes("Blue + Yellow") && whiteRoutes.includes("Red + Cyan") &&
+  whiteRoutes.includes("Green + Magenta"));
 
 check("no uncaught exceptions", t.exceptions.length === 0);
 if (t.exceptions.length) console.log(t.exceptions.join("\n"));

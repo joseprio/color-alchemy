@@ -711,7 +711,7 @@ pairs - Violet + Yellow, Orange + Blue.
 | Sky | Air + Blue · Air + Cyan |
 | Gold | Yellow + Orange |
 | Water | Blue + Matter · Fire + Ice |
-| Fire | Red + Air · Orange + Air · Fire + Air |
+| Fire | Red + Matter · Orange + Matter · Red + Air · Orange + Air · Fire + Air |
 | Earth | Brown + Matter |
 | Clay | Earth + Water |
 | Pottery | Clay + Fire |
@@ -761,11 +761,11 @@ pairs - Violet + Yellow, Orange + Blue.
 | Bee | Animal + Flower |
 | Honey | Bee + Flower |
 | Bear | Animal + Honey |
-| Polar Bear | Bear + Ice |
+| Polar Bear | Bear + Ice · Bear + Snow · Bear + White |
 | Acid | Green + Water |
 | Electricity | Acid + Metal |
 | Light Bulb | Electricity + Glass |
-| Ice | Water + Night |
+| Ice | Cyan + Water · White + Water · Water + Night |
 | Snow | Cloud + Ice |
 | Prism | Diamond + Glass · Glass + Tool |
 | Rainbow | White + Prism · Sun + Rain · Prism + Sun · Light Bulb + Prism |
