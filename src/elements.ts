@@ -14,12 +14,13 @@
 // plus a fire fanned by more Air; the Cloud has five, and every one of them is
 // still water meeting warmth or height; Ash, Black, Lava, Polar Bear, Rainbow,
 // Sand and Stone have four; Charcoal, Chick, Clay, Glass, Ice, Lightning,
-// Lizard, Plant, Prism, Water and White three; Bee, Bird, Cactus, Cheese,
-// Diamond, Dog, Field, Fish, Fox, Gold, Life, Magic, Matter, Mirror, Night,
-// Paper, Penguin, Phoenix, Rose, Sky, Snow, Star, Storm, Sun, Sunflower,
-// Unicorn and Wood two each — the Unicorn takes its Magic from a Horse or from
-// a plain Animal, a Diamond comes out of a Lava or the Volcano it came from,
-// and the Night falls out of a Violet sky as readily as a Black one.
+// Lizard, Magic, Plant, Prism, Water and White three; Bee, Bird, Cactus,
+// Cheese, Crystal Ball, Diamond, Dog, Field, Fish, Fox, Gold, Life, Matter,
+// Mirror, Night, Paper, Penguin, Phoenix, Rose, Sky, Snow, Star, Storm, Sun,
+// Sunflower, Unicorn and Wood two each — the Unicorn takes its Magic from a
+// Horse or from a plain Animal, a Diamond comes out of a Lava or the Volcano
+// it came from, and the Night falls out of a Violet sky as readily as a Black
+// one.
 // A PLAIN COLOUR IS THE CHEAPEST SECOND INGREDIENT there is — every one of the
 // thirteen sits within three moves of the starters — so a colour laid on a
 // thing is the shortcut wherever the table offers one, and that is the
@@ -56,6 +57,19 @@
 // another Dog, Fire + Air is a fanned fire and nothing more, Lizard + Egg
 // hatches another Lizard, and Lava + Stone just melts the Stone back into
 // more Lava — it is flavor for a pair players try, never a cheaper route.
+// MAGIC AND THE CRYSTAL BALL ARE MUTUALLY CYCLIC, which is a different thing
+// from the self-loops above: Magic + Glass makes the Ball, and the Ball + a
+// Rainbow makes Magic. Two elements, each on a path back to the other, and
+// neither pair is a self-loop. It resolves because BOTH ends keep a route
+// that does not run through the other — Magic from Wood + Star and from
+// Pumpkin + Night, the Ball from Violet + Glass — and only ONE of those three
+// has to survive for the cycle to stay solvable. Measured: drop Violet +
+// Glass alone and everything still resolves; drop both of Magic's other two
+// and everything still resolves; drop ALL THREE and Magic, the Crystal Ball
+// and the Unicorn downstream of them all go unreachable together, because
+// each end would then be reachable only from the other and the solver drops
+// the loop rather than entering it. That is the invariant to preserve if this
+// corner is ever rewired: one independent way in, somewhere in the pair.
 // n is OPTIONAL in the table below: for 98 of the 101 it is just the id with a
 // capital, and writing it out again is the one field roadroller genuinely pays
 // for — a near-miss repeat of a string it has already seen costs real bits,
@@ -285,9 +299,9 @@ export const ELEMENTS = ([
     r:[["white","prism"],["sun","rain"],["prism","sun"],
        ["lightbulb","prism"]] },
   { id:"magic", e:"\u{1FA84}", q:"Any sufficiently advanced technology is indistinguishable from magic.",
-    r:[["wood","star"],["pumpkin","night"]] },
+    r:[["wood","star"],["pumpkin","night"],["rainbow","crystalball"]] },
   { id:"crystalball",n:"Crystal Ball", e:"\u{1F52E}", q:"Reply hazy, try again.",
-    r:[["magic","glass"]] },
+    r:[["magic","glass"],["violet","glass"]] },
   { id:"unicorn", e:"\u{1F984}", q:"Always be yourself. Unless you can be a unicorn, then always be a unicorn.",
     r:[["horse","magic"],["animal","magic"]] },
   { id:"plant", e:"\u{1F33F}", q:"Grow where you are planted.",

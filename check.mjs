@@ -900,6 +900,20 @@ check("alt: Sun on Ice is the same melt as Fire on Ice",
 check("alt: a Blue Animal is a Fish, the same as an Animal in Water",
   RECIPE['animal+blue'] === "fish" &&
   RECIPE['animal+water'] === "fish");
+// THE MUTUAL CYCLE. Violet is the table's magic colour, and Violet + Glass is
+// the first material it touches — it also takes the Crystal Ball from 24 down
+// to 11 and, crucially, gives it a route that does NOT pass through Magic.
+// That is what makes Rainbow + Crystal Ball safe as a third way to Magic:
+// two elements each on a path back to the other, resolving only because both
+// ends keep an independent way in. Unlike the self-loops (Fire + Air, Lava +
+// Stone) neither half of this one is a no-op, and the Crystal Ball stops
+// being the one deep element that nothing used.
+check("alt: Magic and the Crystal Ball make each other, and both stay reachable",
+  RECIPE['glass+violet'] === "crystalball" &&
+  RECIPE['glass+magic'] === "crystalball" &&
+  RECIPE['crystalball+rainbow'] === "magic" &&
+  RECIPE['star+wood'] === "magic" &&
+  RECIPE['night+pumpkin'] === "magic");
 check("alt: Prism + Sun is also a Rainbow",
   RECIPE['prism+sun'] === "rainbow");
 check("alt: a Light Bulb through a Prism is a Rainbow too",
