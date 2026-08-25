@@ -14,6 +14,7 @@ npm run build-dev         # the same, keeping the development-only menu tools
 npm test                  # 149 headless checks against dist/bundle.html
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
+npm run fn-order-optimize     # re-fit fn-order.json after a source change
 npm run fouc-check        # is the sheet in place before the first paint?
 npm run css-diff          # does cssnano change any computed style?
 npm run music-check       # is the shipped page actually producing audio?
@@ -43,6 +44,42 @@ npm run audio-bench       # what a sample costs, against the callback budget
   → **9651 bytes, 72.50% of the budget.**
   `src/style.css` is read ONCE, at config load: after editing it during
   `npm start`, restart the watcher.
+- **The function order is SEARCHED, not reasoned about** (galaxy-raid
+  OPTIMIZATIONS.md #134, ported here). Worth **−49 bytes** on this project:
+  13347 → 13298, from a permutation of the 54 top-level function declarations
+  in the packed chunk (13308 chars, 30% of it). A permutation cannot change the
+  chunk's length — only how well roadroller's context model predicts it.
+  The finding is that **every rule-based ordering loses.** Measured on
+  galaxy-raid against the compiler's own emission order: similarity-clustered
+  by 6-gram Jaccard **+50**, reverse **+51**, size ascending/descending
+  **+71/+78**, lexical **+81**. "Put similar functions next to each other" is
+  the pass anyone would write first and it is nearly the worst — closure emits
+  in definition order, which already groups mutual callers and shared
+  vocabulary, and a text-similarity metric breaks that up chasing token
+  overlap. Compressor locality is not text similarity.
+  So there is no rule to implement. `tools/fn-order.mjs` applies a stored
+  permutation from `fn-order.json`, the same discipline `rr-config.json` gets;
+  `npm run fn-order-optimize` hill-climbs random swap/move against the packed
+  size, A/Bs the winner on the real zip, and writes only on a strict win. Here
+  that took 2871 proposals over 900s, and the returns fall off a cliff — it was
+  −41 by proposal 362 and −69 by 2771, so **budget the long tail as insurance
+  on the win, not as a hunt for more.** The pass runs between terser and the
+  snapshot, so `dist/pre-roadroller.js` is the reordered chunk.
+  **Keyed by a hash of each function's TEXT**, never by index or name: minified
+  names are one letter and move on any edit, and an index-keyed order would
+  apply a *wrong* permutation to a changed chunk — which still parses and still
+  runs, so nothing would catch it. On a mismatch the pass no-ops and warns; a
+  stale order costs bytes, a misapplied one costs bytes and hides. Absolute
+  order also makes the pass idempotent, which is what lets the search run on an
+  already-reordered chunk.
+  The zip A/B runs the REAL `postbuild.mjs` rather than a copy of its
+  inline/minify/zip chain, so those numbers cannot drift from the build's.
+  Two costs. **The order is fitted to one exact chunk**, so any source edit
+  invalidates it, and unlike `rr-config.json` there is no keep-the-incumbent
+  fallback — a permutation of a changed function set is meaningless. And **the
+  params and the order are co-fitted**: re-search the order after source
+  changes, the params on their own schedule, each a strict-win A/B. Do not
+  chase the loop between them.
 - **Only UNIQUE PROSE is worth moving into the payload.** The same trade as the
   stylesheet above, applied to what markup was left, and the rule that came out
   of measuring it: the zip DEFLATES the markup, roadroller MODELS the payload,

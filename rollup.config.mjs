@@ -18,6 +18,7 @@ import closureCompiler from "@ampproject/rollup-plugin-closure-compiler";
 // matchModel from rr-config.json as an unknown option and quietly pack worse —
 // cannot go unnoticed.
 import { Packer } from "roadroller";
+import { reorderFunctions } from "./tools/fn-order.mjs";
 import { ESLint } from "eslint";
 import { createRequire } from "module";
 import { createHash } from "crypto";
@@ -208,6 +209,25 @@ const roadroller = {
   },
 };
 
+/* ------------------------------------------------------------- fn order */
+// A permutation of the top-level function declarations, fitted by
+// `npm run fn-order-optimize` and stored in fn-order.json. Same discipline as
+// rr-config.json: a searched artifact, applied only when it matches this exact
+// chunk, and a no-op when it does not. See tools/fn-order.mjs — the finding it
+// carries is that no RULE-based ordering wins, so there is nothing to
+// implement here beyond applying what the search found.
+//
+// Runs BEFORE snapshotChunk so dist/pre-roadroller.js is the reordered chunk:
+// that is what the search fits against, and what rr-config.json is stamped to.
+// The pass is idempotent (the stored order is absolute), so searching an
+// already-ordered chunk is sound.
+const reorderFns = {
+  name: "fn-order",
+  renderChunk(code) {
+    return reorderFunctions(code, (m) => console.log(m));
+  },
+};
+
 // roadroller's exact input, for tools/find-rr-config.mjs to fit params against.
 // Returning null leaves the chunk untouched.
 const snapshotChunk = {
@@ -283,6 +303,7 @@ export default {
           ascii_only: true,
         },
       }),
+    production && reorderFns,
     production && snapshotChunk,
     production && roadroller,
     !production &&
