@@ -1,0 +1,539 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — fireworks for the completion screens. Open it in a
+     browser; nothing to build. Click a card — or press its number — for the
+     full-size view; space replays, 1-6 switch, Q and F swap which ending is
+     mocked, C hides the notes, Esc goes back. The cards replay themselves.
+
+     WHAT THIS IS FOR. The game has two endings and neither one celebrates.
+     QUEST COMPLETE (Rainbow + Unicorn) and GRAND ALCHEMIST (all 101) both open
+     the same quiet card over the same still veil, say the move count, and wait.
+     The discovery layer — one element, seen a hundred times a run — gets a
+     fourteen-ray fracture. The ending gets nothing. These are six ways to fix
+     that, each drawn BEHIND the card that is already there.
+
+     THE BUDGET WORKS BACKWARDS HERE, AND IT IS THE FIRST THING TO ARGUE WITH.
+     Every other animation in this game is priced by repetition: the discovery
+     card plays about a hundred times in a full clear, so 300 B buys a hundred
+     moments and a long duration is a tax on all of them. An ending plays ONCE.
+     That cuts both ways and the two halves point in opposite directions:
+
+       - Duration stops mattering. Nothing here needs to be short, because
+         nobody sits through it seventy-nine times. Two full seconds is fine.
+       - Bytes matter MORE, not less. 300 B spent on the discovery card is
+         3 B a viewing; the same 300 B here is 300 B for one. The bar for
+         shipping any of these should be HIGHER than it was for the fracture,
+         not lower, and "it is only 200 bytes" is not the argument it usually is.
+
+     dist/bundle.html is 11534 B of 13312 — about 1778 B spare, the most this
+     game has had. Each card carries an honest estimate; two of the six are
+     hard to justify at any level of spare.
+
+     FIVE RULES EVERY OPTION BELOW OBEYS.
+
+       1. IT GOES BEHIND THE CARD, NEVER OVER IT. The overlay carries the move
+          count, the best line and the buttons, and those are what the player
+          actually came for. Every option here draws under .A and outside it.
+       2. THE PALETTE IS THE TITLE'S. The same seven stops as the COLOR
+          gradient, the discovery rays and the visualizer options. A firework
+          in some other colour would be the only thing in the game that is.
+       3. IT ENDS BY ITSELF, AND IT NEVER BLOCKS. No tap to dismiss, no pause
+          before the buttons work. The player can hit New game on frame one.
+       4. prefers-reduced-motion GETS A STILL — the card as it is today, or a
+          single static flourish behind it. Never a faster version. A screen of
+          flashing bursts is exactly what that setting exists to prevent.
+       5. THE TWO ENDINGS ARE NOT THE SAME SIZE. The quest is a milestone; the
+          full clear is the end of the game. Press Q and F to switch the mock:
+          an option that cannot scale between them costs twice, because it
+          either overstates the first or undersells the second.
+
+     WHAT IS NOT HERE. No audio: SFX.fanfare() and SFX.grand() already play on
+     these two screens and are not up for redesign. Nothing that touches the
+     card's own layout — if an option needs the card to move, it is out. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — completion fireworks</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    background-attachment: fixed; padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 92ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 18px; }
+  kbd {
+    background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+    padding: 0 5px; color: #7f9fc0; font: inherit; font-size: 12px;
+  }
+
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+  .card {
+    background: #080c18; border: 1px solid #223052; border-radius: 14px;
+    padding: 12px; cursor: pointer;
+  }
+  .card:hover { border-color: #33e9e9; }
+  .card h2 {
+    font-size: 12px; letter-spacing: .16em; margin: 2px 0 2px; color: #ffd75e;
+    display: flex; justify-content: space-between; gap: 8px;
+  }
+  .card h2 i { color: #55708e; font-style: normal; letter-spacing: 0; }
+  .card .thesis { color: #8fb4d8; font-size: 12px; margin: 6px 2px 0; min-height: 3.6em; }
+  .card .cost { color: #55708e; font-size: 11px; margin: 6px 2px 0; }
+  .card .cost b { color: #7dff9a; font-weight: 400; }
+
+  /* THE STAGE. Every option draws into .fx, which sits behind .A — the mock of
+     the game's own completion card, at the game's own styles. The small stage
+     scales the card down rather than restyling it, so what a card shows is the
+     real proportions and not a second design. */
+  .stage {
+    position: relative; height: 210px; border-radius: 10px; overflow: hidden;
+    background: #04060ce8; display: grid; place-items: center;
+  }
+  .stage.big { height: min(72vh, 620px); }
+  .fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .fx canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .A {
+    position: relative; z-index: 2;
+    background: #0c1122; border: 1px solid #ffd75e; border-radius: 14px;
+    padding: 26px 34px; text-align: center; max-width: min(88vw, 420px);
+    box-shadow: 0 0 50px #ffd75e22; transform: scale(.62);
+  }
+  .stage.big .A { transform: none; }
+  .A .B { font-size: 56px; line-height: 1; margin-bottom: 10px; display: flex; justify-content: center; }
+  .A .T { font-size: 11px; letter-spacing: .3em; color: #ffd75e; }
+  .A h3 { margin: 6px 0 2px; color: #fff; font-size: 22px; font-weight: 400; }
+  .A .L { margin: 6px 0 0; color: #cfe3ff; }
+  .A .L b { color: #fff; }
+  .A .S { color: #ffd75e; }
+  .A .N { color: #7dff9a; font-weight: 700; letter-spacing: .1em; }
+  .A .ob { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+  .A .ob span {
+    background: #101528; color: #cfe3ff; border: 1px solid #33436e; border-radius: 8px;
+    padding: 8px 16px;
+  }
+  .A .ob span.F { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
+
+  /* full-size view */
+  #full { display: none; position: fixed; inset: 0; z-index: 10; background: #05060f; padding: 18px 20px; overflow: auto; }
+  #full.on { display: block; }
+  #fullHead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  #fullHead b { color: #ffd75e; font-size: 13px; letter-spacing: .16em; }
+  #fullHead i { color: #55708e; font-style: normal; font-size: 12px; }
+  #notes { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  #notes.off { display: none; }
+  #notes .n { background: #080c18; border: 1px solid #223052; border-radius: 10px; padding: 10px 12px; }
+  #notes .n b { color: #ffd75e; font-size: 11px; letter-spacing: .14em; display: block; margin-bottom: 4px; }
+  #notes .n span { color: #8fb4d8; font-size: 12px; }
+
+  /* ---------------------------------------------------------- the options */
+  /* 1 RAY BURST — the discovery layer's own fourteen rays, recoloured and fired
+     from behind the card. These keyframes are the ones already in style.css
+     (#ds .k), which is the entire argument for this option. */
+  .ray {
+    position: absolute; left: 50%; top: 50%; width: 2px; height: 0;
+    transform-origin: 50% 0; background: linear-gradient(180deg, #fff, var(--c) 40%, transparent);
+    animation: rayGo .72s cubic-bezier(.1, .85, .3, 1) forwards;
+  }
+  @keyframes rayGo { from { height: 0; opacity: 1; } 55% { opacity: 1; } to { height: 60vmin; opacity: 0; } }
+
+  /* 2 SHELLS — a rising dot, then twelve sparks on a two-stage ease: out fast,
+     then falling. --a is the spark's angle, --d how far it throws. */
+  .shell { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--c);
+    box-shadow: 0 0 8px var(--c); animation: rise var(--rt, .62s) cubic-bezier(.2, .7, .5, 1) forwards; }
+  @keyframes rise { from { transform: translateY(0); opacity: 1; } 85% { opacity: 1; } to { transform: translateY(var(--ry)); opacity: 0; } }
+  .spark {
+    position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--c);
+    box-shadow: 0 0 6px var(--c); opacity: 0;
+    animation: burst 1.15s cubic-bezier(.12, .62, .28, 1) forwards;
+  }
+  /* the fall is a second translate on the SAME transform list, so the browser
+     interpolates the components and not a decomposed matrix */
+  @keyframes burst {
+    from { transform: translate(0, 0) scale(1); opacity: 1; }
+    70% { opacity: 1; }
+    to { transform: translate(calc(cos(var(--a)) * var(--d)), calc(sin(var(--a)) * var(--d) + 42px)) scale(.4); opacity: 0; }
+  }
+
+  /* 4 YOUR OWN ELEMENTS — the swatches drift down past the card. */
+  .swatch {
+    position: absolute; width: 22px; height: 22px; border-radius: 5px; top: -30px;
+    background: var(--c); box-shadow: 0 0 10px var(--c);
+    animation: fall var(--fd) linear forwards;
+  }
+  @keyframes fall {
+    from { transform: translateY(0) rotate(0); opacity: 0; }
+    8% { opacity: 1; }
+    88% { opacity: 1; }
+    to { transform: translateY(115%) rotate(var(--fr)); opacity: 0; }
+  }
+
+  /* 5 FOUNTAIN — two low jets behind the card, looping, never finishing. */
+  .jet {
+    position: absolute; bottom: -6px; width: 3px; height: 3px; border-radius: 50%;
+    background: var(--c); box-shadow: 0 0 7px var(--c);
+    animation: jetGo var(--jt) ease-out infinite; animation-delay: var(--jd);
+  }
+  @keyframes jetGo {
+    from { transform: translate(0, 0) scale(1); opacity: 0; }
+    10% { opacity: 1; }
+    to { transform: translate(var(--jx), var(--jy)) scale(.3); opacity: 0; }
+  }
+
+  /* 6 CHROMATIC RINGS — no particles at all: three rings in the title gradient
+     opening out from behind the card. */
+  .ring {
+    position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px;
+    border-radius: 50%; border: 2px solid transparent;
+    background: conic-gradient(#ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff, #ff3b30) border-box;
+    -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: ringGo 1.6s cubic-bezier(.16, .74, .3, 1) forwards; animation-delay: var(--rd);
+  }
+  @keyframes ringGo {
+    from { transform: scale(.2) rotate(0); opacity: 0; }
+    12% { opacity: .95; }
+    to { transform: scale(var(--rs)) rotate(140deg); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* the page itself keeps animating — judging a still against a still is not
+       the comparison anyone came here to make — but it says so */
+    .warn { display: block !important; }
+  }
+  .warn { display: none; color: #ff9aa8; margin: 8px 0 0; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>COMPLETION FIREWORKS</h1>
+<p class="lede">Six ways to make the two endings feel like endings. Every option draws <b>behind</b> the
+card the game already shows, in the title's own seven colours, and clears itself. The cost line on each
+card is what it would add to <b>dist/bundle.html</b>, compressed &mdash; and an ending plays <b>once a
+run</b>, so those bytes buy one viewing, not a hundred.</p>
+<p class="keys">
+  <kbd>1</kbd>&ndash;<kbd>6</kbd> open &middot; <kbd>space</kbd> replay &middot;
+  <kbd>Q</kbd> quest ending &middot; <kbd>F</kbd> full clear &middot;
+  <kbd>C</kbd> notes &middot; <kbd>Esc</kbd> back
+</p>
+<p class="warn">Your system asks for reduced motion. This page still animates on purpose — but read every
+option's REDUCED MOTION note, because that still is what you would actually be shipping to yourself.</p>
+
+<div id="grid"></div>
+
+<div id="full">
+  <div id="fullHead"><b id="fullName"></b><i id="fullOf"></i></div>
+  <div id="fullWrap"></div>
+  <div id="notes"></div>
+</div>
+
+<script>
+/* The title's gradient, and the game's own two endings. */
+const RAINBOW = ["#ff3b30", "#ff9430", "#ffdc32", "#34d158", "#33e9e9", "#2f6bff", "#9a4dff"];
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pickC = () => RAINBOW[(Math.random() * RAINBOW.length) | 0];
+
+// The completion card, copied from what openOverlay() actually writes: the big
+// icon, the tag line, the heading, the move lines and the buttons. QUEST is the
+// milestone, GRAND the end of the game — rule 5, and the reason for Q and F.
+const ENDINGS = {
+  quest: '<div class="B">\u{1F308}\u{1F984}</div><div class="T">QUEST COMPLETE</div>' +
+    "<h3>Rainbow &amp; Unicorn</h3>" +
+    '<div class="L">forged in <b>47</b> moves</div>' +
+    '<div class="L S">best: <span class="N">NEW BEST</span></div>' +
+    '<div class="ob"><span class="F">Keep playing</span><span>New game</span></div>',
+  full: '<div class="B">\u{1F451}</div><div class="T">GRAND ALCHEMIST</div>' +
+    "<h3>All 101 elements</h3>" +
+    '<div class="L">quest also completed &mdash; in <b>47</b> moves</div>' +
+    '<div class="L">complete run: <b>312</b> moves</div>' +
+    '<div class="L S">best: <span class="N">NEW BEST</span></div>' +
+    '<div class="ob"><span class="F">New game</span></div>',
+};
+let ending = "quest";
+
+/* ---------------------------------------------------------------- options */
+// Each option fills the .fx layer and returns a stop function. `big` is true in
+// the full-size view: the only thing it changes is COUNT, never behaviour — an
+// option that needs different numbers to work at two sizes is an option that
+// will not survive a phone.
+const OPTIONS = [
+  {
+    name: "RAY BURST",
+    tag: "reuse · 0.7s",
+    thesis: "The discovery layer's own fourteen rays, fired from behind the card instead of from the middle of an empty screen. Two volleys for the full clear, one for the quest.",
+    cost: "~60&ndash;120 B",
+    run(fx, big) {
+      const fire = (n, delay, len) => {
+        for (let i = 0; i < n; i++) {
+          const s = document.createElement("span");
+          s.className = "ray";
+          s.style.cssText = "transform:rotate(" + (i * (360 / n) + 8) + "deg);--c:hsl(" +
+            ((i * 360 / n) | 0) + " 95% 62%);animation-delay:" + (delay + i * 0.012) + "s";
+          if (len) s.style.setProperty("height", "0");
+          fx.appendChild(s);
+        }
+      };
+      fire(14, 0);
+      if (ending === "full") fire(14, 0.55);
+      return () => {};
+    },
+    notes: [
+      ["DURATION", "0.72s a volley, 1.3s for the full clear's two. The shortest of the six, and the only one that is over before the player has finished reading the card."],
+      ["COSTS", "~60&ndash;120 B, and it is the only option here that is nearly free: <b>#ds .k</b> and its keyframes are already in the stylesheet and already in the payload. What is new is the loop that writes fourteen spans at a second place, and roadroller has seen every one of those strings before."],
+      ["REDUCED MOTION", "Draw the rays at full length, no growth, and fade the whole layer once. Costs nothing extra: <b>#ds</b> already has exactly this still."],
+      ["SCALES?", "Yes, and cheaply &mdash; one volley or two is a number, not a second animation."],
+      ["VERDICT", "The honest baseline, and on a byte-per-moment basis probably the right answer. Its weakness is that it says the same thing the discovery card already said a hundred times that run, which is the one thing an ENDING should not do."],
+    ],
+  },
+  {
+    name: "SHELLS",
+    tag: "the real thing · 2.4s",
+    thesis: "What a firework actually is: a dot climbs, stops, and throws twelve sparks that arc over and fall. Three shells for the quest, six for the full clear, staggered across the width.",
+    cost: "~300&ndash;420 B",
+    run(fx, big) {
+      const w = fx.clientWidth, h = fx.clientHeight;
+      const n = ending === "full" ? (big ? 6 : 4) : (big ? 4 : 3);
+      for (let i = 0; i < n; i++) {
+        const x = rnd(0.12, 0.88) * w, top = rnd(0.18, 0.42) * h, c = pickC();
+        const delay = i * rnd(0.24, 0.42);
+        const rise = document.createElement("span");
+        rise.className = "shell";
+        rise.style.cssText = "left:" + x + "px;top:" + h + "px;--c:" + c +
+          ";--ry:" + (top - h) + "px;--rt:" + (0.5 + i * 0.03) + "s;animation-delay:" + delay + "s";
+        fx.appendChild(rise);
+        // the burst lands where the climb ended, which is why the delay is the
+        // climb's delay PLUS its duration and not a number chosen to look right
+        for (let k = 0; k < 12; k++) {
+          const s = document.createElement("span");
+          s.className = "spark";
+          s.style.cssText = "left:" + x + "px;top:" + top + "px;--c:" + c +
+            ";--a:" + (k * 30 + rnd(-8, 8)) + "deg;--d:" + rnd(46, 96) * (big ? 1.5 : 1) +
+            "px;animation-delay:" + (delay + 0.5 + i * 0.03) + "s";
+          fx.appendChild(s);
+        }
+      }
+      return () => {};
+    },
+    notes: [
+      ["DURATION", "2.4s end to end for the quest's three, 3.1s for the full clear's six. Long, and it does not matter: nobody sees this twice in a run."],
+      ["COSTS", "~300&ndash;420 B. Two keyframe sets, two classes, and a nested loop that writes 13 spans a shell &mdash; 39 elements for the quest, 78 for the full clear. The markup is the cost, not the CSS."],
+      ["REDUCED MOTION", "Sparks at rest, mid-burst, no climb and no fall &mdash; three static rosettes behind the card. Reads well frozen, which not all of these do."],
+      ["SCALES?", "By count, which is the cheapest axis there is. Three shells against six is one number."],
+      ["VERDICT", "The one a player would call fireworks. <b>cos()</b> and <b>sin()</b> in <b>calc()</b> are what make the burst one keyframe instead of twelve, and they are Baseline 2024 &mdash; check the floor before shipping this, because the fallback is a spark that does not move at all."],
+    ],
+  },
+  {
+    name: "CANVAS PYRO",
+    tag: "particles · 3.5s",
+    thesis: "A real particle system: gravity, drag, trails that smear because the canvas is faded rather than cleared, and sparks that flicker out at different rates. The only option here that can look like a photograph of a firework.",
+    cost: "~600&ndash;800 B",
+    run(fx, big) {
+      const cv = document.createElement("canvas");
+      fx.appendChild(cv);
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      const w = fx.clientWidth, h = fx.clientHeight;
+      cv.width = w * dpr; cv.height = h * dpr;
+      const g = cv.getContext("2d");
+      g.scale(dpr, dpr);
+      const parts = [];
+      const shell = () => {
+        const x = rnd(0.15, 0.85) * w, y = rnd(0.2, 0.45) * h, c = pickC();
+        const n = big ? 46 : 26;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + rnd(-0.1, 0.1), sp = rnd(40, 150) * (big ? 1.4 : 1);
+          parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, c, life: rnd(0.9, 1.7), t: 0 });
+        }
+      };
+      let last = 0, next = 0, elapsed = 0, raf = 0;
+      const total = ending === "full" ? 3.4 : 2.2;
+      const step = (now) => {
+        const dt = Math.min(0.05, (now - last) / 1000) || 0;
+        last = now; elapsed += dt;
+        if (elapsed > next && elapsed < total) { shell(); next = elapsed + rnd(0.3, 0.6); }
+        // fade rather than clear: the previous frame stays underneath at 82%,
+        // which is the whole trail effect and costs one fillRect
+        g.globalCompositeOperation = "source-over";
+        g.fillStyle = "rgba(4,6,12,.24)";
+        g.fillRect(0, 0, w, h);
+        g.globalCompositeOperation = "lighter";
+        for (let i = parts.length; i--;) {
+          const p = parts[i];
+          p.t += dt;
+          if (p.t > p.life) { parts.splice(i, 1); continue; }
+          p.vy += 96 * dt;                    // gravity
+          p.vx *= 1 - 1.1 * dt;               // drag
+          p.vy *= 1 - 1.1 * dt;
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          const k = 1 - p.t / p.life;
+          g.globalAlpha = k * (0.6 + 0.4 * Math.sin(p.t * 40));   // the flicker
+          g.fillStyle = p.c;
+          g.fillRect(p.x, p.y, 2.5, 2.5);
+        }
+        g.globalAlpha = 1;
+        if (elapsed < total + 2) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame((t) => { last = t; step(t); });
+      return () => cancelAnimationFrame(raf);
+    },
+    notes: [
+      ["DURATION", "3.5s including the tail. The trails keep reading for a second after the last spark stops being thrown."],
+      ["COSTS", "~600&ndash;800 B, and this is the estimate to distrust. It is a <b>whole subsystem's worth of one-off tokens</b> &mdash; createElement('canvas'), getContext, globalCompositeOperation, fillRect, devicePixelRatio, requestAnimationFrame, cancelAnimationFrame &mdash; and the payload has no canvas anywhere else, so roadroller has never seen any of them. Measure it before believing any number here."],
+      ["REDUCED MOTION", "Skip it entirely and fall back to option 6's rings, or draw one frame of a burst and stop. A trail system with no motion is nothing."],
+      ["SCALES?", "By particle count and shell count, both free."],
+      ["VERDICT", "The best-looking by a distance and the hardest to justify: it is a third of the remaining budget for one viewing per run. If the game ever grows a second use for a canvas, this becomes cheap and obvious &mdash; on its own it is a luxury."],
+    ],
+  },
+  {
+    name: "YOUR OWN ELEMENTS",
+    tag: "on-theme · 3.2s",
+    thesis: "Not fireworks: the things you made. The swatches of the elements you discovered drift down past the card, in discovery order, the first ones you ever found arriving last.",
+    cost: "~220&ndash;320 B",
+    run(fx, big) {
+      const w = fx.clientWidth, n = big ? 34 : 16;
+      for (let i = 0; i < n; i++) {
+        const s = document.createElement("span");
+        s.className = "swatch";
+        s.style.cssText = "left:" + rnd(0, w - 22) + "px;--c:" + pickC() +
+          ";--fd:" + rnd(2.2, 3.4) + "s;--fr:" + rnd(-220, 220) + "deg;animation-delay:" + rnd(0, 1.4) + "s";
+        fx.appendChild(s);
+      }
+      return () => {};
+    },
+    notes: [
+      ["DURATION", "3.2s, and it is the only option that would be fine looping until the player presses a button."],
+      ["COSTS", "~220&ndash;320 B. One class, one keyframe, one loop &mdash; and the colours come from <b>BY_ID[id].c</b>, which is already in the bundle, so the palette costs nothing at all. Elements with an emoji rather than a swatch need <b>iconHtml()</b>, which is also already there."],
+      ["REDUCED MOTION", "A still scatter of swatches behind the card, no falling. Arguably the best of the six stills, because the content is the point rather than the movement."],
+      ["SCALES?", "Yes, and MEANINGFULLY: the quest shows the elements you used, the full clear shows all 101. The count is the achievement."],
+      ["VERDICT", "The only option here that could not belong to another game. It is not a firework, which is either the objection or the entire point &mdash; on a screen that says GRAND ALCHEMIST over a hundred things you made, raining those hundred things is a better sentence than a rocket is."],
+    ],
+  },
+  {
+    name: "FOUNTAIN",
+    tag: "stage pyro · loops",
+    thesis: "Two low jets of sparks behind the card, the kind that sit at the front of a stage. It never finishes and never peaks — it is a condition the screen is in, not an event.",
+    cost: "~240&ndash;340 B",
+    run(fx, big) {
+      const w = fx.clientWidth, h = fx.clientHeight;
+      const jets = ending === "full" ? [0.22, 0.5, 0.78] : [0.28, 0.72];
+      jets.forEach((jx) => {
+        const per = big ? 26 : 16;
+        for (let i = 0; i < per; i++) {
+          const s = document.createElement("span");
+          s.className = "jet";
+          const spread = rnd(-38, 38) * (big ? 1.6 : 1);
+          s.style.cssText = "left:" + (jx * w) + "px;--c:" + pickC() +
+            ";--jx:" + spread + "px;--jy:" + -rnd(0.34, 0.62) * h + "px;--jt:" +
+            rnd(1.1, 1.9) + "s;--jd:" + rnd(0, 1.9) + "s";
+          fx.appendChild(s);
+        }
+      });
+      return () => {};
+    },
+    notes: [
+      ["DURATION", "None &mdash; it loops. Which means it needs the overlay to tear it down on close, the one option here that owns state past its own animation."],
+      ["COSTS", "~240&ndash;340 B. One class, one keyframe, and 32&ndash;78 spans each carrying five custom properties. The properties are the bulk of it."],
+      ["REDUCED MOTION", "A static gradient glow at the two jet positions. Cheap and honest, but it loses everything that made the option worth having."],
+      ["SCALES?", "Two jets or three. Weakest scaling of the six &mdash; a fountain reads the same whatever you do to it."],
+      ["VERDICT", "The calmest, and the only one that is still going while the player reads the best line and decides what to do. That is either restful or it is wallpaper. An infinite animation behind a screen the player may sit on for a minute is also the only option here with a battery cost."],
+    ],
+  },
+  {
+    name: "CHROMATIC RINGS",
+    tag: "no particles · 2.2s",
+    thesis: "Three rings in the title's gradient, opening out from behind the card and rotating as they go. No particles, no physics, no markup to speak of — the cheapest way to make the screen do something big.",
+    cost: "~140&ndash;200 B",
+    run(fx, big) {
+      const n = ending === "full" ? 4 : 3;
+      for (let i = 0; i < n; i++) {
+        const s = document.createElement("span");
+        s.className = "ring";
+        s.style.cssText = "--rd:" + (i * 0.26) + "s;--rs:" + (big ? 26 : 11) + ";";
+        fx.appendChild(s);
+      }
+      return () => {};
+    },
+    notes: [
+      ["DURATION", "2.2s for three rings, 2.5s for the full clear's four."],
+      ["COSTS", "~140&ndash;200 B, second-cheapest here. One class and one keyframe &mdash; but the conic-gradient ring uses a <b>mask-composite</b> pair to punch its middle out, and that is two properties the stylesheet does not use anywhere else, plus their <b>-webkit-</b> twins. A border and a plain conic would be cheaper and very nearly as good."],
+      ["REDUCED MOTION", "One ring, at rest, at full size behind the card. Almost free and it looks deliberate."],
+      ["SCALES?", "By ring count and final scale, both numbers."],
+      ["VERDICT", "The best ratio on this page after option 1, and unlike option 1 it does not repeat the discovery card. Its problem is that expanding rings are what the game's dupe-pulse and shockwave language already say &mdash; it reads as feedback rather than as celebration."],
+    ],
+  },
+];
+
+/* ----------------------------------------------------------------- render */
+const grid = document.getElementById("grid");
+const running = new Map();
+
+function play(stage, opt, big) {
+  const old = running.get(stage);
+  if (old) old();
+  const fx = stage.querySelector(".fx");
+  fx.innerHTML = "";
+  running.set(stage, opt.run(fx, big) || (() => {}));
+}
+
+function makeStage(big) {
+  const st = document.createElement("div");
+  st.className = "stage" + (big ? " big" : "");
+  st.innerHTML = '<div class="fx"></div><div class="A">' + ENDINGS[ending] + "</div>";
+  return st;
+}
+
+OPTIONS.forEach((o, i) => {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = "<h2>" + (i + 1) + ". " + o.name + " <i>" + o.tag + "</i></h2>";
+  const st = makeStage(false);
+  card.appendChild(st);
+  card.insertAdjacentHTML("beforeend",
+    '<div class="thesis">' + o.thesis + '</div><div class="cost">adds <b>' + o.cost + "</b> to the bundle</div>");
+  card.onclick = () => open(i);
+  grid.appendChild(card);
+  play(st, o, false);
+  setInterval(() => { if (!full.classList.contains("on")) play(st, o, false); }, 4200);
+});
+
+/* -------------------------------------------------------------- full view */
+const full = document.getElementById("full");
+const wrap = document.getElementById("fullWrap");
+const notes = document.getElementById("notes");
+let cur = -1;
+
+function open(i) {
+  cur = (i + OPTIONS.length) % OPTIONS.length;
+  const o = OPTIONS[cur];
+  document.getElementById("fullName").textContent = (cur + 1) + ". " + o.name;
+  document.getElementById("fullOf").textContent =
+    o.tag + "  ·  " + (cur + 1) + " / " + OPTIONS.length +
+    "  ·  " + (ending === "full" ? "GRAND ALCHEMIST (F)" : "QUEST COMPLETE (Q)") +
+    "  ·  adds " + o.cost.replace(/&ndash;/g, "–");
+  wrap.innerHTML = "";
+  const st = makeStage(true);
+  wrap.appendChild(st);
+  notes.innerHTML = o.notes.map(([k, v]) => '<div class="n"><b>' + k + "</b><span>" + v + "</span></div>").join("");
+  full.classList.add("on");
+  play(st, o, true);
+}
+function replay() { if (cur >= 0) open(cur); }
+
+addEventListener("keydown", (e) => {
+  if (e.key >= "1" && e.key <= String(OPTIONS.length)) return open(+e.key - 1);
+  if (e.key === "Escape") { full.classList.remove("on"); cur = -1; return; }
+  if (e.key === " ") { e.preventDefault(); return replay(); }
+  if (e.key === "q" || e.key === "Q") { ending = "quest"; return replay(); }
+  if (e.key === "f" || e.key === "F") { ending = "full"; return replay(); }
+  if (e.key === "c" || e.key === "C") return notes.classList.toggle("off");
+  if (cur >= 0 && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+    open(cur + (e.key === "ArrowRight" ? 1 : -1));
+  }
+});
+</script>
+</body>
+</html>
