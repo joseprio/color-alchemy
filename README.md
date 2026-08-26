@@ -12,7 +12,7 @@ npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
 npm run build-director    # the director's cut: no budget, no size-golf tail
-npm test                  # 151 headless checks against dist/bundle.html
+npm test                  # 154 headless checks against dist/bundle.html
 node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
@@ -436,6 +436,18 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 - You start with **Red**, **Green** and **Blue**.
 - Pick any two elements to attempt a combination. Every attempt costs a move —
   successes, failures and rediscoveries alike.
+- **A dead end is remembered.** Pick an element and every tile you have already
+  tried it against, for nothing, goes grey. In a tree of 101 elements the thing
+  that actually costs you moves is re-deriving the same failures, and the game
+  already knew them — it just was not saying. The mark is on the tile's
+  *chrome* only, never on the swatch: this game asks you to judge a colour, and
+  dimming the square that carries it would be a lie about the element rather
+  than a note about the pair. It appears only while something is picked, since
+  with nothing in hand there is no pair to be dead. It rides with the codex
+  rather than the run — the tree does not change between games — and it is
+  filtered on load the mirror image of the way performed recipes are: a pair
+  that has *gained* a recipe in a balance patch is no longer a dead end, so the
+  memory of it being one is dropped.
 - **Hint** — the HUD button, **H**, or Ⓨ on a gamepad — names two elements you
   already hold that make something you do not, and costs a move for it, exactly
   like an attempt. It reveals the *pair* and never the result, so the discovery

@@ -13,15 +13,17 @@
      n  tile name      l  cauldron slot   W  result well    q  the + and =
      e  locked pick    E  second pick     u  kb/pad cursor  d  drag source
      p  drop target    z  arrival done    h  known-pair pulse
+     x  no such recipe: the altar's shake, and on a TILE the standing mark
+        that this one and the pick have been tried and made nothing
      g  standing hint (both halves, until the pair is made)
-     G  drag ghost     x  no such recipe  P  result landed  w  shown
+     G  drag ghost     P  result landed   w  shown
      y  on (lock, discovery layer)        Y  off (muted)
      v  veil           A  card            B  big icon       T  tag line
      L  card line      S  a best          N  a new best     F  focused button
      R  armed button   C  title screen    M  on <body>: the title is up
      j  on #mu: it is holding a subscreen, not the button column
      H  highscore row  O  note under it   J  codex row      I  codex icon
-     X  codex recipes  Q  codex quote
+     X  codex recipes
    and inside #ds, the discovery layer: a and b are the two ingredients, r the
    result, m the box that centres one of them, g the icon itself, k a ray, f
    the flash, c the caption. */
@@ -108,7 +110,8 @@ body {
 .q { color: #33e9e9; font-size: 15px; }
 /* the whole altar shakes when the pair makes nothing */
 #cd.x { animation: shake .4s cubic-bezier(.36, .07, .19, .97); }
-/* the result's own line: name and quote, where the modal used to put them */
+/* the result's own line: the name, where the modal used to put it (and the
+   quote too, until that left for the director's cut) */
 #cq { min-height: 18px; margin: 6px 0 0; color: #8fb4d8; font-size: 12px; text-align: center; padding: 0 12px; }
 #cq b { color: #fff; }
 #cq i { color: #55708e; }
@@ -143,6 +146,15 @@ body {
 }
 @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .t:hover { border-color: #3d5584; }
+/* ALREADY TRIED WITH THE PICK, AND IT MADE NOTHING. The mark is on the tile's
+   chrome only — border, ground, name — and never on the swatch: this game asks
+   the player to judge a colour, and dimming the one square that carries it
+   would be a lie about the ELEMENT rather than a note about the PAIR.
+   Placed above every other tile state so a dead tile that is also hinted, or
+   being dragged onto, still reads as those: the mark is the weakest thing a
+   tile can say, and the first to give way. */
+.t.x { border-color: #16203a; background: #080c17cc; }
+.t.x .n { color: #45536c; }
 /* A hint bought and not yet spent: BOTH named tiles hold a steady violet glow
    until the pair's result exists — no pulse, so it can sit there for as long
    as the answer goes unused. Placed ABOVE the pick and pulse rules on purpose:

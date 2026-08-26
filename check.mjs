@@ -269,6 +269,23 @@ check("fail: the cauldron says nothing happens",
 check("fail: the cauldron shakes and the tiles do not",
   await evalJs(`document.getElementById('cd').classList.contains('x')`) &&
   !(await evalJs(`!!document.querySelector('.t.x')`)));
+// ...and the board is clean above because NOTHING IS PICKED — a loose pick is
+// spent by its mix. The dead-pair mark is a property of the pick, not of the
+// tile, so it only appears once there is a pair to be dead.
+await click("green");
+check("dead: picking one half of a failed pair marks the other",
+  await evalJs(`document.querySelector('[data-id=yellow]').classList.contains('x')`) &&
+  // red + green is Yellow, a recipe that worked, so red stays clean...
+  !(await evalJs(`document.querySelector('[data-id=red]').classList.contains('x')`)) &&
+  // ...and an element is never tried against itself, so the pick never marks
+  !(await evalJs(`document.querySelector('[data-id=green]').classList.contains('x')`)));
+await release();
+check("dead: letting the pick go clears every mark",
+  !(await evalJs(`!!document.querySelector('.t.x')`)));
+// Stored with the CODEX, not the run: the tree does not change between runs, so
+// a dead end stays dead through a New game the way a discovered element does.
+check("dead: the memory rides with the codex",
+  ((await cellGet(SLOT.codex)) || {}).d.includes("green+yellow"));
 check("pick: a loose pick is spent by its mix — nothing stays picked",
   s.sel === -1 && s.pick === -1 &&
   !(await evalJs(`!!document.querySelector('.t.E')`)) &&

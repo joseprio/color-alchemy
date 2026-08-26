@@ -65,6 +65,15 @@ const order: string[] = [];         // discovery order (drives the grid)
 // survives balance patches, with stale entries filtered on load.
 const codexF: string[] = [];
 const codexK = new Set<string>();
+// Pairs TRIED that made nothing. Knowledge like the two above and stored with
+// them: the tree does not change between runs, so a dead end found in one run
+// is still dead in the next, and the alternative is a player re-deriving the
+// same hundred failures every time. It is the cheap half of the codex — the
+// recipes above say what works, this says where there is nothing to find, and
+// in a tree of 101 elements the second is the bigger number by far.
+// Filtered on load like codexK, but the other way round: if a balance patch
+// gives a dead pair a recipe, the memory of it being dead has to go.
+const dead = new Set<string>();
 let moves = 0;                      // every combination attempt, incl. failures
 let questDone = false;              // Rainbow + Unicorn found this run
 let fullDone = false;               // all elements found this run
@@ -100,7 +109,7 @@ function save(): void {
   put(S_RUN, { f: order, m: moves, q: questDone, c: fullDone, x: cheated });
 }
 function saveCodex(): void {
-  put(S_CODEX, { f: codexF, k: [...codexK] });
+  put(S_CODEX, { f: codexF, k: [...codexK], d: [...dead] });
 }
 
 /* -------------------------------------------------------------------- HUD */
@@ -201,6 +210,10 @@ function flash(...ids: string[]): void {
 }
 function renderFocus(): void {
   const h = standingHint();
+  // What the PICK has already been tried against, and made nothing of. Only
+  // ever while something is picked: with nothing in hand there is no pair to
+  // be dead, and a board that stayed half-greyed would just look broken.
+  const p = sel >= 0 ? order[sel] : "";
   tiles.map((t, i) => {
     // one element wears one of the two: gold for a locked pick, cyan for a
     // loose one. Nothing else on the board is marked — a mix leaves the pair
@@ -211,6 +224,9 @@ function renderFocus(): void {
     // both halves of an unspent hint glow, and stop glowing the moment
     // standingHint() goes null — which is why nothing has to clear it
     t.classList.toggle("g", !!h && h.includes(order[i]));
+    // ...and the pair already known to make nothing. Not on the pick itself:
+    // an element is never tried against itself, so it can never be dead.
+    t.classList.toggle("x", !!p && i !== sel && dead.has(rkey(p, order[i])));
   });
 }
 function gridCols(): number {
@@ -489,8 +505,9 @@ export function clearSel(): boolean {
 export function attempt(aId: string, bId: string): void {
   closeDisc();   // a new attempt cuts any discovery still playing
   moves++;
-  const res = RECIPE[rkey(aId, bId)];
-  if (res && !codexK.has(rkey(aId, bId))) { codexK.add(rkey(aId, bId)); saveCodex(); }
+  const k = rkey(aId, bId);
+  const res = RECIPE[k];
+  if (res && !codexK.has(k)) { codexK.add(k); saveCodex(); }
   slotA = aId;
   slotB = bId;
   slotR = res || null;
@@ -509,6 +526,9 @@ export function attempt(aId: string, bId: string): void {
     sweep(1500);
   } else {
     cq.innerHTML = "<i>nothing happens</i>";
+    // remembered from here on, so the next pick of either half says so on the
+    // board. Guarded because a pair tried twice must not rewrite the save.
+    if (!dead.has(k)) { dead.add(k); saveCodex(); }
     SFX.fail();
     sweep(1100);
   }
@@ -727,6 +747,7 @@ function wipeAll(i: number): void {
   [S_RUN, S_QUEST, S_FULL, S_CODEX].map(i => put(i, 0));
   codexF.length = 0;
   codexK.clear();
+  dead.clear();
   reset();
   paintMenu();
   // deliberately NOT closeMenu(): New game means "start playing", this means
@@ -889,6 +910,10 @@ export function boot(): void {
         .map(id => { if (!codexF.includes(id)) codexF.push(id); });
       (cx.k && cx.k.map ? (cx.k as string[]) : []).filter(k => RECIPE[k])
         .map(k => codexK.add(k));
+      // the reverse filter: a pair that HAS a recipe is not a dead end, however
+      // it got into an old save
+      (cx.d && cx.d.map ? (cx.d as string[]) : []).filter(k => !RECIPE[k])
+        .map(k => dead.add(k));
     }
   } catch {}
   STARTERS.map(id => { if (!codexF.includes(id)) codexF.push(id); });
