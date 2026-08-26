@@ -595,6 +595,26 @@ const hintGlowsItsPair = () => evalJs(`(() => {
   return JSON.stringify(lit) === JSON.stringify([id(m[1]), id(m[2])].sort());
 })()`);
 
+// PREREQUISITES, from the same table: id -> the pairs that make it. RECIPE is
+// keyed the other way, so this is it inverted rather than a second source.
+const PREQ = {};
+for (const [k, id] of Object.entries(RECIPE)) (PREQ[id] = PREQ[id] || []).push(k.split("+"));
+// Everything the quest still needs, given what is held — the game's questWants()
+// derived here independently, off the source of truth rather than off the game.
+// The want.has guard is what terminates it: Magic and the Crystal Ball make each
+// other, so the walk is cyclic.
+const questWants = (held) => {
+  const want = new Set();
+  const walk = (id) => {
+    if (held.includes(id) || want.has(id)) return;
+    want.add(id);
+    for (const pr of PREQ[id] || []) { walk(pr[0]); walk(pr[1]); }
+  };
+  walk("rainbow");
+  walk("unicorn");
+  return want;
+};
+
 check("hud: the Hint button names both shortcuts",
   (await evalJs(`document.getElementById('ht').textContent`)) === "HintH / Ⓨ");
 let m0 = (await state()).moves;
@@ -1162,6 +1182,47 @@ check(`encyclopedia: a row lists every route performed — White: ${whiteRoutes}
   whiteRoutes.split("·").length === 3 &&
   whiteRoutes.includes("Blue + Yellow") && whiteRoutes.includes("Red + Cyan") &&
   whiteRoutes.includes("Green + Magenta"));
+
+// --- the hint answers the quest while there is one ------------------------
+// Last, because it spends moves freely and every move-count assertion is behind
+// it. A fresh run taken 22 moves in: deep enough that the off-path branches (the
+// animals, the drinks, the ornaments) are reachable, which is the whole point —
+// at a six-element board EVERY reachable element is on the quest path and this
+// check would pass with the priority switched off.
+//
+// Five hints, each bought and then MADE so the next one is a fresh answer rather
+// than the standing one. With the priority on, every one is an ancestor of the
+// Rainbow or the Unicorn. With it off, each has roughly a one-in-three chance of
+// wandering, so five in a row is about a 1-in-13 pass — the failure this catches
+// is a regression, and it catches it most runs rather than every run. The counts
+// go in the label so a reader can see how strong the sample actually was.
+await reset();
+await run(PERFECT_QUEST.slice(0, 22));
+let onPath = 0, offered = 0, offPath = 0, wandered = "";
+for (let i = 0; i < 5; i++) {
+  s = await state();
+  const want = questWants(s.found);
+  // what the game could have said, and how much of it was a detour
+  let any = 0;
+  for (const [k, id] of Object.entries(RECIPE)) {
+    const [a, b] = k.split("+");
+    if (s.found.includes(a) && s.found.includes(b) && !s.found.includes(id)) {
+      any++;
+      if (!want.has(id)) offPath++;
+    }
+  }
+  offered += any;
+  await clearToast();
+  await key("h");
+  const pr = await hintedPair();
+  if (!pr) break;
+  const made = RECIPE[[pr[0], pr[1]].sort().join("+")];
+  if (want.has(made)) onPath++; else wandered += " " + made;
+  await attempt(pr[0], pr[1]);      // spend it, so the next H is a new answer
+  await release();
+}
+check(`hint: 5 hints, ${offPath} of ${offered} offers off the quest path, ${onPath} stayed on` + wandered,
+  offPath > 0 && onPath === 5);
 
 check("no uncaught exceptions", t.exceptions.length === 0);
 if (t.exceptions.length) console.log(t.exceptions.join("\n"));

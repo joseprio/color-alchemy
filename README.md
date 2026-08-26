@@ -12,7 +12,7 @@ npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
 npm run build-director    # the director's cut: no budget, no size-golf tail
-npm test                  # 157 headless checks against dist/bundle.html
+npm test                  # 158 headless checks against dist/bundle.html
 node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
@@ -461,6 +461,20 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   like an attempt. It reveals the *pair* and never the result, so the discovery
   card keeps its surprise. The price is the point: a hinted run can never
   quietly out-rank an unhinted one.
+- **While the quest stands, the hint answers the quest.** It walks back from the
+  Rainbow and the Unicorn through every recipe that makes them, keeps what you
+  do not own yet, and names a pair from that set. **34 of the 101 elements are
+  off that path entirely** — the animals, the drinks, the ornaments — so an
+  unbiased hint was sending you shopping for a Penguin while the Rainbow stood
+  unforged, and it got worse the deeper the run went: at a nine-element board 2
+  of 5 reachable elements are a detour, and by the time you hold 59 it is 16 of
+  18. It NARROWS rather than replaces, so if nothing within reach is on the
+  path the full list stands and a hint is never refused for being off-plan;
+  once the quest is done the filter switches off and the endgame gets every
+  reachable pair again. Deliberately generous, too — an element on *any* route
+  to a goal counts, not only the cheapest, because a hint that named the
+  shortest path would be telling you which route to take, and its contract is
+  that it reveals the pair and never the plan. Worth **+64 B**.
 - **One hint at a time.** Until you have actually made it, pressing hint again
   just shows the same pair and highlights it once more, free — you paid for
   that answer, so re-reading it is not a second purchase. Only moving on to a

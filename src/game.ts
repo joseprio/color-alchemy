@@ -576,6 +576,33 @@ function showHint([a, b]: [string, string, string], tail: string): void {
   renderFocus();    // the pair lights and STAYS lit; see .t.g in style.css
   SFX.hint();
 }
+// EVERYTHING THE QUEST STILL NEEDS: walk back from the two goals through every
+// recipe that makes them, and keep what is not owned yet. 34 of the 101 are off
+// that path entirely — the animals, the drinks, the ornaments — so an unbiased
+// hint spends about a third of its answers sending you shopping for a Penguin
+// while the Rainbow stands unforged. Measured from a fresh board: 64 of 101 are
+// on the path, and it narrows as the run goes (18 left by the time 70 are held).
+//
+// The `want.has` guard is not just for speed: Magic and the Crystal Ball make
+// each other, so the walk would not terminate without it. A found element is not
+// walked THROUGH either — owning it makes its own prerequisites irrelevant,
+// which is what keeps the set to things still worth having.
+//
+// Deliberately generous: an element on ANY route to a goal counts, not only the
+// cheapest one. A hint that named only the shortest path would be telling the
+// player which route to take, and the hint's whole contract is that it reveals
+// the pair and never the plan.
+function questWants(): Set<string> {
+  const want = new Set<string>();
+  const walk = (id: string): void => {
+    if (found.has(id) || want.has(id)) return;
+    want.add(id);
+    (BY_ID[id].r || []).map(p => { walk(p[0]); walk(p[1]); });
+  };
+  walk("rainbow");
+  walk("unicorn");
+  return want;
+}
 export function hint(): void {
   if (phase() !== "play") return;
   const std = standingHint();
@@ -583,10 +610,19 @@ export function hint(): void {
     showHint(std, " — already paid for");
     return;
   }
-  const picks: [string, string, string][] = [];
+  let picks: [string, string, string][] = [];
   for (const el of ELEMENTS) {
     if (found.has(el.id)) continue;
     for (const p of el.r || []) if (found.has(p[0]) && found.has(p[1])) picks.push([p[0], p[1], el.id]);
+  }
+  // While the quest stands, answer it. Narrowing rather than replacing: if
+  // nothing within reach is on the quest path the full list stands, so a hint is
+  // never refused for being off-plan — and once the quest is done every
+  // reachable pair is fair game again, which is what the endgame asks for.
+  if (!questDone) {
+    const want = questWants();
+    const on = picks.filter(p => want.has(p[2]));
+    if (on.length) picks = on;
   }
   // Nothing within reach is free — no move, no score. Defensive: running out of
   // productive pairs means the board is complete, which opens the completion
