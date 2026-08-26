@@ -58,11 +58,33 @@ const production = !process.env.ROLLUP_WATCH;
 // for `npm run build-dev`. That reads npm_lifecycle_event rather than an env var
 // because `DEV=1 rollup -c` is not portable to the cmd.exe npm runs scripts in.
 const DEV = !production || process.env.npm_lifecycle_event === "build-dev";
+// `npm run build-director` -> the DIRECTOR'S CUT: the same game with no 13KB
+// budget behind it. Read the same way DEV is, and for the same reason.
+// It is a RELEASE build, not a development one — DEV stays false, so the two
+// menu tools are absent from it exactly as they are from a shipping bundle.
+// What it drops is the whole size-golf tail (closure, the two respellings,
+// terser, fn-order, roadroller): every one of those exists to fit 13312 bytes,
+// and each one costs something a cut with no budget has no reason to pay —
+// ADVANCED's dead-code hazards, mangled names in a stack trace, an eval'd
+// payload with a decoder that leaks globals. Content meant for it goes behind
+// __DIRECTOR__, which closure deletes from the shipping build the way it
+// deletes __DEV__.
+const DIRECTOR = process.env.npm_lifecycle_event === "build-director";
+// It builds into dist/director/ and postbuild writes dist/director.html, so a
+// director build can never overwrite the committed at-budget artifacts.
+const OUT_DIR = DIRECTOR ? "dist/director" : "dist";
+// Every pass in the size-golf tail is gated on this one flag rather than on
+// `production` alone, so "what a director build skips" is one grep.
+const golf = production && !DIRECTOR;
 const defines = {
   name: "defines",
   transform(code, id) {
-    if (!id.endsWith(".ts") || !code.includes("__DEV__")) return null;
-    return { code: code.replace(/__DEV__/g, String(DEV)), map: null };
+    if (!id.endsWith(".ts")) return null;
+    if (!code.includes("__DEV__") && !code.includes("__DIRECTOR__")) return null;
+    return {
+      code: code.replace(/__DEV__/g, String(DEV)).replace(/__DIRECTOR__/g, String(DIRECTOR)),
+      map: null,
+    };
   },
 };
 
@@ -70,10 +92,12 @@ const defines = {
 // Dev serves it as-is; production's postbuild.mjs inlines the script into
 // dist/bundle.html (galaxy-raid does this with rollup-plugin-html2 +
 // web-resource-inliner; one string replace does the same job here).
+// A director build emits the same page into dist/director/ instead, and the
+// script reference is the same either way because the bundle sits beside it.
 const emitHtml = {
   name: "emit-html",
   writeBundle() {
-    mkdirSync("dist", { recursive: true });
+    mkdirSync(OUT_DIR, { recursive: true });
     // Anchored to the document end: a bare "</body>" also appears in the
     // template's header comment, and a first-match replace injected the
     // script tag into that comment once (postbuild then stripped it away).
@@ -84,7 +108,7 @@ const emitHtml = {
     if (!html.includes('<script src="bundle.js">')) {
       throw new Error("emit-html: template is missing its </body></html> tail");
     }
-    writeFileSync("dist/index.html", html);
+    writeFileSync(`${OUT_DIR}/index.html`, html);
   },
 };
 
@@ -246,7 +270,7 @@ export default {
     // the chunk is a plain script either way — but without the IIFE wrapper the
     // whole game is top-level code, which is what lets closure ADVANCED rename
     // and inline across the entire program.
-    file: "dist/bundle.js",
+    file: `${OUT_DIR}/bundle.js`,
     format: "es",
     sourcemap: false,
     generatedCode: "es2015",
@@ -256,7 +280,10 @@ export default {
     defines,
     typescript(),
     emitHtml,
-    production &&
+    // The size-golf tail, and the ONLY thing a director build turns off: every
+    // pass from here to roadroller is there to fit the budget, so a cut with no
+    // budget skips the lot and ships the bundle rollup produced.
+    golf &&
       closureCompiler({
         compilation_level: "ADVANCED",
         language_in: "ECMASCRIPT_NEXT",
@@ -267,9 +294,9 @@ export default {
         language_out: "ECMASCRIPT_2020",
         externs: "closure-externs.js",
       }),
-    production && eslintVarToLet,
-    production && constToLet,
-    production &&
+    golf && eslintVarToLet,
+    golf && constToLet,
+    golf &&
       terser({
         ecma: 2021,
         module: true,
@@ -303,9 +330,9 @@ export default {
           ascii_only: true,
         },
       }),
-    production && reorderFns,
-    production && snapshotChunk,
-    production && roadroller,
+    golf && reorderFns,
+    golf && snapshotChunk,
+    golf && roadroller,
     !production &&
       serve({
         // HOST=0.0.0.0 to reach the dev server from a phone on the same

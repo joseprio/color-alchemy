@@ -9,7 +9,9 @@ import { readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { launch, check } from "./cdp.mjs";
 
-const page = fileURLToPath(new URL("./dist/bundle.html", import.meta.url));
+// The shipping bundle by default; any other build is an argument, which is how
+// the director's cut gets the same 149 checks:  node check.mjs dist/director.html
+const page = fileURLToPath(new URL(process.argv[2] || "./dist/bundle.html", import.meta.url));
 const t = await launch({ url: page });
 const { evalJs, send, sleep } = t;
 

@@ -23,6 +23,10 @@ declare const ht: HTMLElement;   // Hint button
 // and therefore a literal by the time closure sees it — which is what lets
 // ADVANCED drop the dead branch AND the handlers it was the only caller of.
 declare const __DEV__: boolean;
+// True only in `npm run build-director`, the cut with no 13KB budget behind it.
+// Same substitution, same closure treatment: content behind it is deleted from
+// a shipping build, so putting a scene here costs the bundle nothing.
+declare const __DIRECTOR__: boolean;
 declare const sn: HTMLElement;   // Music button
 declare const mn: HTMLElement;   // Menu button
 declare const dk: HTMLElement;   // docked cauldron strip

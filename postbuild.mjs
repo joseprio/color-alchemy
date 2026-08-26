@@ -15,16 +15,25 @@ import ect from "ect-bin";
 import advzip from "advzip-bin";
 import { minify } from "html-minifier-next";
 
-const BUNDLE_FILE = "./dist/bundle.html";
+// `npm run build-director` builds the DIRECTOR'S CUT, which has no budget to
+// answer to: rollup put it in dist/director/ with the whole size-golf tail
+// switched off, and this script inlines and minifies the page exactly as it
+// does for a shipping build, then stops. No zip, no ECT/advzip, no MAX — the
+// zip only ever existed to be weighed, and there is nothing here to weigh.
+// Its own output file, dist/director.html, keeps it off the committed
+// at-budget artifacts (dist/bundle.html and dist/build.zip).
+const DIRECTOR = process.env.npm_lifecycle_event === "build-director";
+const IN_DIR = DIRECTOR ? "./dist/director" : "./dist";
+const BUNDLE_FILE = DIRECTOR ? "./dist/director.html" : "./dist/bundle.html";
 const ZIP_FILE = "./dist/build.zip";
 const MAX = 13 * 1024;
 
 // --- inline the script into the template ----------------------------------
 // Comments are stripped BEFORE inlining so the regex can never touch the JS.
-let html = readFileSync("./dist/index.html", "utf8")
+let html = readFileSync(`${IN_DIR}/index.html`, "utf8")
   .replace(/<!--[\s\S]*?-->/g, "")
   .replace(/\n{2,}/g, "\n");
-const js = readFileSync("./dist/bundle.js", "utf8").trim();
+const js = readFileSync(`${IN_DIR}/bundle.js`, "utf8").trim();
 if (js.includes("</script")) {
   throw new Error("bundle.js contains '</script' — cannot be inlined safely");
 }
@@ -32,13 +41,14 @@ if (js.includes("</script")) {
 // would otherwise interpret as substitution patterns
 html = html.replace('<script src="bundle.js"></script>', () => `<script>${js}</script>`);
 if (!html.includes("<script>")) {
-  throw new Error("postbuild: no script reference found in dist/index.html — nothing was inlined");
+  throw new Error(`postbuild: no script reference found in ${IN_DIR}/index.html — nothing was inlined`);
 }
 // --- minify the page ------------------------------------------------------
 // Same html-minifier-next pass galaxy-raid runs, on the same options. The
 // script is left alone (minifyJS defaults off): its content is already through
 // closure, terser and roadroller, and re-parsing a packed payload could only
-// break it.
+// break it. A director build wants it left alone for the opposite reason —
+// nothing has been minified, and that is the point of the cut.
 //
 // minifyCSS matters for anything the template still styles inline — the
 // stylesheet itself travels in the payload now (src/css.ts) — and pipes through
@@ -66,6 +76,15 @@ if (!html.includes("<style id=st>") && !html.includes('<style id="st">')) {
 }
 
 writeFileSync(BUNDLE_FILE, html);
+
+// --- the director's cut ends here -----------------------------------------
+// Everything below weighs the page against the 13KB budget, and a director
+// build is the one that does not have one. It leaves rather than skipping past
+// in an `else`, so the measurement chain below stays one straight read.
+if (DIRECTOR) {
+  console.log(`director.html: ${statSync(BUNDLE_FILE).size} bytes (unpacked, no budget)`);
+  process.exit(0);
+}
 
 // --- deterministic single-entry zip ---------------------------------------
 const crcTable = new Int32Array(256).map((_, n) => {

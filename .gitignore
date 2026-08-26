@@ -3,3 +3,5 @@ node_modules/
 .qr.png
 .fn-order-candidate.json
 .fn-order-bundle-backup.js
+dist/director/
+dist/director.html

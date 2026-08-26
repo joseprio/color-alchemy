@@ -11,7 +11,9 @@ primaries.
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
+npm run build-director    # the director's cut: no budget, no size-golf tail
 npm test                  # 149 headless checks against dist/bundle.html
+node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fn-order-optimize     # re-fit fn-order.json after a source change
@@ -23,6 +25,19 @@ npm run audio-bench       # what a sample costs, against the callback budget
 ```
 
 - **Play:** open `dist/bundle.html` — the whole game in one file.
+- **The director’s cut** is `npm run build-director` — `dist/director.html`,
+  the same game with nothing to fit into. It is a *release* build, not a
+  development one: `__DEV__` is false, so Unlock all and Reset everything are
+  as absent from it as they are from a shipping bundle. What it drops is the
+  whole size-golf tail, which is the only reason any of that tail exists —
+  closure ADVANCED, the two respellings, terser, `fn-order.json`, roadroller —
+  so the page is readable JavaScript and about 100 KB. Content meant only for
+  it goes behind `__DIRECTOR__`, the `__DEV__` mechanism exactly: a literal by
+  the time closure runs, so a whole scene behind one costs a shipping build
+  nothing. It builds through `dist/director/` and writes `dist/director.html`,
+  both git-ignored, so it can never overwrite the at-budget `dist/bundle.html`
+  and `dist/build.zip` that are committed — and `check.mjs` takes a page as its
+  first argument, so the cut answers the same 149 checks the bundle does.
 - The pipeline is galaxy-raid's, size-golf tail included. `prebuild` runs the
   `tsc` type check, then rollup bundles `src/index.ts` and — in production only
   — puts it through **closure ADVANCED → eslint `no-var` → `const`→`let` → terser → the
