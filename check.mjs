@@ -761,6 +761,13 @@ await run(QUEST);
 await sleep(100);
 s = await state();
 check("quest: overlay opens with Rainbow+Unicorn found", s.questDone && s.phase === "overlay");
+// The Unicorn that finishes the quest is a first-EVER discovery, so attempt()
+// opened the full-screen card before checkMilestones ran. The completion screen
+// cancels it in the same turn, and nothing of it is ever painted — otherwise it
+// would play for 3.25s in front of the screen that actually matters.
+check("quest: the completion screen cancels the discovery card",
+  !(await evalJs(`document.getElementById('ds').classList.contains('y')`)) &&
+  (await evalJs(`document.getElementById('ds').innerHTML`)) === "");
 const questMoves = s.moves;
 check("quest: best stored on first completion", (await best("bestQuest")) === questMoves);
 check("quest: overlay reports the move count",
@@ -817,6 +824,9 @@ check("prism: icon is an inline SVG, sized by the same .s rules",
 check("full: overlay shows the hidden best",
   await evalJs(`document.getElementById('oc').textContent.includes('GRAND ALCHEMIST')`) &&
   await evalJs(`document.getElementById('oc').textContent.includes('complete run')`));
+check("full: the completion screen cancels the discovery card here too",
+  !(await evalJs(`document.getElementById('ds').classList.contains('y')`)) &&
+  (await evalJs(`document.getElementById('ds').innerHTML`)) === "");
 await shot("complete");
 
 // --- new game keeps bests, hides the hidden one ---------------------------

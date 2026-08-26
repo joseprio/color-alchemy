@@ -12,7 +12,7 @@ npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
 npm run build-director    # the director's cut: no budget, no size-golf tail
-npm test                  # 154 headless checks against dist/bundle.html
+npm test                  # 156 headless checks against dist/bundle.html
 node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
@@ -464,6 +464,14 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 - Each element has a name and an icon (a plain square for the colors, an emoji
   or a gradient swatch for the rest, and inline SVG for the Prism). It also has
   a **quote**, and that is the director's cut only — see below.
+- **A completion screen cancels the discovery card.** The element that finishes
+  the quest or the board is a first-ever discovery like any other, so the
+  full-screen card has already been raised by the time the milestone is
+  checked — and it would then play for its 3.25s in front of the screen that
+  actually matters. It is cancelled in the same synchronous turn it was opened
+  in, so nothing of it is ever painted. Every overlay this game raises *is* a
+  completion screen, which is why the rule lives in `openOverlay` rather than
+  at the two places that call it.
 - **The cauldron** is docked to the bottom of the viewport — two slots and a
   result well, in sight however far the board has scrolled. The room for the
   last row of tiles to scroll clear of it is `--dock` of **footer padding** —

@@ -609,6 +609,15 @@ type OverlayButton = [string, () => void];
 let obFns: (() => void)[] = [];
 let obCur = 0;
 function openOverlay(html: string, buttons: OverlayButton[]): void {
+  // A COMPLETION SCREEN CANCELS THE DISCOVERY LAYER, first-ever or not. The
+  // element that finishes the quest or the board is a first discovery like any
+  // other, so attempt() has already opened the full-screen card by the time
+  // checkMilestones gets here — and the card would then play for its 3.25s in
+  // front of the screen that actually matters, or worse, land on top of it.
+  // Cancelled in the SAME synchronous turn it was opened in, so nothing of it
+  // is ever painted. Every overlay this game opens is a completion screen, so
+  // the rule belongs here rather than at the two places that raise one.
+  closeDisc();
   oc.innerHTML = html + '<div id="ob"></div>';
   obFns = [];
   obCur = 0;
