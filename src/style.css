@@ -232,7 +232,7 @@ f {
    to spare, and only then does the screen break and the new element arrive on
    the crack, fourteen rays stepping round the spectrum. Rediscoveries never
    see it; the cauldron handles those. Skippable (a tap anywhere) and
-   self-clearing after 2.4s.
+   self-clearing after 2.9s.
    Chosen in experiments/discovery-approach.html, which compares nine ways to
    cross that first second against this exact ending. */
 #ds { position: fixed; inset: 0; z-index: 10; display: none; overflow: hidden; background: #04060ce8; }
@@ -243,12 +243,12 @@ f {
    ingredients climb rather than being switched off under them. Dropping a
    black sheet on frame one is a cut; this is the lights going down.
    OUT: the last 350ms, so it leaves rather than blinks out; the JS timer fires
-   at 2.7s, when this has already taken it to zero.
+   at 3.2s, when this has already taken it to zero.
    The from-colour is the background's own, at zero alpha, rather than the
    keyword transparent — same thing in every engine that interpolates colour
    premultiplied, and no argument with the ones that might not. */
 #ds.y { display: block;
-  animation: din .47s cubic-bezier(.18, .62, .28, 1), dout .35s 2.4s ease-in forwards; }
+  animation: din .47s cubic-bezier(.18, .62, .28, 1), dout .35s 2.9s ease-in forwards; }
 @keyframes din { from { background-color: #04060c00; } }
 @keyframes dout { to { opacity: 0; } }
 #ds .m { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); }

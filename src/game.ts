@@ -438,7 +438,7 @@ function openDisc(id: string, aId: string, bId: string): void {
     '<span class="c"><b>' + el.n + "</b><i>“" + el.q + "”</i></span>";
   reflow(ds);            // re-arm the fade when one discovery follows another
   ds.classList.add("y");
-  discTimer = setTimeout(closeDisc, 2750);
+  discTimer = setTimeout(closeDisc, 3250);
 }
 
 export function unlock(): void {

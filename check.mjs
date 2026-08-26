@@ -320,7 +320,7 @@ const drag = (fromId, toTarget) =>
     ev('pointermove', x2, y2);
     ev('pointerup', x2, y2);
   })()`);
-// A first discovery puts the full-screen layer up for 2.75s, and it is what
+// A first discovery puts the full-screen layer up for 3.25s, and it is what
 // elementFromPoint hits — so every drop while it is there reads as "on
 // nothing". A real pointer dismisses it with the same press that would have
 // started the drag; these events are dispatched straight at the tile and skip
