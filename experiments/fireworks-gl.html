@@ -339,7 +339,7 @@ const OPTIONS = [
     name: "COMETS",
     tag: "long tails · 3.8s",
     cost: "+~120 B over PYRO",
-    thesis: "The same physics with a memory: each spark keeps its last few positions and is drawn as a stroked line through them, so it reads as a comet rather than a dot with a smear behind it. Slower, heavier, more like a real long-exposure shell.",
+    thesis: "The same physics with a memory: each spark keeps its last few positions and is drawn as a stroked line through them, so it reads as a comet rather than a dot with a smear behind it. Fired three to a second rather than one — a barrage, not a sequence, and the busiest thing on either page.",
     run(fx, big) {
       const { g, w, h } = canvas2d(fx);
       const parts = [];
@@ -354,7 +354,10 @@ const OPTIONS = [
       const total = ending === "full" ? 3.2 : 2.0;
       g.lineCap = "round";
       return loop((dt, t) => {
-        if (t > next && t < total) { shell(); next = t + rnd(0.35, 0.7); }
+        // a third of the old gap, so three times the shells go up in the same
+        // window. The spread across the canvas is what keeps that from reading
+        // as one big burst — see shell()'s x and y.
+        if (t > next && t < total) { shell(); next = t + rnd(0.35, 0.7) / 3; }
         g.globalCompositeOperation = "source-over";
         g.fillStyle = "rgba(4,6,12,.30)";
         g.fillRect(0, 0, w, h);
@@ -382,11 +385,11 @@ const OPTIONS = [
       }, total + 2.2);
     },
     notes: [
-      ["DURATION", "3.8s. The tails keep reading longest of the three canvas options."],
-      ["COSTS", "+~120 B on top of PYRO &mdash; beginPath, moveTo, lineTo, stroke, strokeStyle, lineWidth, lineCap. Only ~120 B because the context, the loop and the physics are already bought. That is the whole point of this page."],
+      ["DURATION", "3.8s, and about 9 shells for the quest against 27 for the full clear &mdash; three times what it fired before, in the same window."],
+      ["COSTS", "+~120 B on top of PYRO &mdash; beginPath, moveTo, lineTo, stroke, strokeStyle, lineWidth, lineCap. Only ~120 B because the context, the loop and the physics are already bought. That is the whole point of this page, and tripling the shell count costs NOTHING in bytes: it is one divisor."],
       ["REDUCED MOTION", "One frame of tails at full length, held. Better than PYRO's still, since a comet frozen mid-arc still looks like something."],
       ["SCALES?", "Yes, though fewer, longer comets read better at full-clear size than more of them."],
-      ["VERDICT", "The best-looking of the canvas three and the cheapest upgrade on this page. Stroking a 6-point path per particle is real per-frame cost &mdash; fine for 300 sparks, not for 3000."],
+      ["VERDICT", "The best-looking of the canvas three and the cheapest upgrade on this page. But the barrage is where its per-frame cost stops being free: ~800 live comets at the full clear, each a 6-segment stroke every frame, is around 5000 line segments a frame. Comfortable on a laptop, and the one thing on this page to profile on a phone before believing."],
     ],
   },
   {
