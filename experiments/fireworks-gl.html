@@ -1,0 +1,725 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — completion fireworks, the EXPENSIVE half: three in canvas
+     2D and three as GL shaders. Open it in a browser; nothing to build. Click a
+     card or press its number for the full-size view; space replays, Q and F
+     swap which ending is mocked, C hides the notes, Esc goes back.
+
+     The sibling of experiments/fireworks.html. That page is mostly CSS — six
+     options between 60 and 800 B, and its argument is that an ending plays ONCE
+     a run, so bytes buy one viewing and the bar should be high. This page takes
+     the two techniques that lost that argument on price and asks what the money
+     actually buys. Same mock card, same two endings, same palette, so an option
+     here can be compared straight across to one there.
+
+     THE THREE COSTS, AND THEY ARE NOT THE SAME SHAPE.
+
+       CSS (next door). Keyframes and spans. Roadroller has seen every token
+       before because the stylesheet is already full of them. ~60-420 B, and
+       option 1 there is nearly free because it reuses #ds .k outright.
+
+       CANVAS 2D (options 1-3 here). One new API surface: getContext, fillRect,
+       globalCompositeOperation, globalAlpha, requestAnimationFrame. Perhaps a
+       dozen unique tokens the payload has never seen, plus the physics. Call it
+       500-900 B for the first one — and then the SECOND canvas effect in the
+       game is nearly free, because the surface is paid for.
+
+       WEBGL (options 4-6 here). createShader, shaderSource, compileShader,
+       getShaderParameter, COMPILE_STATUS, createProgram, attachShader,
+       linkProgram, useProgram, getUniformLocation, uniform1f, uniform2f,
+       drawArrays, createVertexArray, bindVertexArray — fifteen-plus one-off
+       strings before a single pixel, and then the GLSL itself, which is prose
+       roadroller has no vocabulary for. 1200-1800 B is the honest range, and
+       it is a FIXED cost: a game that ships one shader has paid for ten.
+
+     WHICH MEANS THE REAL QUESTION IS NOT "IS THIS PRETTY". It is: does this
+     game want a canvas or a GL context AT ALL, for anything? Ship one and the
+     next one is cheap. Ship none and every one of these six is the whole
+     purchase price for a three-second animation nobody sees twice. At 11494 of
+     13312 the GL options do not fit next to anything else, and say so on their
+     cards. The director's cut has no such problem, and is the honest home for
+     4-6 as they stand.
+
+     WHAT ONLY THE GPU CAN DO, and the reason option 4 exists: its sparks have
+     no CPU state at all. Position, colour and fade are a closed-form function
+     of (vertex id, time) evaluated in the vertex shader, so 20000 sparks cost
+     what 200 do and the JS side is a handful of uniforms and one drawArrays. No
+     canvas particle system can be written that way. If a GL context is ever
+     paid for, that is the effect to spend it on — not a fragment shader doing
+     what a canvas could have done more cheaply.
+
+     FIVE RULES, THE SAME FIVE THE CSS PAGE OBEYS.
+       1. Behind the card, never over it.
+       2. The title's seven colours, and nothing else.
+       3. Ends by itself, never blocks a button.
+       4. prefers-reduced-motion gets a still, not a faster version.
+       5. The quest and the full clear are not the same size — Q and F. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — canvas &amp; GL fireworks</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    background-attachment: fixed; padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 92ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 18px; }
+  kbd {
+    background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+    padding: 0 5px; color: #7f9fc0; font: inherit; font-size: 12px;
+  }
+  .fam {
+    grid-column: 1 / -1; color: #ffd75e; font-size: 11px; letter-spacing: .22em;
+    margin: 14px 0 -6px; padding-top: 10px; border-top: 1px solid #223052;
+  }
+  .fam i { color: #55708e; font-style: normal; letter-spacing: 0; font-size: 12px; margin-left: 10px; }
+
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+  .card { background: #080c18; border: 1px solid #223052; border-radius: 14px; padding: 12px; cursor: pointer; }
+  .card:hover { border-color: #33e9e9; }
+  .card h2 {
+    font-size: 12px; letter-spacing: .16em; margin: 2px 0 2px; color: #ffd75e;
+    display: flex; justify-content: space-between; gap: 8px;
+  }
+  .card h2 i { color: #55708e; font-style: normal; letter-spacing: 0; }
+  .card .thesis { color: #8fb4d8; font-size: 12px; margin: 6px 2px 0; min-height: 4.2em; }
+  .card .cost { color: #55708e; font-size: 11px; margin: 6px 2px 0; }
+  .card .cost b { color: #7dff9a; font-weight: 400; }
+  .card .cost.hot b { color: #ff9aa8; }
+
+  .stage {
+    position: relative; height: 210px; border-radius: 10px; overflow: hidden;
+    background: #04060ce8; display: grid; place-items: center;
+  }
+  .stage.big { height: min(72vh, 620px); }
+  .fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .fx canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .A {
+    position: relative; z-index: 2;
+    background: #0c1122; border: 1px solid #ffd75e; border-radius: 14px;
+    padding: 26px 34px; text-align: center; max-width: min(88vw, 420px);
+    box-shadow: 0 0 50px #ffd75e22; transform: scale(.62);
+  }
+  .stage.big .A { transform: none; }
+  .A .B { font-size: 56px; line-height: 1; margin-bottom: 10px; display: flex; justify-content: center; }
+  .A .T { font-size: 11px; letter-spacing: .3em; color: #ffd75e; }
+  .A h3 { margin: 6px 0 2px; color: #fff; font-size: 22px; font-weight: 400; }
+  .A .L { margin: 6px 0 0; color: #cfe3ff; }
+  .A .L b { color: #fff; }
+  .A .S { color: #ffd75e; }
+  .A .N { color: #7dff9a; font-weight: 700; letter-spacing: .1em; }
+  .A .ob { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+  .A .ob span {
+    background: #101528; color: #cfe3ff; border: 1px solid #33436e; border-radius: 8px;
+    padding: 8px 16px;
+  }
+  .A .ob span.F { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
+
+  #full { display: none; position: fixed; inset: 0; z-index: 10; background: #05060f; padding: 18px 20px; overflow: auto; }
+  #full.on { display: block; }
+  #fullHead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  #fullHead b { color: #ffd75e; font-size: 13px; letter-spacing: .16em; }
+  #fullHead i { color: #55708e; font-style: normal; font-size: 12px; }
+  #notes { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  #notes.off { display: none; }
+  #notes .n { background: #080c18; border: 1px solid #223052; border-radius: 10px; padding: 10px 12px; }
+  #notes .n b { color: #ffd75e; font-size: 11px; letter-spacing: .14em; display: block; margin-bottom: 4px; }
+  #notes .n span { color: #8fb4d8; font-size: 12px; }
+  #err {
+    display: none; margin-top: 10px; padding: 8px; border-radius: 8px;
+    background: #1b0d12; border: 1px solid #6b2233; color: #ff9aa8;
+    font-size: 11px; white-space: pre-wrap; max-height: 40vh; overflow: auto;
+  }
+  #err.on { display: block; }
+</style>
+</head>
+<body>
+<h1>FIREWORKS &mdash; CANVAS &amp; GL</h1>
+<p class="lede">The expensive half of <b>experiments/fireworks.html</b>: three canvas-2D options and three
+GL ones, on the same mock card. The question is not which looks best &mdash; it is whether this game wants
+a <b>drawing context at all</b>. The first one costs the whole API surface; every one after it is nearly
+free. At 11494 of 13312 bytes, none of the GL three fits beside anything else.</p>
+<p class="keys">
+  <kbd>1</kbd>&ndash;<kbd>6</kbd> open &middot; <kbd>space</kbd> replay &middot;
+  <kbd>Q</kbd> quest ending &middot; <kbd>F</kbd> full clear &middot;
+  <kbd>C</kbd> notes &middot; <kbd>Esc</kbd> back
+</p>
+
+<div id="grid"></div>
+
+<div id="full">
+  <div id="fullHead"><b id="fullName"></b><i id="fullOf"></i></div>
+  <div id="fullWrap"></div>
+  <div id="err"></div>
+  <div id="notes"></div>
+</div>
+
+<script>
+const RAINBOW = ["#ff3b30", "#ff9430", "#ffdc32", "#34d158", "#33e9e9", "#2f6bff", "#9a4dff"];
+// the same seven, as floats, for the shaders
+const RGB = RAINBOW.map(h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16) / 255));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pickC = () => RAINBOW[(Math.random() * RAINBOW.length) | 0];
+
+const ENDINGS = {
+  quest: '<div class="B">\u{1F308}\u{1F984}</div><div class="T">QUEST COMPLETE</div>' +
+    "<h3>Rainbow &amp; Unicorn</h3>" +
+    '<div class="L">forged in <b>47</b> moves</div>' +
+    '<div class="L S">best: <span class="N">NEW BEST</span></div>' +
+    '<div class="ob"><span class="F">Keep playing</span><span>New game</span></div>',
+  full: '<div class="B">\u{1F451}</div><div class="T">GRAND ALCHEMIST</div>' +
+    "<h3>All 101 elements</h3>" +
+    '<div class="L">quest also completed &mdash; in <b>47</b> moves</div>' +
+    '<div class="L">complete run: <b>312</b> moves</div>' +
+    '<div class="L S">best: <span class="N">NEW BEST</span></div>' +
+    '<div class="ob"><span class="F">New game</span></div>',
+};
+let ending = "quest";
+
+/* ------------------------------------------------------------ canvas plumbing */
+// Every canvas option starts the same way, so the differences between them are
+// the physics and nothing else.
+function canvas2d(fx) {
+  const cv = document.createElement("canvas");
+  fx.appendChild(cv);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const w = fx.clientWidth, h = fx.clientHeight;
+  cv.width = Math.max(1, w * dpr);
+  cv.height = Math.max(1, h * dpr);
+  const g = cv.getContext("2d");
+  g.scale(dpr, dpr);
+  return { g, w, h };
+}
+// A rAF loop that stops itself and can be cancelled from outside. dt is clamped:
+// a backgrounded tab hands back a half-second first frame and the physics would
+// teleport.
+function loop(fn, seconds) {
+  let raf = 0, last = 0, t = 0;
+  const step = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000) || 0;
+    last = now; t += dt;
+    fn(dt, t);
+    if (t < seconds) raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame((n) => { last = n; step(n); });
+  return () => cancelAnimationFrame(raf);
+}
+
+/* ---------------------------------------------------------------- GL plumbing */
+const errEl = document.getElementById("err");
+const VERT_QUAD = `#version 300 es
+void main() {
+  vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+// Shared by every fragment option: the palette, the ground, and a hash.
+const GL_HEAD = `#version 300 es
+precision highp float;
+uniform vec2 uRes; uniform float uT; uniform float uBig; uniform float uFull;
+out vec4 fragColor;
+const vec3 GROUND = vec3(0.0157, 0.0235, 0.047);
+vec3 rainbow(float t) {
+  t = clamp(t, 0.0, 1.0) * 6.0;
+  vec3 c0 = vec3(1.0,0.231,0.188), c1 = vec3(1.0,0.580,0.188), c2 = vec3(1.0,0.863,0.196),
+       c3 = vec3(0.204,0.820,0.345), c4 = vec3(0.200,0.914,0.914), c5 = vec3(0.184,0.420,1.0),
+       c6 = vec3(0.604,0.302,1.0);
+  vec3 a = t<1.?c0:t<2.?c1:t<3.?c2:t<4.?c3:t<5.?c4:c5;
+  vec3 b = t<1.?c1:t<2.?c2:t<3.?c3:t<4.?c4:t<5.?c5:c6;
+  return mix(a, b, fract(t));
+}
+float h11(float n) { return fract(sin(n * 127.1) * 43758.5453123); }
+vec2 h22(float n) { return vec2(h11(n), h11(n + 7.3)); }
+float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1,0)), u.x), mix(h21(i + vec2(0,1)), h21(i + vec2(1,1)), u.x), u.y);
+}
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
+`;
+
+function compile(gl, kind, src) {
+  const sh = gl.createShader(kind);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    const log = gl.getShaderInfoLog(sh);
+    gl.deleteShader(sh);
+    // numbered as GL saw it, head included, or the line in the message is a lie
+    throw new Error(log + "\n" + src.split("\n").map((l, i) => String(i + 1).padStart(4) + " | " + l).join("\n"));
+  }
+  return sh;
+}
+// Returns { gl, prog, w, h } or null, having reported the failure itself.
+function glStage(fx, vert, frag) {
+  const cv = document.createElement("canvas");
+  fx.appendChild(cv);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const w = fx.clientWidth, h = fx.clientHeight;
+  cv.width = Math.max(1, w * dpr);
+  cv.height = Math.max(1, h * dpr);
+  const gl = cv.getContext("webgl2", { alpha: true, antialias: false, depth: false, premultipliedAlpha: false });
+  if (!gl) { fail("WebGL2 is not available here, so options 4-6 cannot run."); return null; }
+  try {
+    const p = gl.createProgram();
+    gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vert));
+    gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, frag));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    gl.bindVertexArray(gl.createVertexArray());
+    gl.viewport(0, 0, cv.width, cv.height);
+    gl.useProgram(p);
+    errEl.classList.remove("on");
+    return { gl, p, w: cv.width, h: cv.height };
+  } catch (e) {
+    fail(e.message);
+    return null;
+  }
+}
+function fail(msg) { errEl.textContent = msg; errEl.classList.add("on"); }
+const U = (s, n) => s.gl.getUniformLocation(s.p, n);
+
+/* -------------------------------------------------------------------- options */
+const OPTIONS = [
+  /* ============================================================ CANVAS 2D === */
+  {
+    fam: "CANVAS 2D",
+    famNote: "one new API surface, then the second effect is free",
+    name: "PYRO",
+    tag: "the control · 3.5s",
+    cost: "~600&ndash;800 B",
+    thesis: "The straight particle system, carried over unchanged from the CSS page so the two have a shared reference: shells thrown at intervals, gravity, drag, and trails that come from fading the canvas instead of clearing it.",
+    run(fx, big) {
+      const { g, w, h } = canvas2d(fx);
+      const parts = [];
+      const shell = () => {
+        const x = rnd(0.15, 0.85) * w, y = rnd(0.2, 0.45) * h, c = pickC(), n = big ? 46 : 26;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + rnd(-0.1, 0.1), sp = rnd(40, 150) * (big ? 1.4 : 1);
+          parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, c, life: rnd(0.9, 1.7), t: 0 });
+        }
+      };
+      let next = 0;
+      const total = ending === "full" ? 3.4 : 2.2;
+      return loop((dt, t) => {
+        if (t > next && t < total) { shell(); next = t + rnd(0.3, 0.6); }
+        g.globalCompositeOperation = "source-over";
+        g.fillStyle = "rgba(4,6,12,.24)";
+        g.fillRect(0, 0, w, h);
+        g.globalCompositeOperation = "lighter";
+        for (let i = parts.length; i--;) {
+          const p = parts[i];
+          p.t += dt;
+          if (p.t > p.life) { parts.splice(i, 1); continue; }
+          p.vy += 96 * dt; p.vx *= 1 - 1.1 * dt; p.vy *= 1 - 1.1 * dt;
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          g.globalAlpha = (1 - p.t / p.life) * (0.6 + 0.4 * Math.sin(p.t * 40));
+          g.fillStyle = p.c;
+          g.fillRect(p.x, p.y, 2.5, 2.5);
+        }
+        g.globalAlpha = 1;
+      }, total + 2);
+    },
+    notes: [
+      ["DURATION", "3.5s including the tail after the last shell."],
+      ["COSTS", "~600&ndash;800 B. About a dozen never-before-seen tokens plus 20 lines of physics. This is the price of ADMISSION to canvas; options 2 and 3 cost a fraction of it once it is paid."],
+      ["REDUCED MOTION", "Nothing. A trail system with no motion is a blank canvas &mdash; fall back to the CSS page's rings."],
+      ["SCALES?", "Shell count and particle count, both free."],
+      ["VERDICT", "The baseline for this page. If the answer to “do we want a canvas” is no, every option here is dead and the CSS page is the whole conversation."],
+    ],
+  },
+  {
+    fam: null,
+    name: "COMETS",
+    tag: "long tails · 3.8s",
+    cost: "+~120 B over PYRO",
+    thesis: "The same physics with a memory: each spark keeps its last few positions and is drawn as a stroked line through them, so it reads as a comet rather than a dot with a smear behind it. Slower, heavier, more like a real long-exposure shell.",
+    run(fx, big) {
+      const { g, w, h } = canvas2d(fx);
+      const parts = [];
+      const shell = () => {
+        const x = rnd(0.18, 0.82) * w, y = rnd(0.22, 0.44) * h, c = pickC(), n = big ? 30 : 18;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + rnd(-0.08, 0.08), sp = rnd(60, 160) * (big ? 1.4 : 1);
+          parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, c, life: rnd(1.1, 1.9), t: 0, h: [] });
+        }
+      };
+      let next = 0;
+      const total = ending === "full" ? 3.2 : 2.0;
+      g.lineCap = "round";
+      return loop((dt, t) => {
+        if (t > next && t < total) { shell(); next = t + rnd(0.35, 0.7); }
+        g.globalCompositeOperation = "source-over";
+        g.fillStyle = "rgba(4,6,12,.30)";
+        g.fillRect(0, 0, w, h);
+        g.globalCompositeOperation = "lighter";
+        for (let i = parts.length; i--;) {
+          const p = parts[i];
+          p.t += dt;
+          if (p.t > p.life) { parts.splice(i, 1); continue; }
+          p.vy += 88 * dt; p.vx *= 1 - 1.0 * dt; p.vy *= 1 - 1.0 * dt;
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          // six positions is where a tail stops getting better and starts
+          // costing a draw call for nothing
+          p.h.push(p.x, p.y);
+          if (p.h.length > 12) p.h.splice(0, 2);
+          const k = 1 - p.t / p.life;
+          g.globalAlpha = k * 0.9;
+          g.strokeStyle = p.c;
+          g.lineWidth = 1 + k * 1.6;
+          g.beginPath();
+          g.moveTo(p.h[0], p.h[1]);
+          for (let j = 2; j < p.h.length; j += 2) g.lineTo(p.h[j], p.h[j + 1]);
+          g.stroke();
+        }
+        g.globalAlpha = 1;
+      }, total + 2.2);
+    },
+    notes: [
+      ["DURATION", "3.8s. The tails keep reading longest of the three canvas options."],
+      ["COSTS", "+~120 B on top of PYRO &mdash; beginPath, moveTo, lineTo, stroke, strokeStyle, lineWidth, lineCap. Only ~120 B because the context, the loop and the physics are already bought. That is the whole point of this page."],
+      ["REDUCED MOTION", "One frame of tails at full length, held. Better than PYRO's still, since a comet frozen mid-arc still looks like something."],
+      ["SCALES?", "Yes, though fewer, longer comets read better at full-clear size than more of them."],
+      ["VERDICT", "The best-looking of the canvas three and the cheapest upgrade on this page. Stroking a 6-point path per particle is real per-frame cost &mdash; fine for 300 sparks, not for 3000."],
+    ],
+  },
+  {
+    fam: null,
+    name: "ELEMENT RAIN",
+    tag: "on-theme · 4s",
+    cost: "+~60 B over PYRO",
+    thesis: "The CSS page's best idea with physics under it: the particles are the game's element swatches — rounded squares in the elements' own colours — tumbling and settling rather than bursting. What the ending is about, thrown at the screen.",
+    run(fx, big) {
+      const { g, w, h } = canvas2d(fx);
+      const n = big ? 90 : 40;
+      const parts = Array.from({ length: n }, () => ({
+        x: rnd(0, w), y: rnd(-h, 0), vy: rnd(30, 80), vx: rnd(-14, 14),
+        a: rnd(0, 6.28), va: rnd(-2, 2), c: pickC(), s: big ? rnd(9, 15) : rnd(5, 9),
+      }));
+      return loop((dt) => {
+        g.clearRect(0, 0, w, h);
+        for (const p of parts) {
+          p.vy += 22 * dt;
+          p.x += p.vx * dt; p.y += p.vy * dt; p.a += p.va * dt;
+          if (p.y > h + 20) { p.y = -20; p.vy = rnd(30, 80); p.x = rnd(0, w); }
+          g.save();
+          g.translate(p.x, p.y);
+          g.rotate(p.a);
+          g.fillStyle = p.c;
+          g.globalAlpha = 0.9;
+          g.fillRect(-p.s / 2, -p.s / 2, p.s, p.s);
+          g.restore();
+        }
+        g.globalAlpha = 1;
+      }, ending === "full" ? 6 : 4);
+    },
+    notes: [
+      ["DURATION", "4s for the quest, 6s for the full clear &mdash; and it would be fine looping until a button is pressed."],
+      ["COSTS", "+~60 B over PYRO: save, translate, rotate, restore, clearRect. The colours are free &mdash; they are <b>BY_ID[id].c</b>, already in the bundle, and the count is <b>codexF.length</b>, also already there."],
+      ["REDUCED MOTION", "A still scatter of swatches, no falling. The best still on either page: the content carries it, not the movement."],
+      ["SCALES?", "Meaningfully. The quest rains what you used; the full clear rains all 101. The COUNT is the achievement."],
+      ["VERDICT", "The only option on either page that could not belong to another game. Canvas buys it tumbling and depth, which the CSS version cannot do &mdash; but the CSS version is 220 B and this is 660, and the difference is rotation."],
+    ],
+  },
+  /* ================================================================== GL === */
+  {
+    fam: "WEBGL",
+    famNote: "a fixed 1.2-1.8 KB before the first pixel — none of these fit today",
+    name: "GPU SPARKS",
+    tag: "20000 of them · 3.6s",
+    cost: "~1300&ndash;1700 B",
+    thesis: "The one effect here that canvas cannot do at any price. Every spark's whole life — position, colour, fade, size — is a closed-form function of its vertex id and the clock, evaluated in the vertex shader. There is no particle array, no CPU loop, no per-frame upload: three uniforms and one drawArrays for twenty thousand sparks.",
+    run(fx, big) {
+      // Exactly as many vertices as the shader will use: shells * per. Drawing
+      // more and discarding the excess in the vertex shader is the obvious way
+      // to write this and it wastes most of the draw — the early-out below is
+      // for shells that have not LAUNCHED yet, not for vertices that never had
+      // a shell at all.
+      const per = big ? 2000 : 400;
+      const shells = ending === "full" ? 10 : 6;
+      const N = per * shells;
+      const vert = `#version 300 es
+precision highp float;
+uniform vec2 uRes; uniform float uT; uniform float uBig; uniform float uFull;
+uniform float uPer; uniform float uShells;
+out vec3 vC; out float vA;
+
+// An INTEGER hash, not fract(sin(x)). The float one bands badly once the input
+// is in the thousands — every spark index here is — and the banding shows up as
+// concentric rings inside each burst instead of a filled shell. Wang hash on the
+// vertex id costs a handful of ALU ops and is exact at every id.
+uint wang(uint s) {
+  s = (s ^ 61u) ^ (s >> 16u); s *= 9u; s = s ^ (s >> 4u); s *= 0x27d4eb2du; s = s ^ (s >> 15u);
+  return s;
+}
+float rnd(uint s) { return float(wang(s) & 0xffffffu) / float(0xffffffu); }
+
+vec3 rainbow(float t) {
+  t = clamp(t, 0.0, 1.0) * 6.0;
+  vec3 c0 = vec3(1.0,0.231,0.188), c1 = vec3(1.0,0.580,0.188), c2 = vec3(1.0,0.863,0.196),
+       c3 = vec3(0.204,0.820,0.345), c4 = vec3(0.200,0.914,0.914), c5 = vec3(0.184,0.420,1.0),
+       c6 = vec3(0.604,0.302,1.0);
+  vec3 a = t<1.?c0:t<2.?c1:t<3.?c2:t<4.?c3:t<5.?c4:c5;
+  vec3 b = t<1.?c1:t<2.?c2:t<3.?c3:t<4.?c4:t<5.?c5:c6;
+  return mix(a, b, fract(t));
+}
+
+void main() {
+  uint id = uint(gl_VertexID);
+  float shell = floor(float(id) / uPer);
+  uint sh = uint(shell);
+  // staggered launches: the shells go up across the first seconds rather than
+  // all at once, which is the difference between a display and a bang
+  float t0 = shell / uShells * mix(1.2, 2.0, uFull) + rnd(sh * 7919u) * 0.25;
+  float t = uT - t0;
+  float life = 1.1 + rnd(sh * 104729u) * 0.8;
+  if (t < 0.0 || t > life) { gl_Position = vec4(2.0, 2.0, 0.0, 1.0); return; }
+
+  // EVERYTHING BELOW IS IN Y-NORMALISED UNITS: 1.0 is half the canvas height on
+  // both axes, so a burst is a circle. Only the very last line divides x by the
+  // aspect to reach clip space — do it any earlier and the shells come out as
+  // ellipses on a wide window, which is exactly what they did at first.
+  float aspect = uRes.x / uRes.y;
+  vec2 origin = vec2((rnd(sh * 31u) - 0.5) * 1.7 * aspect, 0.15 + rnd(sh * 131u) * 0.6);
+
+  // a spark: a direction, then a speed picked so the shell fills rather than
+  // hoops — sqrt of a uniform is what spreads points evenly over a disc
+  float ang = rnd(id * 3u) * 6.2831853;
+  float sp = (0.22 + sqrt(rnd(id * 17u + 5u)) * 0.62) * mix(0.75, 1.0, uBig);
+  vec2 v = vec2(cos(ang), sin(ang)) * sp;
+  vec2 pos = origin + v * t - vec2(0.0, 0.5 * t * t);   // ballistics
+  pos -= v * t * t * 0.30;                              // drag, cheap closed form
+
+  gl_Position = vec4(pos.x / aspect, pos.y, 0.0, 1.0);
+  float fade = 1.0 - t / life;
+  vA = fade * (0.55 + 0.45 * sin(t * 38.0 + rnd(id * 23u) * 6.0));   // per-spark flicker
+  vC = rainbow(rnd(sh * 7717u));
+  gl_PointSize = mix(1.5, 3.5, uBig) * (0.4 + fade);
+}`;
+      const frag = `#version 300 es
+precision highp float;
+in vec3 vC; in float vA;
+out vec4 fragColor;
+void main() {
+  // a round spark, not a square: gl_PointCoord is the only cheap way to get one
+  float d = length(gl_PointCoord - 0.5);
+  float a = vA * smoothstep(0.5, 0.1, d);
+  fragColor = vec4(vC * a, a);
+}`;
+      const s = glStage(fx, vert, frag);
+      if (!s) return () => {};
+      const { gl } = s;
+      const uT = U(s, "uT");
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE);     // additive: sparks pile into white where they cross
+      gl.uniform2f(U(s, "uRes"), s.w, s.h);
+      gl.uniform1f(U(s, "uBig"), big ? 1 : 0);
+      gl.uniform1f(U(s, "uFull"), ending === "full" ? 1 : 0);
+      gl.uniform1f(U(s, "uPer"), per);
+      gl.uniform1f(U(s, "uShells"), shells);
+      return loop((dt, t) => {
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.uniform1f(uT, t);
+        gl.drawArrays(gl.POINTS, 0, N);
+      }, ending === "full" ? 4.4 : 3.6);
+    },
+    notes: [
+      ["DURATION", "3.6s, 4.4s for the full clear. Ten shells go up across the first two seconds rather than together, which is the difference between a display and a bang."],
+      ["COSTS", "~1300&ndash;1700 B and it is the single most expensive thing on either page. Fifteen-plus one-off GL tokens, plus ~40 lines of GLSL that share no vocabulary with anything in the payload. It does not fit in the 1818 B spare beside ANYTHING else."],
+      ["REDUCED MOTION", "Freeze the clock at t = 0.35 and draw one frame. Free, and it looks like a photograph of a burst."],
+      ["SCALES?", "By a uniform. <b>uShells</b> takes the quest's six to the full clear's ten and the GPU does not notice &mdash; 12000 sparks against 20000, same three uniforms, same one draw call."],
+      ["VERDICT", "The right thing to spend a GL context on, and the wrong thing to buy a GL context FOR. Twenty thousand sparks for three uniforms is a real argument &mdash; but only once something else in the game has already paid the admission. Director's cut today."],
+    ],
+  },
+  {
+    fam: null,
+    name: "SHOCK & BLOOM",
+    tag: "screen-space · 2.6s",
+    cost: "+~250 B after GPU SPARKS",
+    thesis: "No particles at all: three burst points, each a ring expanding out of a hot core, summed in a fragment shader. Every pixel asks the same question of the same six numbers, so the cost is a screenful of arithmetic and nothing else.",
+    run(fx, big) {
+      const frag = GL_HEAD + `
+void main() {
+  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec3 col = vec3(0.0);
+  float n = mix(3.0, 5.0, uFull);
+  for (float i = 0.0; i < 5.0; i++) {
+    if (i >= n) break;
+    vec2 o = (h22(i * 4.7) - 0.5) * vec2(1.5, 0.7);
+    float t0 = h11(i * 9.1) * mix(0.9, 1.5, uFull);
+    float t = uT - t0;
+    if (t < 0.0) continue;
+    float r = length(p - o);
+    // the ring: a thin band whose radius grows and whose width grows with it,
+    // so it thins out visually as it goes rather than staying a hard hoop
+    float rad = t * 0.55;
+    float ring = exp(-pow((r - rad) / (0.012 + t * 0.05), 2.0));
+    // the core: a bright point that dies fast, which is what sells the ring as
+    // an EXPLOSION rather than a wave
+    float core = exp(-r * 46.0) * exp(-t * 7.0);
+    float fade = exp(-t * 1.5);
+    col += rainbow(h11(i + 2.0)) * (ring * fade * 1.6 + core * 2.2);
+  }
+  fragColor = vec4(col, clamp(max(max(col.r, col.g), col.b), 0.0, 1.0));
+}`;
+      const s = glStage(fx, VERT_QUAD, frag);
+      if (!s) return () => {};
+      const { gl } = s;
+      const uT = U(s, "uT");
+      gl.uniform2f(U(s, "uRes"), s.w, s.h);
+      gl.uniform1f(U(s, "uBig"), big ? 1 : 0);
+      gl.uniform1f(U(s, "uFull"), ending === "full" ? 1 : 0);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      return loop((dt, t) => {
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.uniform1f(uT, t);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      }, ending === "full" ? 3.4 : 2.6);
+    },
+    notes: [
+      ["DURATION", "2.6s, 3.4s for the full clear."],
+      ["COSTS", "+~250 B once option 4 has bought the context &mdash; a shorter shader and the same plumbing. On its own it is the same 1200 B floor as anything else with a GL context in it."],
+      ["REDUCED MOTION", "One frozen frame at t = 0.8: three rings at different radii, held. Costs a uniform."],
+      ["SCALES?", "Three bursts or five, by uniform."],
+      ["VERDICT", "The honest critique of this option is that a canvas could draw three expanding stroked arcs for a tenth of the price, and only the soft falloff would be missing. It is the clearest example on this page of paying for GL and then not using it."],
+    ],
+  },
+  {
+    fam: null,
+    name: "EMBER SMOKE",
+    tag: "the aftermath · 4.5s",
+    cost: "+~320 B after GPU SPARKS",
+    thesis: "What a firework leaves rather than what it is: domain-warped smoke, drifting up and lit from inside by the embers still burning in it. Nothing else on either page can do this — a canvas would need a blur pass per frame to come close.",
+    run(fx, big) {
+      const frag = GL_HEAD + `
+void main() {
+  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec3 col = vec3(0.0);
+  float n = mix(3.0, 4.0, uFull);
+  for (float i = 0.0; i < 4.0; i++) {
+    if (i >= n) break;
+    vec2 o = (h22(i * 5.3) - 0.5) * vec2(1.4, 0.6);
+    float t0 = h11(i * 3.7) * 1.2;
+    float t = uT - t0;
+    if (t < 0.0) continue;
+    // the plume rises and spreads: q is the sample point pulled downward over
+    // time, which is what makes the smoke drift UP rather than the light do it
+    vec2 q = (p - o) * (2.6 - t * 0.24) + vec2(0.0, t * 0.42);
+    vec2 warp = vec2(fbm(q + uT * 0.06), fbm(q + vec2(4.1, 2.7) - uT * 0.05));
+    float d = fbm(q * 1.2 + warp * 1.4);
+    float body = smoothstep(0.62, 0.16, length(p - o) * (1.0 + t * 0.5)) * d;
+    // embers: the same field thresholded hard, so only its hottest ridges light
+    float ember = pow(clamp(d - 0.52, 0.0, 1.0) * 3.2, 3.0) * exp(-t * 0.9);
+    vec3 c = rainbow(h11(i + 6.0));
+    col += c * (body * exp(-t * 0.75) * 0.5 + ember * 1.4);
+  }
+  fragColor = vec4(col, clamp(max(max(col.r, col.g), col.b) * 1.3, 0.0, 1.0));
+}`;
+      const s = glStage(fx, VERT_QUAD, frag);
+      if (!s) return () => {};
+      const { gl } = s;
+      const uT = U(s, "uT");
+      gl.uniform2f(U(s, "uRes"), s.w, s.h);
+      gl.uniform1f(U(s, "uBig"), big ? 1 : 0);
+      gl.uniform1f(U(s, "uFull"), ending === "full" ? 1 : 0);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      return loop((dt, t) => {
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.uniform1f(uT, t);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      }, ending === "full" ? 5.5 : 4.5);
+    },
+    notes: [
+      ["DURATION", "4.5s, 5.5s for the full clear. The slowest thing on either page, and the only one that would still be worth watching at ten seconds."],
+      ["COSTS", "+~320 B after option 4, and the fbm is most of it &mdash; five octaves of value noise is ~10 lines that compress badly."],
+      ["REDUCED MOTION", "A single frozen frame reads beautifully here, better than the animation does in a screenshot. Nearly free."],
+      ["SCALES?", "Plume count by uniform, but honestly it wants the same three either way."],
+      ["VERDICT", "The most atmospheric thing on either page and the least like a firework. Behind a card that says GRAND ALCHEMIST it reads as alchemy rather than as celebration, which may be the better instinct for this game &mdash; and the per-pixel fbm is the one option here that could actually drop frames on a weak phone."],
+    ],
+  },
+];
+
+/* ------------------------------------------------------------------- render */
+const grid = document.getElementById("grid");
+const running = new Map();
+
+function play(stage, opt, big) {
+  const old = running.get(stage);
+  if (old) old();
+  const fx = stage.querySelector(".fx");
+  fx.innerHTML = "";
+  running.set(stage, opt.run(fx, big) || (() => {}));
+}
+function makeStage(big) {
+  const st = document.createElement("div");
+  st.className = "stage" + (big ? " big" : "");
+  st.innerHTML = '<div class="fx"></div><div class="A">' + ENDINGS[ending] + "</div>";
+  return st;
+}
+
+OPTIONS.forEach((o, i) => {
+  if (o.fam) {
+    const head = document.createElement("div");
+    head.className = "fam";
+    head.innerHTML = o.fam + "<i>" + o.famNote + "</i>";
+    grid.appendChild(head);
+  }
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = "<h2>" + (i + 1) + ". " + o.name + " <i>" + o.tag + "</i></h2>";
+  const st = makeStage(false);
+  card.appendChild(st);
+  card.insertAdjacentHTML("beforeend",
+    '<div class="thesis">' + o.thesis + '</div><div class="cost' + (i >= 3 ? " hot" : "") +
+    '">adds <b>' + o.cost + "</b></div>");
+  card.onclick = () => open(i);
+  grid.appendChild(card);
+  play(st, o, false);
+  setInterval(() => { if (!full.classList.contains("on")) play(st, o, false); }, 5200);
+});
+
+const full = document.getElementById("full");
+const wrap = document.getElementById("fullWrap");
+const notes = document.getElementById("notes");
+let cur = -1;
+
+function open(i) {
+  cur = (i + OPTIONS.length) % OPTIONS.length;
+  const o = OPTIONS[cur];
+  document.getElementById("fullName").textContent = (cur + 1) + ". " + o.name;
+  document.getElementById("fullOf").textContent =
+    o.tag + "  ·  " + (cur < 3 ? "canvas 2D" : "WebGL") +
+    "  ·  " + (ending === "full" ? "GRAND ALCHEMIST (F)" : "QUEST COMPLETE (Q)") +
+    "  ·  adds " + o.cost.replace(/&ndash;/g, "–");
+  wrap.innerHTML = "";
+  const st = makeStage(true);
+  wrap.appendChild(st);
+  notes.innerHTML = o.notes.map(([k, v]) => '<div class="n"><b>' + k + "</b><span>" + v + "</span></div>").join("");
+  full.classList.add("on");
+  play(st, o, true);
+}
+function replay() { if (cur >= 0) open(cur); }
+
+addEventListener("keydown", (e) => {
+  if (e.key >= "1" && e.key <= String(OPTIONS.length)) return open(+e.key - 1);
+  if (e.key === "Escape") { full.classList.remove("on"); cur = -1; return; }
+  if (e.key === " ") { e.preventDefault(); return replay(); }
+  if (e.key === "q" || e.key === "Q") { ending = "quest"; return replay(); }
+  if (e.key === "f" || e.key === "F") { ending = "full"; return replay(); }
+  if (e.key === "c" || e.key === "C") return notes.classList.toggle("off");
+  if (cur >= 0 && (e.key === "ArrowRight" || e.key === "ArrowLeft")) open(cur + (e.key === "ArrowRight" ? 1 : -1));
+});
+</script>
+</body>
+</html>

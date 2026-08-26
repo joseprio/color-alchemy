@@ -403,6 +403,14 @@ experiments/visualizer-gl.html         the same six slots as GL fragment
                                        background can live behind a game about
                                        colour. CLEAR MIDDLE is the switch, G the
                                        mock board. Also not wired in
+experiments/fireworks.html             six ways for the two completion screens
+                                       to celebrate, mostly CSS — and the
+                                       argument that an ending plays ONCE a run,
+                                       so bytes there buy one viewing
+experiments/fireworks-gl.html          the expensive half of that: three in
+                                       canvas 2D, three as GL shaders, and the
+                                       question underneath both — does this game
+                                       want a drawing context at all
 experiments/discovery-animation.html   the six first-discovery sequences the
                                        shipped one (FRACTURE) was chosen from
 experiments/discovery-approach.html    nine ways for the pair to reach the
