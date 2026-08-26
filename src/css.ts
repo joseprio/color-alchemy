@@ -12,14 +12,23 @@
 // __MARKUP__ is the bare CSS text — no <style> wrapper — injected by
 // rollup.config.mjs from src/style.css, minified with the same cssnano pass
 // postbuild.mjs applies to anything left in the template.
+import { QUOTE_CSS } from "./quotes";
+
 declare const __MARKUP__: string;
 
 st.innerHTML = __MARKUP__;
 
+// The director's cut appends the rules for its quote containers — in the same
+// synchronous run, so they are in place before the first paint as well.
+// __DIRECTOR__ is a literal, so a shipping build has `if (false)` here and
+// closure deletes the line, then QUOTE_CSS, then the rest of src/quotes.ts.
+if (__DIRECTOR__) st.innerHTML += QUOTE_CSS;
+
 // The help line rides in the PACKED PAYLOAD, not the template. It is the
 // biggest block of prose left in the markup, and the markup is deflated by the
-// zip while this is modelled by roadroller alongside the 101 quotes it already
-// carries — the same trade as the stylesheet above (galaxy-raid #18).
+// zip while this is modelled by roadroller — the same trade as the stylesheet
+// above (galaxy-raid #18). It is also, since the quotes left for the director's
+// cut, very nearly the last prose in the packed payload at all.
 // gl.after() drops a TEXT NODE exactly where the template had one — inside
 // <f>, straight after #gl — so `f` styles it as before and no wrapper element
 // (and no font-style reset for it) is needed.

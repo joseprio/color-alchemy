@@ -28,6 +28,10 @@
 // names. Shortening all five keys to one character each was measured first as
 // an upper bound and only reached -25, so the structure is where the bytes are.
 import { ELEMENTS, STARTERS, BY_ID, RECIPE, N, type ElementDef } from "./elements";
+// Director's-cut only: three markup helpers over a table of 101 strings, all
+// four of them behind the __DIRECTOR__ literal at every call site below, which
+// is what lets closure delete the lot from a shipping build.
+import { cardQuote, wellQuote, codexQuote } from "./quotes";
 import { SFX, muted } from "./sfx";
 import { toggleMute } from "./music";
 
@@ -435,7 +439,7 @@ function openDisc(id: string, aId: string, bId: string): void {
     '<span class="m"><span class="g a">' + iconHtml(BY_ID[aId]) + "</span></span>" +
     '<span class="m"><span class="g b">' + iconHtml(BY_ID[bId]) + "</span></span>" +
     '<span class="m"><span class="g r">' + iconHtml(el) + "</span></span>" +
-    '<span class="c"><b>' + el.n + "</b><i>“" + el.q + "”</i></span>";
+    '<span class="c"><b>' + el.n + "</b>" + (__DIRECTOR__ ? cardQuote(id) : "") + "</span>";
   reflow(ds);            // re-arm the fade when one discovery follows another
   ds.classList.add("y");
   discTimer = setTimeout(closeDisc, 3250);
@@ -495,7 +499,7 @@ export function attempt(aId: string, bId: string): void {
     addTile(res);
     if (!codexF.includes(res)) { codexF.push(res); saveCodex(); openDisc(res, aId, bId); }
     const el = BY_ID[res];
-    cq.innerHTML = "<b>" + el.n + "</b> &mdash; &ldquo;" + el.q + "&rdquo;";
+    cq.innerHTML = "<b>" + el.n + "</b>" + (__DIRECTOR__ ? wellQuote(res) : "");
     SFX.discover();
     sweep(2200);
   } else if (res) {
@@ -834,7 +838,7 @@ function encycloHtml(): string {
     return (
       '<div class="J"><span class="I">' + iconHtml(el) + "</span><span>" +
       "<b>" + el.n + '</b><i class="X">' + rec + "</i>" +
-      '<div class="Q">' + el.q + "</div></span></div>"
+      (__DIRECTOR__ ? codexQuote(id) : "") + "</span></div>"
     );
   }).join("");
   return rows +

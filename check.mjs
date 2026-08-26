@@ -204,9 +204,21 @@ await sleep(100);
 s = await state();
 check("mouse: combining resolves in the cauldron, nothing to dismiss", s.phase === "play");
 check("mouse: Yellow discovered, 1 move", s.found.includes("yellow") && s.moves === 1);
-check("cauldron: the well shows the result and the quote sits under it",
+// The 101 QUOTES are the DIRECTOR'S CUT only. They live in src/quotes.ts with
+// the three containers they sit in and the two rules that style them, all four
+// behind __DIRECTOR__, and closure deletes the lot from a shipping build.
+// Same discipline as the development tools below: one probe decides which build
+// this is, and then every place a quote can appear has to agree with it — so a
+// half-applied gate, quoted in the codex but not on the card, cannot pass.
+// The probe is the card's own <i>, which only a quote ever puts there, and it
+// is read here because this is the one moment the card is up.
+const QUOTED = await evalJs(`!!document.querySelector('#ds .c i')`);
+check("cauldron: the well shows the result" +
+  (QUOTED ? " and the quote sits under it" : ", with no quote under it to give away"),
   await evalJs(`document.getElementById('cr').textContent.includes('Yellow')`) &&
-  await evalJs(`document.getElementById('cq').textContent.includes('choose you')`));
+  QUOTED === await evalJs(`document.getElementById('cq').textContent.includes('choose you')`));
+check(`discovery: the card ${QUOTED ? "carries the element's quote" : "names the element and nothing else"}`,
+  QUOTED === await evalJs(`document.getElementById('ds').textContent.includes('choose you')`));
 check("discovery: a first-EVER element takes the whole screen",
   await evalJs(`document.getElementById('ds').classList.contains('y')`) &&
   (await evalJs(`document.querySelectorAll('#ds .k').length`)) === 14 &&
@@ -297,6 +309,9 @@ check("encyclopedia: undiscovered elements stay hidden",
   !(await evalJs(`document.getElementById('ml').textContent.includes('Unicorn')`)));
 check("encyclopedia: unperformed alternate recipes stay unspoiled",
   !(await evalJs(`document.getElementById('ml').textContent.includes('Red + Cyan')`)));
+check(`encyclopedia: a row ${QUOTED ? "carries the element's quote" : "is name and recipes, with no quote"}`,
+  QUOTED === await evalJs(`!!document.querySelector('#ml .Q')`) &&
+  QUOTED === await evalJs(`document.getElementById('ml').textContent.includes('choose you')`));
 await key("Escape");   // close the panel
 await key("Escape");   // back to the game
 s = await state();

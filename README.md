@@ -12,7 +12,7 @@ npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
 npm run build-director    # the director's cut: no budget, no size-golf tail
-npm test                  # 149 headless checks against dist/bundle.html
+npm test                  # 151 headless checks against dist/bundle.html
 node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
@@ -37,7 +37,20 @@ npm run audio-bench       # what a sample costs, against the callback budget
   nothing. It builds through `dist/director/` and writes `dist/director.html`,
   both git-ignored, so it can never overwrite the at-budget `dist/bundle.html`
   and `dist/build.zip` that are committed — and `check.mjs` takes a page as its
-  first argument, so the cut answers the same 149 checks the bundle does.
+  first argument, so the cut answers the same suite the bundle does:
+  `node check.mjs dist/director.html`.
+- **The 101 quotes are the first thing the cut has that the game does not.**
+  They were a `q` field on every element, and a field on a live object is
+  reachable — closure cannot prove a string dead when something might read it,
+  so all 101 shipped whether or not the budget could afford them. They live in
+  `src/quotes.ts` now, with the three containers they sit in (the discovery
+  card's `<i>`, the cauldron line, the codex row's `.Q`) and the two CSS rules
+  that style those, and every one of the three call sites in `game.ts` is a
+  `__DIRECTOR__ ? … : ""`. ADVANCED folds those to empty strings, finds the
+  four exports unreferenced and deletes the table, the markup and the rules
+  together. Worth **&minus;1841 B**, 13.8% of the budget: 13306 → **11465**.
+  The rules go with the strings for the same reason — a selector in
+  `style.css` ships whether or not anything ever wears the class.
 - The pipeline is galaxy-raid's, size-golf tail included. `prebuild` runs the
   `tsc` type check, then rollup bundles `src/index.ts` and — in production only
   — puts it through **closure ADVANCED → eslint `no-var` → `const`→`let` → terser → the
@@ -355,7 +368,9 @@ src/music.ts      the background track: the floatbeat engine, and the node
                   that plays it
 src/sfx.ts        WebAudio synth for the interface sounds, and the shared
                   AudioContext the music borrows
-src/elements.ts   the element tree: names, quotes, icons, recipes
+src/elements.ts   the element tree: names, icons, recipes
+src/quotes.ts     the 101 quotes, their containers and their two CSS rules —
+                  the director's cut only; a shipping build has none of it
 src/game.ts       state, grid, the cauldron, combining, goal overlays,
                   scoring and persistence
 src/input.ts      keyboard listener + gamepad polling
@@ -399,10 +414,11 @@ The game boots to a title screen — *COLOR* in an animated rainbow over
 - **New game** — restart; asks for confirmation when a run is in progress.
 - **Highscore** — the quest best, and the complete-run best, which shows as
   `???` until the game has actually been completed.
-- **Encyclopedia** — the player's journal: every discovered element with its
-  quote and the combinations *actually performed* (alternate recipes never
-  tried stay unspoiled; starters are listed as "primordial"). The journal
-  persists across runs - New game wipes the board, never the knowledge.
+- **Encyclopedia** — the player's journal: every discovered element with the
+  combinations *actually performed* (alternate recipes never tried stay
+  unspoiled; starters are listed as "primordial"), and, in the director's cut,
+  the element's quote. The journal persists across runs - New game wipes the
+  board, never the knowledge.
 
 Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 **Esc** and Ⓑ — with either of those (when nothing is selected), or with
@@ -426,9 +442,9 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   reaching it some other way (an alternate recipe, or stumbling onto it)
   releases the next one. It is not saved with the run: a reload forgets the
   standing hint, which can only ever cost you, never the reverse.
-- Each element has a name, an icon (a plain square for the colors, an emoji or
-  a gradient swatch for the rest, and inline SVG for the Prism) and a quote,
-  which the cauldron prints under the result.
+- Each element has a name and an icon (a plain square for the colors, an emoji
+  or a gradient swatch for the rest, and inline SVG for the Prism). It also has
+  a **quote**, and that is the director's cut only — see below.
 - **The cauldron** is docked to the bottom of the viewport — two slots and a
   result well, in sight however far the board has scrolled. The room for the
   last row of tiles to scroll clear of it is `--dock` of **footer padding** —
