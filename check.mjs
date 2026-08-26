@@ -827,6 +827,11 @@ check("full: overlay shows the hidden best",
 check("full: the completion screen cancels the discovery card here too",
   !(await evalJs(`document.getElementById('ds').classList.contains('y')`)) &&
   (await evalJs(`document.getElementById('ds').innerHTML`)) === "");
+// The fireworks: sized means fireworks() ran, and it is the only thing that
+// sizes this canvas. The width going back to 0 on close is the CLEAR — a canvas
+// left at full size is one still holding its last frame behind the next screen.
+check("full: the fireworks canvas is live behind the card",
+  (await evalJs(`document.getElementById('fw').width`)) > 0);
 await shot("complete");
 
 // --- new game keeps bests, hides the hidden one ---------------------------

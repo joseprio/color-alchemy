@@ -11,7 +11,7 @@
      there is no getElementById anywhere. One letter would not do — roadroller's
      decoder leaks single-letter globals that would shadow it in the packed
      build only. The names (gl/hd/mv/ct/bq/ht/sn/mn/gd/to/ds/dk/cd/ca/cb/cr/cq/
-     ov/oc/ti/tw/tl/tb/mu/st, plus ob from openOverlay and mh/ml/mb from
+     ov/fw/oc/ti/tw/tl/tb/mu/st, plus ob from openOverlay and mh/ml/mb from
      openPanel) are the contract between this template, src/dom.d.ts,
      closure-externs.js, the game code and check.mjs — rename in all of them
      or not at all.
@@ -65,6 +65,6 @@
 </div>
 <div id="ds"></div>
 <div id="to"></div>
-<div id="ov" class="v"><div class="A" id="oc"></div></div>
+<div id="ov" class="v"><canvas id="fw"></canvas><div class="A" id="oc"></div></div>
 </body>
 </html>

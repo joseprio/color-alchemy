@@ -644,6 +644,80 @@ export function obGo(): void {
 function closeOverlay(): void {
   ov.classList.remove("w");
   oc.innerHTML = ""; // the hidden best must not linger in the DOM
+  cancelAnimationFrame(fwRaf);
+  fw.width = 0;      // resizing the bitmap IS the clear, and it is one word
+}
+
+/* ------------------------------------------------------ completion fireworks */
+// COMETS, chosen in experiments/fireworks-gl.html. Shells go up across `span`
+// seconds, spread over the width; each spark keeps its last six positions and is
+// stroked as a path through them, so it reads as a comet rather than as a dot
+// with a smear behind it. The trails come from FADING the canvas each frame
+// instead of clearing it — one fillRect, and the frame before shows through.
+//
+// The only canvas in the game, and it earns that by being the only moment worth
+// it: this runs once or twice in a whole run. It never blocks — every button on
+// the card works on frame one — and it stops itself when the last comet dies.
+// A restored completion screen does NOT raise it: that moment already happened.
+// prefers-reduced-motion gets no still, because a trail system held still is a
+// blank canvas; style.css hides it outright and the card stands on its own.
+let fwRaf = 0;
+function fireworks(span: number): void {
+  const g = fw.getContext("2d") as CanvasRenderingContext2D;
+  // the bitmap is device pixels and the drawing code is CSS pixels, or every
+  // tail is soft on the phones most likely to see this screen
+  const r = Math.min(devicePixelRatio || 1, 2);
+  const w = innerWidth, h = innerHeight;
+  fw.width = w * r;
+  fw.height = h * r;
+  g.setTransform(r, 0, 0, r, 0, 0);
+  g.lineCap = "round";
+  const P: { x: number; y: number; vx: number; vy: number; c: string; l: number; t: number; h: number[] }[] = [];
+  let last = 0, at = 0, next = 0;
+  const step = (now: number): void => {
+    const dt = Math.min(0.05, (now - last) / 1000) || 0;
+    last = now;
+    at += dt;
+    if (at > next && at < span) {
+      const x = (0.16 + Math.random() * 0.68) * w, y = (0.2 + Math.random() * 0.24) * h;
+      // the discovery rays' own colour formula, so a shell is never a colour the
+      // game does not already use somewhere
+      const c = "hsl(" + ((Math.random() * 360) | 0) + " 95% 62%)";
+      for (let i = 0; i < 26; i++) {
+        const a = (i / 26) * 6.283, s = 60 + Math.random() * 100;
+        P.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, c, l: 1.1 + Math.random() * 0.8, t: 0, h: [] });
+      }
+      next = at + 0.12 + Math.random() * 0.12;
+    }
+    g.globalCompositeOperation = "source-over";
+    g.fillStyle = "#04060c4d";
+    g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = "lighter";
+    for (let i = P.length; i--;) {
+      const p = P[i];
+      p.t += dt;
+      if (p.t > p.l) { P.splice(i, 1); continue; }
+      p.vy += 88 * dt;                       // gravity
+      p.vx -= p.vx * dt;                     // drag
+      p.vy -= p.vy * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.h.push(p.x, p.y);
+      if (p.h.length > 12) p.h.splice(0, 2); // six positions is the whole tail
+      const k = 1 - p.t / p.l;
+      g.globalAlpha = k * 0.9;
+      g.strokeStyle = p.c;
+      g.lineWidth = 1 + k * 1.6;
+      g.beginPath();
+      g.moveTo(p.h[0], p.h[1]);
+      for (let j = 2; j < p.h.length; j += 2) g.lineTo(p.h[j], p.h[j + 1]);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+    if (P.length || at < span) fwRaf = requestAnimationFrame(step);
+    else fw.width = 0;
+  };
+  fwRaf = requestAnimationFrame(now => { last = now; step(now); });
 }
 
 // Compare-and-store; returns the HTML line describing the result.
@@ -673,6 +747,7 @@ function checkMilestones(): void {
       [["Keep playing", () => { closeOverlay(); hud(); }],
        ["New game", () => { closeOverlay(); reset(); }]],
     );
+    fireworks(1.6);
     return;
   }
   if (!fullDone && found.size === ELEMENTS.length) finishFull("");
@@ -692,6 +767,7 @@ function finishFull(questHtml: string): void {
     '<div class="L">complete run: <b>' + moves + "</b> moves</div>" + f,
     [["New game", () => { closeOverlay(); reset(); }]],
   );
+  fireworks(3.2);
 }
 
 /* ------------------------------------------------------- title screen menu */

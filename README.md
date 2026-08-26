@@ -12,7 +12,7 @@ npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
 npm run build-director    # the director's cut: no budget, no size-golf tail
-npm test                  # 156 headless checks against dist/bundle.html
+npm test                  # 157 headless checks against dist/bundle.html
 node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
@@ -472,6 +472,24 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 - Each element has a name and an icon (a plain square for the colors, an emoji
   or a gradient swatch for the rest, and inline SVG for the Prism). It also has
   a **quote**, and that is the director's cut only — see below.
+- **The endings have fireworks**, chosen in `experiments/fireworks-gl.html` as
+  COMETS: shells go up across the width, and each spark keeps its last six
+  positions and is stroked as a path through them, so it reads as a comet
+  rather than a dot with a smear behind it. The trails come from *fading* the
+  canvas each frame instead of clearing it. The quest gets a 1.6s window and
+  the full clear 3.2s, because a milestone and the end of the game are not the
+  same size; a restored completion screen gets none, since that moment already
+  happened. It never blocks — every button works on frame one — and it stops
+  itself when the last comet dies. Shell colours use the discovery rays' own
+  `hsl(… 95% 62%)` formula, so a shell is never a colour the game does not
+  already use. `prefers-reduced-motion` hides it outright rather than freezing
+  it: a trail system held still is a blank canvas.
+  **The one canvas in the game**, and worth **+452 B** — 11494 → 11946. That is
+  the whole admission price for a drawing context, most of it spent once: a
+  *second* canvas effect would now be nearly free. `#fw` sits inside the
+  overlay at `z-index: -1`, which puts it above the veil's own background and
+  below the card in one property rather than a rule for each, because `.v` is
+  itself a stacking context.
 - **A completion screen cancels the discovery card.** The element that finishes
   the quest or the board is a first-ever discovery like any other, so the
   full-screen card has already been raised by the time the milestone is

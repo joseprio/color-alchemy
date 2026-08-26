@@ -23,6 +23,8 @@ declare const ht: HTMLElement;   // Hint button
 // and therefore a literal by the time closure sees it — which is what lets
 // ADVANCED drop the dead branch AND the handlers it was the only caller of.
 declare const __DEV__: boolean;
+// the ONE canvas in the game: the completion fireworks, and nothing else
+declare const fw: HTMLCanvasElement;
 // True only in `npm run build-director`, the cut with no 13KB budget behind it.
 // Same substitution, same closure treatment: content behind it is deleted from
 // a shipping build, so putting a scene here costs the bundle nothing.

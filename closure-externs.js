@@ -26,10 +26,12 @@
 // variable to it — the build fails loudly on each one, which is how this list
 // was assembled.
 var localStorage;
+// the viewport, for sizing the fireworks canvas in device pixels
+var innerWidth, innerHeight, devicePixelRatio;
 
 // the id globals (see 3 above); #ob exists only while the overlay is open
 var gl, hd, mv, ct, bq, ht, sn, mn, dk, cd, ca, cb, cr, cq, gd;
-var ti, tw, tl, tb, mu, mh, ml, mb, ds, to, ov, oc, ob, st;
+var ti, tw, tl, tb, mu, mh, ml, mb, ds, to, ov, fw, oc, ob, st;
 
 // Handler PROPERTIES are the other half of this problem, and they are fixed at
 // the call site rather than here: this compiler knows onclick and onkeydown but

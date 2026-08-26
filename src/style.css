@@ -328,6 +328,9 @@ f {
      the resting state the animation departs from, so switching the animation
      off leaves exactly the steady glow, not an unmarked tile */
   .t.g { animation: none; }
+  /* a trail system with no motion is a blank canvas, so the fireworks do not
+     get a still — they get nothing, and the card stands on its own */
+  #fw { display: none; }
 }
 
 .v {
@@ -335,6 +338,10 @@ f {
   align-items: center; justify-content: center; background: #030409cc;
 }
 .v.w { display: flex; }
+/* The completion fireworks. z-index: -1 inside .v — which IS a stacking context,
+   being positioned with a z-index — puts the canvas above the veil's own
+   background and below the card, in one property instead of a rule for each. */
+#fw { position: absolute; inset: 0; z-index: -1; }
 .A {
   background: #0c1122; border: 1px solid #33e9e9; border-radius: 14px;
   padding: 26px 34px; text-align: center; max-width: min(88vw, 420px);
