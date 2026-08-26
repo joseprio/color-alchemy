@@ -1,38 +1,46 @@
 <!doctype html>
-<!-- Music visualizer options, running on the GAME's own music.
+<!-- Music visualizer options as GL SHADERS, running on the GAME's own music.
      Open it in a browser and press play; nothing to build.
 
-     Canvas 2D, and every option on the BORDER. The GL sibling,
-     experiments/visualizer-gl.html, takes the same six slots to fragment
-     shaders and asks the question this page rules out by construction: whether
-     a full-field background can live behind the board at all.
+     The sibling of experiments/visualizer.html, and deliberately the same page:
+     same engine splice, same analysis, same controls, same mock board. What
+     changes is where the picture is made — six fragment shaders over a
+     fullscreen quad instead of six canvas-2D draw calls — so the two pages can
+     be opened side by side and the difference is the technique and nothing
+     else.
 
-     The engine below the markers is spliced in from src/music.ts by
-     tools/build-visualizer.mjs — re-run that after changing the music, or this
-     page will drift from what the game actually sounds like. Playback is the
-     same render-ahead scheme the game uses (quarter-second buffers, a couple of
-     seconds queued), so what you see is what the game would show.
+     THE QUESTION THIS PAGE EXISTS TO ANSWER. The canvas page obeys a rule: the
+     visualizer lives on the BORDER and leaves the middle to the game. A shader
+     background is the opposite proposal — the whole field, behind everything —
+     and the reason to doubt it is that this game is ABOUT COLOUR. Tiles are
+     translucent, and a moving coloured field behind them shifts the apparent
+     hue of the very swatches the player has to name. So the rule is a SWITCH
+     here rather than a law: CLEAR MIDDLE (on by default) fades every option out
+     under the board, and turning it off shows what the honest full-field
+     version costs. Press G for the mock board and judge it there, not on an
+     empty screen — an option that looks best alone is not the one to ship.
 
-     Every option obeys the same three rules:
-       - it lives on the BORDER, leaving the middle to the game. Press G for a
-         mock of the board on top, to judge it in place.
-       - it is STEREO: the left half of the screen is the left channel, the right
-         half the right. The engine's reverb decorrelates the channels, so this
-         is real movement, not a mirror.
-       - it is a RAINBOW across frequency, low to high, in the same order as the
-         title's gradient — red at the bass end, violet at the top.
+     The other two rules from the canvas page still hold:
+       - STEREO. The left half of the screen is the left channel, the right half
+         the right; the engine's reverb decorrelates them, so this is real
+         movement and not a mirror.
+       - RAINBOW ACROSS FREQUENCY, low to high, in the title's own gradient —
+         red at the bass end, violet at the top.
 
      1-6 switch, G the mock board, H hides the panel, space plays and pauses.
-     Two of the sliders matter more than the rest: TOP FREQ, because the music is
-     low-passed at 1500-2000 Hz and bands spread past that are dead air, and
-     AUTO-LEVEL, because the bass is sustained and pins any fixed scale while the
-     highs never leave the floor. CENTRED puts the bass at the middle of each
-     edge and the treble out at the corners. -->
+     INTENSITY is the one slider to reach for first: these are backgrounds, and
+     every one of them is more convincing at a level that looks too dim on its
+     own. TOP FREQ matters for the same reason it does next door — the music is
+     low-passed at 1500-2000 Hz and bands spread past that are dead air.
+
+     If a shader fails to compile the panel says so and prints the driver's log,
+     with the line numbered as GL saw it; the page keeps running on the last one
+     that worked. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Color Alchemy — music visualizer</title>
+<title>Color Alchemy — GL visualizer</title>
 <style>
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -57,6 +65,8 @@
   #mock .hud { display: flex; gap: 18px; margin: 10px 0 4px; font-size: 13px; }
   #mock .hud b { color: #fff; }
   #mock .grid { display: grid; grid-template-columns: repeat(4, 92px); gap: 10px; margin-top: 12px; }
+  /* the tile background is the GAME's, alpha and all: cc over the shader is
+     exactly the see-through this page is here to judge */
   #mock .tile {
     width: 92px; padding: 10px 4px 8px; text-align: center;
     background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
@@ -96,6 +106,13 @@
   }
   #meter { color: #55708e; font-size: 11px; margin-top: 8px; }
   #meter b { color: #7dff9a; font-weight: 400; }
+  /* a shader that will not compile is the one failure this page must not hide */
+  #err {
+    display: none; margin-top: 8px; padding: 8px; border-radius: 8px;
+    background: #1b0d12; border: 1px solid #6b2233; color: #ff9aa8;
+    font-size: 11px; white-space: pre-wrap; max-height: 40vh; overflow: auto;
+  }
+  #err.on { display: block; }
   /* the panel covers the right channel, so it gets out of the way on H */
   #ui.hidden { display: none; }
 </style>
@@ -116,18 +133,19 @@
 </div>
 
 <div id="ui">
-  <h2>VISUALIZER</h2>
+  <h2>GL VISUALIZER</h2>
   <div id="opts"></div>
   <label><span>bands</span><input id="bands" type="range" min="8" max="96" value="40"><i class="val" id="bandsV">40</i></label>
   <label><span>sensitivity</span><input id="sens" type="range" min="50" max="400" value="120"><i class="val" id="sensV">1.2</i></label>
   <label><span>smoothing</span><input id="smooth" type="range" min="0" max="95" value="45"><i class="val" id="smoothV">.45</i></label>
-  <label><span>depth</span><input id="depth" type="range" min="20" max="300" value="120"><i class="val" id="depthV">120</i></label>
+  <label><span>intensity</span><input id="gain" type="range" min="20" max="300" value="100"><i class="val" id="gainV">1.0</i></label>
   <label><span>top freq</span><input id="top" type="range" min="1000" max="12000" step="250" value="5000"><i class="val" id="topV">5k</i></label>
   <label><span>auto-level</span><input id="agc" type="checkbox" checked><i class="val"></i></label>
-  <label><span>centred</span><input id="mirror" type="checkbox" checked><i class="val"></i></label>
+  <label><span>clear middle</span><input id="clear" type="checkbox" checked><i class="val"></i></label>
   <button id="play">PLAY  (space)</button>
   <div class="note" style="margin: 8px 0 0 0">G board &middot; H hide this &middot; space play</div>
   <div id="meter"></div>
+  <div id="err"></div>
 </div>
 
 <script>
@@ -495,7 +513,8 @@ function sampler(SR) {
 
 /* ------------------------------------------------------------------ audio */
 // The game's own playback, in miniature: render quarter-second chunks ahead and
-// schedule them, with a splitter feeding one analyser per channel.
+// schedule them, with a splitter feeding one analyser per channel. Identical to
+// the canvas page — the two have to be hearing the same thing to be compared.
 const SONG_SR = 24000, CHUNK = 0.25, LEAD = 1.5;
 let ctx = null, bus = null, anL = null, anR = null, next = null, at = 0, pumping = 0;
 
@@ -550,28 +569,27 @@ function toggleAudio() {
 playBtn.addEventListener("click", toggleAudio);
 
 /* ----------------------------------------------------------------- analysis */
-// Where the music actually is, measured on the engine at its densest, in dB
-// below the peak:
+// Carried over WHOLE from the canvas page, and it should stay that way: it is
+// the tuned part. Where the music actually is, measured on the engine at its
+// densest, in dB below the peak:
 //     20-160 Hz    0      640-1280 Hz  -18      2560-5120 Hz  -54
 //     160-320     -8     1280-2560     -39      5120-10240    -76
 //     320-640    -12                            10240+        -99
 // The mixer low-passes the pad at 1500 Hz and the pulse bus at 2000, so there is
-// nothing in the top half of the spectrum by construction. Spreading the bands
-// across the analyser's full 0-24 kHz therefore left the top bars permanently
-// dark; they run 40 Hz to `top` instead.
-const opt = { bands: 40, sens: 1.2, smooth: 0.45, depth: 120, top: 5000, agc: 1, mirror: 1 };
-let freqL, freqR, timeL, timeR;
-const peakL = new Float32Array(96).fill(0.2), peakR = new Float32Array(96).fill(0.2);
+// nothing in the top half of the spectrum by construction. Bands run 40 Hz to
+// `top` rather than across the analyser's full 0-24 kHz.
+const MAXB = 96;
+const opt = { bands: 40, sens: 1.2, smooth: 0.45, gain: 1, top: 5000, agc: 1, clear: 1 };
+let freqL, freqR;
+const peakL = new Float32Array(MAXB).fill(0.2), peakR = new Float32Array(MAXB).fill(0.2);
 
-// One log-spaced band per bar between 40 Hz and opt.top, each taking the loudest
-// bin it covers — an average washes the detail out.
-//
-// Then auto-level, per band. The bass here is a sustained pad under a sustained
-// bass line: on any fixed scale it sits pinned at the ceiling and stops moving,
-// while the highs never leave the floor — which is both "the bottom bars don't
-// move" and "the top bars never show". Dividing each band by its own
-// slowly-decaying peak gives every bar the full height and shows its own
-// variation rather than the mix's balance. Turn it off to see the raw balance.
+// One log-spaced band per slot between 40 Hz and opt.top, each taking the
+// loudest bin it covers — an average washes the detail out. Then auto-level,
+// per band: the bass here is a sustained pad under a sustained bass line, so on
+// any fixed scale it sits pinned at the ceiling and stops moving while the highs
+// never leave the floor. Dividing each band by its own slowly-decaying peak
+// gives every band its full range and shows its own variation rather than the
+// mix's balance. Turn it off to see the raw balance.
 function bands(data, n, out, peak) {
   const binHz = (ctx ? ctx.sampleRate : 48000) / (anL ? anL.fftSize : 2048);
   const lo0 = Math.max(1, Math.round(40 / binHz));
@@ -594,26 +612,6 @@ function bands(data, n, out, peak) {
   }
   return out;
 }
-const hue = (i, n) => 280 * (i / n);      // red at the bass end, violet at the top
-// the title's own gradient stops, for the bars that run the rainbow along their
-// length rather than across the bands
-const RAINBOW = ["#ff3b30", "#ff9430", "#ffdc32", "#34d158", "#33e9e9", "#2f6bff", "#9a4dff"];
-// Reversed — violet at the edge, red at the tip — and cached by rounded length
-// and side, since lengths repeat every frame and only the ends move.
-const gradCache = new Map();
-function barGrad(g, x0, len) {
-  const key = Math.round(len);
-  let grad = gradCache.get(key);
-  if (!grad) {
-    grad = g.createLinearGradient(x0, 0, x0 + len, 0);
-    for (let k = 0; k < RAINBOW.length; k++) {
-      grad.addColorStop(k / (RAINBOW.length - 1), RAINBOW[RAINBOW.length - 1 - k]);
-    }
-    if (gradCache.size > 2000) gradCache.clear();
-    gradCache.set(key, grad);
-  }
-  return grad;
-}
 // mean band level, as a 0-100 reading per channel
 const lvl = (a, n) => {
   let s = 0;
@@ -621,216 +619,368 @@ const lvl = (a, n) => {
   return Math.round((s / n) * 100);
 };
 
-/* ----------------------------------------------------------------- geometry */
-// Where band i sits on a side, as [y, height] pairs. Centred — the default —
-// puts the bass at the middle of each edge and runs the treble out to both
-// corners, so the picture is symmetric about the middle of the screen and the
-// energy is not all piled in one corner. Otherwise it stacks bottom to top.
-function slots(i, n, h) {
-  if (!opt.mirror) {
-    const bh = h / n;
-    return [[h - (i + 1) * bh, bh]];
+// A shader wants a handful of NUMBERS as well as the spectrum: three coarse
+// energies and a beat. The split points are the music's own — the bass line and
+// pad live under about 300 Hz, the chord body up to 1200, and everything above
+// that is the pulse voice and the delay's brightness. They are read off the
+// band array rather than the FFT again, so they inherit the auto-level.
+const energy = new Float32Array(3);
+function energies(L, R, n) {
+  const cut = (frac) => Math.max(1, Math.round(n * frac));
+  const b = cut(0.16), m = cut(0.52);
+  let s0 = 0, s1 = 0, s2 = 0;
+  for (let i = 0; i < n; i++) {
+    const v = (L[i] + R[i]) * 0.5;
+    if (i < b) s0 += v; else if (i < m) s1 += v; else s2 += v;
   }
-  const bh = h / 2 / n, y = h / 2 - (i + 1) * bh;
-  return [[y, bh], [h - y - bh, bh]];
+  energy[0] = s0 / b;
+  energy[1] = s1 / Math.max(1, m - b);
+  energy[2] = s2 / Math.max(1, n - m);
+}
+// A beat is a RISE in the bass, not a level: the pad never lets the bass fall to
+// zero, so anything thresholded on the value alone is either always on or always
+// off. Track a slow average and spike on the distance above it, then decay.
+let bassAvg = 0, beat = 0;
+function beatOf(dt) {
+  const b = energy[0];
+  bassAvg = bassAvg * 0.98 + b * 0.02;
+  beat = Math.max(beat - dt * 2.4, Math.min(1, Math.max(0, (b - bassAvg) * 4)));
+  return beat;
 }
 
-// A point on the border for one channel. Centred: t = 0 at the middle of the
-// side, running out to the corner (dir 1 up, -1 down) and then in along the top
-// or bottom edge to the middle. Otherwise t = 0 at the bottom corner, up and over.
-function edgePoint(side, t, w, h, dir) {
-  const x0 = side < 0 ? 0 : w;
-  const along = opt.mirror ? h / 2 : h;
-  const across = w / 2;
-  const d = t * (along + across);
-  const start = opt.mirror ? h / 2 : h;
-  if (d < along) return [x0, start - dir * d];
-  const inward = (side < 0 ? 1 : -1) * (d - along);
-  return [x0 + inward, opt.mirror ? (dir > 0 ? 0 : h) : 0];
+/* ---------------------------------------------------------------------- GL */
+const cv = document.getElementById("viz");
+const gl = cv.getContext("webgl2", { alpha: false, antialias: false, depth: false });
+const errEl = document.getElementById("err");
+function fail(msg) {
+  errEl.textContent = msg;
+  errEl.classList.add("on");
 }
-const DIRS = () => (opt.mirror ? [1, -1] : [1]);
 
-/* ------------------------------------------------------------------ modes */
-// Each mode draws one frame over the whole canvas. L and R are 0..1 per band,
-// low frequency first; w/h are CSS pixels.
-const MODES = [
+// One vertex shader for every option: a fullscreen TRIANGLE, not a quad. Three
+// vertices with no buffer at all — gl_VertexID indexes a constant array — so
+// there is no attribute state to set up and no diagonal seam where two triangles
+// would meet.
+const VERT = `#version 300 es
+void main() {
+  vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+// Prepended to every option below, so each one is only its own idea. Everything
+// an option is allowed to know about the music arrives through these uniforms.
+const PRELUDE = `#version 300 es
+precision highp float;
+
+uniform vec2  uRes;      // canvas size, device pixels
+uniform float uTime;     // seconds since the page loaded
+uniform float uBeat;     // 0..1, a decaying spike on each bass onset
+uniform float uGain;     // the INTENSITY slider
+uniform float uClear;    // 1 when CLEAR MIDDLE is on
+uniform float uN;        // how many bands are live in uBands
+uniform vec3  uEnergy;   // bass / mid / treble, 0..1, auto-levelled
+uniform vec2  uLevel;    // mean band level, left and right
+uniform sampler2D uBands;// the spectrum: row 0 left, row 1 right
+
+out vec4 fragColor;
+
+const float PI = 3.14159265;
+// The page's own #05060f. Every option ADDS to it rather than replacing it, so
+// silence looks like the game's background and not like a black screen.
+const vec3 GROUND = vec3(0.0196, 0.0235, 0.0588);
+
+// x: 0 at 40 Hz, 1 at the TOP FREQ slider. ch: 0 left, 1 right.
+// The texture is always MAXB wide and only the first uN columns are live, so the
+// lookup walks texel CENTRES from the first band to the last — sampling the full
+// width would drag the dead tail in and flatten the treble end.
+float band(float x, float ch) {
+  float u = (0.5 + clamp(x, 0.0, 1.0) * (uN - 1.0)) / ${MAXB}.0;
+  return texture(uBands, vec2(u, ch * 0.5 + 0.25)).r;
+}
+vec2 bandLR(float x) { return vec2(band(x, 0.0), band(x, 1.0)); }
+
+// The title's own gradient, and the same direction the canvas page uses:
+// red at the bass end, violet at the top.
+vec3 rainbow(float t) {
+  t = clamp(t, 0.0, 1.0) * 6.0;
+  vec3 c0 = vec3(1.000, 0.231, 0.188),  // #ff3b30
+       c1 = vec3(1.000, 0.580, 0.188),  // #ff9430
+       c2 = vec3(1.000, 0.863, 0.196),  // #ffdc32
+       c3 = vec3(0.204, 0.820, 0.345),  // #34d158
+       c4 = vec3(0.200, 0.914, 0.914),  // #33e9e9
+       c5 = vec3(0.184, 0.420, 1.000),  // #2f6bff
+       c6 = vec3(0.604, 0.302, 1.000);  // #9a4dff
+  vec3 a = t < 1.0 ? c0 : t < 2.0 ? c1 : t < 3.0 ? c2 : t < 4.0 ? c3 : t < 5.0 ? c4 : c5;
+  vec3 b = t < 1.0 ? c1 : t < 2.0 ? c2 : t < 3.0 ? c3 : t < 4.0 ? c4 : t < 5.0 ? c5 : c6;
+  return mix(a, b, fract(t));
+}
+
+// Screen position, centred at 0 and scaled by HEIGHT on both axes, so a circle
+// is a circle and the picture does not stretch on a wide window.
+vec2 uvC() { return (gl_FragCoord.xy - 0.5 * uRes) / uRes.y; }
+
+float hash11(float n) { return fract(sin(n * 127.1) * 43758.5453123); }
+float hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2(1, 0)), u.x),
+             mix(hash21(i + vec2(0, 1)), hash21(i + vec2(1, 1)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.02; a *= 0.5; }
+  return v;
+}
+
+// THE BOARD SITS IN THE MIDDLE. With CLEAR MIDDLE on, every option is faded out
+// across the region the tiles occupy — an ellipse a little wider than tall,
+// because the board is — so the colour under a swatch is the game's own.
+float away(vec2 pc) {
+  return smoothstep(0.16, 0.66, length(pc * vec2(0.78, 1.0)));
+}
+
+// Every option ends here: the middle mask, the intensity slider, the ground.
+void finish(vec3 col) {
+  col *= mix(1.0, away(uvC()), uClear);
+  fragColor = vec4(GROUND + col * uGain, 1.0);
+}
+`;
+
+/* ------------------------------------------------------------------ options */
+// Each option is a fragment shader with a main(), appended to the PRELUDE.
+// The note is what the option is FOR, not what it does — the code says that.
+const SHADERS = [
   {
-    name: "edge bars",
-    note: "One bar per band, growing inward from each side. Each runs the title's rainbow along its own length, violet at the edge to red at the tip — so the tip is red however long the bar is.",
-    draw(g, w, h, L, R) {
-      const n = L.length;
-      // A gradient per BAR, scaled to that bar's own length, which is what keeps
-      // the tip red at every level: a single canvas-space gradient would put red
-      // at a fixed distance from the edge instead, so only bars of one length
-      // would end on it. Costs n gradients a frame rather than one; measured at
-      // 60fps, and cached by length below to keep it there.
-      g.globalAlpha = 0.9;
-      for (const [right, v] of [[0, L], [1, R]]) {
-        for (let i = 0; i < n; i++) {
-          const len = v[i] * opt.depth;
-          if (len < 1) continue;
-          g.fillStyle = barGrad(g, right ? w : 0, right ? -len : len);
-          for (const [y, bh] of slots(i, n, h)) {
-            // snapped to device pixels and drawn edge to edge: a half-pixel
-            // inset left a hairline between bars, and fractional band heights
-            // anti-aliased another one even without it
-            const y0 = snap(y), y1 = snap(y + bh);
-            g.fillRect(right ? w - len : 0, y0, len, Math.max(1 / dpr, y1 - y0));
-          }
-        }
-      }
-      g.globalAlpha = 1;
-    },
+    name: "rim bloom",
+    note: "The GL answer to the canvas page's edge bars: the same band-per-slot layout down each side, but as light rather than rectangles. Soft falloff into the screen is what a shader buys you here — the 2D version would need a blur pass per frame to look like this.",
+    src: `
+void main() {
+  vec2 p = gl_FragCoord.xy / uRes;
+  // the left half of the screen is the left channel
+  float ch = p.x < 0.5 ? 0.0 : 1.0;
+  // CENTRED, like the canvas page's default: bass at the middle of each edge,
+  // treble running out to both corners
+  float tv = abs(p.y - 0.5) * 2.0;
+  float th = abs(p.x - 0.5) * 2.0;
+  float av = band(tv, ch), ah = band(th, ch);
+  // distance to the nearest edge, and a falloff that REACHES FURTHER as the
+  // band gets louder rather than just getting brighter in place
+  float dv = min(p.x, 1.0 - p.x);
+  float dh = min(p.y, 1.0 - p.y);
+  vec3 col = rainbow(tv) * av * exp(-dv * 22.0 / (0.35 + av))
+           + rainbow(th) * ah * exp(-dh * 22.0 / (0.35 + ah)) * 0.7;
+  // a whole-rim lift on the beat, so the frame breathes with the bass
+  col *= 1.0 + uBeat * 0.6;
+  finish(col * 1.6);
+}`,
   },
   {
-    name: "perimeter ribbon",
-    note: "The spectrum wrapped around the border — bass at the middle of each side, treble out to the corners. Thickness is level.",
-    draw(g, w, h, L, R) {
-      const n = L.length;
-      g.lineCap = "round";
-      for (const [side, v] of [[-1, L], [1, R]]) {
-        for (const dir of DIRS()) {
-          for (let i = 0; i < n; i++) {
-            const p = edgePoint(side, i / n, w, h, dir), q = edgePoint(side, (i + 1) / n, w, h, dir);
-            g.strokeStyle = `hsl(${hue(i, n)} 95% 60% / .9)`;
-            g.lineWidth = 2 + v[i] * opt.depth * 0.5;
-            g.beginPath();
-            g.moveTo(p[0], p[1]);
-            g.lineTo(q[0], q[1]);
-            g.stroke();
-          }
-        }
-      }
-    },
+    name: "aurora curtains",
+    note: "Light standing up off the bottom and top edges, one curtain per band across the width. The nearest thing here to a background that is still mostly border — the middle stays empty even with CLEAR MIDDLE off, because the curtains never grow that tall.",
+    src: `
+// A curtain's height is its band; the shimmer along it is noise scrolling
+// upward, which is what keeps a tall curtain from reading as a flat bar.
+float curtain(vec2 p, float a, float dir) {
+  float wob = (fbm(vec2(p.x * 3.0, uTime * 0.22)) - 0.5) * 0.5;
+  float top = 0.04 + a * 0.46 + wob * a;
+  float y = dir > 0.0 ? p.y : 1.0 - p.y;
+  // falling ramp written as 1 - rising: smoothstep is UNDEFINED with edge0 >
+  // edge1, however reliably every driver happens to implement it
+  float v = 1.0 - smoothstep(0.0, top, y);
+  float shimmer = 0.55 + 0.45 * fbm(vec2(p.x * 9.0, y * 4.0 - uTime * 0.7));
+  return v * v * shimmer;
+}
+void main() {
+  vec2 p = gl_FragCoord.xy / uRes;
+  float ch = p.x < 0.5 ? 0.0 : 1.0;
+  // bass at the middle of the edge, treble at the corners — the same layout the
+  // rim uses, so the two options are comparable
+  float t = abs(p.x - 0.5) * 2.0;
+  float a = band(t, ch);
+  vec3 c = rainbow(t);
+  float v = curtain(p, a, 1.0) + curtain(p, a * 0.7, -1.0) * 0.55;
+  finish(c * v * (0.55 + uEnergy.x * 0.8));
+}`,
   },
   {
-    name: "aurora",
-    note: "No bars at all: soft rainbow light along the edges, breathing with the band energy. The quietest option under a game.",
-    draw(g, w, h, L, R) {
-      const n = L.length;
-      g.filter = "blur(18px)";
-      for (const [right, v] of [[0, L], [1, R]]) {
-        const x = right ? w - opt.depth : 0;
-        const col = (i) => `hsl(${hue(i, n)} 95% 55% / ${0.04 + v[i] * 0.8})`;
-        // one gradient down the whole side, mirrored around the middle when
-        // centred — two blurred rectangles per side cost 25fps against 50, and
-        // ctx.filter is the expensive part of this mode
-        const grad = g.createLinearGradient(0, 0, 0, h);
-        if (opt.mirror) {
-          for (let i = n - 1; i >= 0; i--) grad.addColorStop(0.5 * (1 - i / (n - 1)), col(i));
-          for (let i = 0; i < n; i++) grad.addColorStop(0.5 + 0.5 * (i / (n - 1)), col(i));
-        } else {
-          for (let i = n - 1; i >= 0; i--) grad.addColorStop(1 - i / (n - 1), col(i));
-        }
-        g.fillStyle = grad;
-        g.fillRect(x, 0, opt.depth, h);
-      }
-      g.filter = "none";
-    },
+    name: "nebula (full field)",
+    note: "The honest full-field proposal: domain-warped noise over the whole screen, drifting slowly, hue riding the bass. This is the one to judge with G and CLEAR MIDDLE off — if a background shader can live behind this game at all, it looks like this, and if it cannot, this is where you see why.",
+    src: `
+void main() {
+  vec2 pc = uvC();
+  float t = uTime * 0.045;
+  // two rounds of warp: the first bends the field, the second bends the bend.
+  // Slow on purpose — a background that moves fast reads as an interruption.
+  vec2 q = vec2(fbm(pc * 1.6 + t), fbm(pc * 1.6 + vec2(5.2, 1.3) + t));
+  vec2 r = vec2(fbm(pc * 1.6 + 2.0 * q + vec2(1.7, 9.2) + t * 1.3),
+                fbm(pc * 1.6 + 2.0 * q + vec2(8.3, 2.8) + t * 1.1));
+  float f = fbm(pc * 1.6 + 2.0 * r);
+  // the warp amount is what the music moves, not the brightness: a field that
+  // pulses in place looks like a light switch, one that CHURNS looks alive
+  float hue = fract(0.52 + f * 0.55 + uEnergy.x * 0.12 + uTime * 0.005);
+  float body = pow(clamp(f, 0.0, 1.0), 2.4) * (0.30 + uEnergy.y * 1.1);
+  vec3 col = rainbow(hue) * body;
+  // the ridges pick up the treble, so the detail arrives with the pulse voice
+  col += vec3(0.6, 0.8, 1.0) * pow(clamp(1.0 - abs(f - 0.55) * 6.0, 0.0, 1.0), 3.0)
+       * uEnergy.z * 0.35;
+  finish(col * 0.85);
+}`,
   },
   {
-    name: "mirror wave",
-    note: "The waveform itself rather than its spectrum, mirrored down each edge — it moves with the beat instead of the pitch.",
-    draw(g, w, h, L, R, tL, tR) {
-      for (const [right, t] of [[0, tL], [1, tR]]) {
-        const x = right ? w : 0, dir = right ? -1 : 1, n = t.length;
-        const grad = g.createLinearGradient(0, h, 0, 0);
-        for (let i = 0; i <= 6; i++) grad.addColorStop(i / 6, `hsl(${280 * (i / 6)} 95% 60%)`);
-        g.strokeStyle = grad;
-        g.lineWidth = 2;
-        g.beginPath();
-        for (let i = 0; i < n; i++) {
-          const y = h - (i / (n - 1)) * h;
-          const a = ((t[i] - 128) / 128) * opt.sens;
-          const px = x + dir * Math.abs(a) * opt.depth * 1.5;
-          i ? g.lineTo(px, y) : g.moveTo(px, y);
-        }
-        g.stroke();
-      }
-    },
+    name: "plasma tide",
+    note: "Four interfering sines, the oldest trick there is, with the last one a ring travelling out from the centre on every beat. Cheap enough to run anywhere, and the most obviously ON of the six — worth having as the upper bound on how much movement is too much.",
+    src: `
+void main() {
+  vec2 pc = uvC() * 3.2;
+  float t = uTime * 0.32;
+  float v = sin(pc.x + t)
+          + sin(pc.y * 1.3 - t * 0.8)
+          + sin((pc.x + pc.y) * 0.9 + t * 1.3)
+          + sin(length(pc) * 2.4 - t * 2.0 - uBeat * 4.0);
+  v *= 0.25;                                  // back into -1..1
+  float lit = 0.5 + 0.5 * v;
+  vec3 col = rainbow(fract(0.5 + v * 0.5 + uEnergy.z * 0.15)) * lit * lit;
+  finish(col * (0.35 + uEnergy.x * 0.9) * 0.8);
+}`,
   },
   {
-    name: "pulse frame",
-    note: "A rainbow frame all the way round, each segment breathing with its band. Reads as one object rather than two sides.",
-    draw(g, w, h, L, R) {
-      const n = L.length;
-      g.lineCap = "butt";
-      for (const [side, v] of [[-1, L], [1, R]]) {
-        for (const dir of DIRS()) {
-          for (let i = 0; i < n; i++) {
-            const p = edgePoint(side, i / n, w, h, dir), q = edgePoint(side, (i + 0.98) / n, w, h, dir);
-            const lit = v[i];
-            g.strokeStyle = `hsl(${hue(i, n)} 95% ${25 + lit * 45}% / ${0.25 + lit * 0.75})`;
-            g.lineWidth = 6 + lit * opt.depth * 0.35;
-            g.beginPath();
-            g.moveTo(p[0], p[1]);
-            g.lineTo(q[0], q[1]);
-            g.stroke();
-          }
-        }
-      }
-    },
+    name: "spectrum rings",
+    note: "Radius IS frequency: bass at the centre, treble at the rim, so the spectrum is a disc rather than a row. Left half of the screen is still the left channel, which makes the disc visibly lopsided wherever the reverb has pushed the two apart.",
+    src: `
+void main() {
+  vec2 pc = uvC();
+  float r = length(pc);
+  float f = clamp(r / 0.72, 0.0, 1.0);         // radius -> band
+  float ch = pc.x < 0.0 ? 0.0 : 1.0;
+  float a = band(f, ch);
+  // fine rings so the band reads as a RING and not a wash, travelling outward
+  float rings = 0.5 + 0.5 * sin(r * 78.0 - uTime * 2.6 - uBeat * 7.0);
+  float body = pow(rings, 5.0) * a;
+  // a soft disc under them, so a loud band is a lit region and not just stripes
+  body += a * a * 0.18;
+  finish(rainbow(f) * body * 1.5);
+}`,
   },
   {
-    name: "comet dots",
-    note: "A dot per band with a fading trail, so a loud band leaves a streak. The most alive, and the busiest.",
-    trails: true,
-    draw(g, w, h, L, R) {
-      const n = L.length;
-      for (const [right, v] of [[0, L], [1, R]]) {
-        for (let i = 0; i < n; i++) {
-          if (v[i] < 0.02) continue;
-          for (const [y, bh] of slots(i, n, h)) {
-            const x = (right ? w : 0) + (right ? -1 : 1) * (8 + v[i] * opt.depth);
-            g.fillStyle = `hsl(${hue(i, n)} 95% 62% / .9)`;
-            g.beginPath();
-            g.arc(x, y + bh / 2, 1.5 + v[i] * 7, 0, 7);
-            g.fill();
-          }
-        }
-      }
-    },
+    name: "warp streaks",
+    note: "Ninety-six lanes radiating from the centre, each carrying one band outward at its own speed. The only option here that is really PARTICLES, and the one that shows what the beat spike is doing — every streak jumps forward on it.",
+    src: `
+void main() {
+  vec2 pc = uvC();
+  float r = length(pc);
+  float ang = atan(pc.y, pc.x) / (2.0 * PI) + 0.5;   // 0..1 round the circle
+  float lanes = uN;
+  float lane = floor(ang * lanes);
+  float h = hash11(lane + 0.5);
+  // the lane's own band, and its own channel: which side of the screen it is on
+  float f = fract(h * 3.7);
+  float a = band(f, pc.x < 0.0 ? 0.0 : 1.0);
+  // travel: a lane's phase is its hash, its speed the overall level, and the
+  // beat shoves every one of them forward at once
+  float speed = 0.10 + (uLevel.x + uLevel.y) * 0.18 + uBeat * 0.5;
+  float d = fract(h + uTime * speed * (0.6 + h * 0.8));
+  float head = d * 0.95;
+  // a head with a tail behind it, both in radius
+  float s = exp(-max(0.0, head - r) * 9.0) * exp(-max(0.0, r - head) * 46.0);
+  // narrow the lane so it is a streak and not a wedge, and fade it in and out
+  // at the ends of its run rather than popping
+  float across = abs(fract(ang * lanes) - 0.5) * 2.0;
+  s *= (1.0 - smoothstep(0.15, 1.0, across))
+     * smoothstep(0.0, 0.12, d) * (1.0 - smoothstep(0.8, 1.0, d));
+  finish(rainbow(f) * s * a * 3.0);
+}`,
   },
 ];
 
-/* ------------------------------------------------------------------- draw */
-const cv = document.getElementById("viz"), g = cv.getContext("2d");
-// the current device-pixel ratio, and rounding to its grid: drawing at
-// fractional device pixels is what puts a seam between two touching rectangles
-let dpr = 1;
-const snap = (v) => Math.round(v * dpr) / dpr;
-let mode = 0, bl = new Float32Array(96), br = new Float32Array(96), frames = 0, fpsAt = 0, stereo = 0;
+/* ------------------------------------------------------------- GL plumbing */
+// Programs are compiled on FIRST USE and kept: switching options should not
+// stall, and a page with six shaders in it should not pay for six compiles
+// before the first frame.
+const programs = new Array(SHADERS.length).fill(null);
+const locs = new Array(SHADERS.length).fill(null);
+let vao = null, tex = null, mode = 0, compiledMs = 0;
 
+function compile(kind, src) {
+  const sh = gl.createShader(kind);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    const log = gl.getShaderInfoLog(sh);
+    gl.deleteShader(sh);
+    // GL numbers the whole source, prelude included, so print it that way or the
+    // line in the message means nothing
+    const lines = src.split("\n").map((l, i) => String(i + 1).padStart(4) + " | " + l);
+    throw new Error(log + "\n" + lines.join("\n"));
+  }
+  return sh;
+}
+
+const UNIFORMS = ["uRes", "uTime", "uBeat", "uGain", "uClear", "uN", "uEnergy", "uLevel", "uBands"];
+
+function program(i) {
+  if (programs[i]) return programs[i];
+  const t0 = performance.now();
+  const vs = compile(gl.VERTEX_SHADER, VERT);
+  const fs = compile(gl.FRAGMENT_SHADER, PRELUDE + SHADERS[i].src);
+  const p = gl.createProgram();
+  gl.attachShader(p, vs);
+  gl.attachShader(p, fs);
+  gl.linkProgram(p);
+  gl.deleteShader(vs);
+  gl.deleteShader(fs);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  compiledMs = performance.now() - t0;
+  programs[i] = p;
+  locs[i] = {};
+  for (const u of UNIFORMS) locs[i][u] = gl.getUniformLocation(p, u);
+  return p;
+}
+
+// The spectrum as a texture: MAXB wide, two rows. R8 rather than a float
+// texture because the analyser already hands us bytes, and LINEAR so a shader
+// can read BETWEEN bands and get a smooth curve instead of a staircase.
+const texData = new Uint8Array(MAXB * 2);
+function initGL() {
+  vao = gl.createVertexArray();          // no attributes, but core profile wants one bound
+  gl.bindVertexArray(vao);
+  tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, MAXB, 2, 0, gl.RED, gl.UNSIGNED_BYTE, texData);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+}
+
+let dpr = 1;
 function resize() {
-  const r = dpr = Math.min(devicePixelRatio || 1, 2);
-  cv.width = innerWidth * r;             // bitmap: device pixels
-  cv.height = innerHeight * r;
-  cv.style.width = innerWidth + "px";    // and the CSS box: viewport pixels
-  cv.style.height = innerHeight + "px";  // (never left to the intrinsic size)
-  g.setTransform(r, 0, 0, r, 0, 0);      // so drawing code works in CSS pixels
-  // the cached bar gradients are anchored at the right edge, which just moved
-  gradCache.clear();
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  cv.width = Math.round(innerWidth * dpr);
+  cv.height = Math.round(innerHeight * dpr);
+  cv.style.width = innerWidth + "px";
+  cv.style.height = innerHeight + "px";
+  if (gl) gl.viewport(0, 0, cv.width, cv.height);
 }
 addEventListener("resize", resize);
-resize();
+
+/* ------------------------------------------------------------------- draw */
+let bl = new Float32Array(MAXB), br = new Float32Array(MAXB);
+let frames = 0, fpsAt = 0, stereo = 0, last = 0, fps = 0;
 
 function frame(now) {
-  const w = innerWidth, h = innerHeight, m = MODES[mode];
-  if (m.trails) {                       // fade instead of clear, so dots streak
-    g.fillStyle = "#05060f28";
-    g.fillRect(0, 0, w, h);
-  } else {
-    g.clearRect(0, 0, w, h);
-  }
+  const dt = Math.min(0.1, (now - last) / 1000) || 0;
+  last = now;
+  const n = opt.bands;
 
   if (anL) {
     anL.smoothingTimeConstant = anR.smoothingTimeConstant = 0.3;
     anL.getByteFrequencyData(freqL);
     anR.getByteFrequencyData(freqR);
-    anL.getByteTimeDomainData(timeL);
-    anR.getByteTimeDomainData(timeR);
-    const n = opt.bands;
-    const L = bands(freqL, n, bl, peakL).subarray(0, n), R = bands(freqR, n, br, peakR).subarray(0, n);
+    const L = bands(freqL, n, bl, peakL), R = bands(freqR, n, br, peakR);
+    energies(L, R, n);
+    beatOf(dt);
     // how far apart the two sides actually are, in the bands being drawn — the
     // reverb decorrelates the channels, and this says by how much
     let d = 0, c = 0;
@@ -838,39 +988,69 @@ function frame(now) {
       if (L[i] > 0.02 || R[i] > 0.02) { d += Math.abs(20 * Math.log10((L[i] + 1e-4) / (R[i] + 1e-4))); c++; }
     }
     stereo = stereo * 0.9 + (c ? d / c : 0) * 0.1;
+    for (let i = 0; i < n; i++) {
+      texData[i] = Math.max(0, Math.min(255, L[i] * 255)) | 0;
+      texData[MAXB + i] = Math.max(0, Math.min(255, R[i] * 255)) | 0;
+    }
+  }
 
-    g.save();
-    m.draw(g, w, h, L, R, timeL, timeR);
-    g.restore();
+  if (gl) {
+    let p;
+    try {
+      p = program(mode);
+      errEl.classList.remove("on");
+    } catch (e) {
+      fail("shader " + (mode + 1) + " (" + SHADERS[mode].name + ") failed:\n\n" + e.message);
+      // fall back to whatever last compiled, so the page keeps running
+      p = programs.find(Boolean);
+      if (!p) return requestAnimationFrame(frame);
+    }
+    const u = locs[programs.indexOf(p)];
+    gl.useProgram(p);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAXB, 2, gl.RED, gl.UNSIGNED_BYTE, texData);
+    gl.uniform2f(u.uRes, cv.width, cv.height);
+    gl.uniform1f(u.uTime, now / 1000);
+    gl.uniform1f(u.uBeat, beat);
+    gl.uniform1f(u.uGain, opt.gain);
+    gl.uniform1f(u.uClear, opt.clear);
+    gl.uniform1f(u.uN, n);
+    gl.uniform3f(u.uEnergy, energy[0], energy[1], energy[2]);
+    gl.uniform2f(u.uLevel, lvl(bl, n) / 100, lvl(br, n) / 100);
+    gl.uniform1i(u.uBands, 0);
+    gl.bindVertexArray(vao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
   frames++;
   if (now - fpsAt > 500) {
+    fps = Math.round((frames * 1000) / (now - fpsAt));
     document.getElementById("meter").innerHTML =
-      Math.round((frames * 1000) / (now - fpsAt)) + " fps &middot; " + m.name +
+      fps + " fps &middot; " + SHADERS[mode].name +
       " &middot; L/R differ by <b>" + stereo.toFixed(1) + " dB</b> across bands" +
-      "<br>level L <b>" + lvl(bl, opt.bands) + "</b> R <b>" + lvl(br, opt.bands) + "</b>" +
-      " &middot; canvas " + cv.width + "x" + cv.height + " bitmap, " +
-      cv.clientWidth + "x" + cv.clientHeight + " on screen";
+      "<br>level L <b>" + lvl(bl, n) + "</b> R <b>" + lvl(br, n) + "</b>" +
+      " &middot; bass <b>" + energy[0].toFixed(2) + "</b> mid <b>" + energy[1].toFixed(2) +
+      "</b> treble <b>" + energy[2].toFixed(2) + "</b> beat <b>" + beat.toFixed(2) + "</b>" +
+      "<br>" + cv.width + "x" + cv.height + " &middot; compile <b>" + compiledMs.toFixed(1) +
+      " ms</b> &middot; " + renderer;
     frames = 0;
     fpsAt = now;
   }
   requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
 
 /* ---------------------------------------------------------------- controls */
 const optsEl = document.getElementById("opts");
-MODES.forEach((m, i) => {
+SHADERS.forEach((m, i) => {
   const d = document.createElement("div");
   d.innerHTML = `<div class="opt" data-i="${i}"><kbd>${i + 1}</kbd> ${m.name}</div>` +
     `<div class="note">${m.note}</div>`;
   optsEl.appendChild(d);
 });
 function pick(i) {
-  mode = (i + MODES.length) % MODES.length;
+  mode = (i + SHADERS.length) % SHADERS.length;
   [...document.querySelectorAll(".opt")].forEach((el, j) => el.classList.toggle("on", j === mode));
-  g.clearRect(0, 0, innerWidth, innerHeight);
 }
 optsEl.addEventListener("click", (e) => {
   const el = e.target.closest(".opt");
@@ -891,11 +1071,11 @@ const slider = (id, key, fmt, scale) => {
 slider("bands", "bands", (v) => v, 1);
 slider("sens", "sens", (v) => v.toFixed(1), 0.01);
 slider("smooth", "smooth", (v) => v.toFixed(2).slice(1), 0.01);
-slider("depth", "depth", (v) => v, 1);
+slider("gain", "gain", (v) => v.toFixed(1), 0.01);
 slider("top", "top", (v) => (v >= 1000 ? (v / 1000).toFixed(1).replace(".0", "") + "k" : v), 1);
 
-// auto-level and centred are the two that answer "the bars do not move" and
-// "it is not centred", so they are switches rather than buried constants
+// auto-level answers "the bands do not move"; clear middle is the whole
+// argument of this page, so neither is a buried constant
 const toggle = (id, key) => {
   const el = document.getElementById(id);
   const apply = () => {
@@ -907,23 +1087,36 @@ const toggle = (id, key) => {
   apply();
 };
 toggle("agc", "agc");
-toggle("mirror", "mirror");
+toggle("clear", "clear");
 
 addEventListener("keydown", (e) => {
-  if (e.key >= "1" && e.key <= String(MODES.length)) pick(+e.key - 1);
+  if (e.key >= "1" && e.key <= String(SHADERS.length)) pick(+e.key - 1);
   else if (e.key === "g" || e.key === "G") document.getElementById("mock").classList.toggle("on");
   else if (e.key === "h" || e.key === "H") document.getElementById("ui").classList.toggle("hidden");
   else if (e.key === " ") { toggleAudio(); e.preventDefault(); }
 });
 
-// the analyser buffers, once the fftSize is known
-function buffers() {
-  freqL = new Uint8Array(1024);
-  freqR = new Uint8Array(1024);
-  timeL = new Uint8Array(2048);
-  timeR = new Uint8Array(2048);
+// the analyser buffers, sized for the fftSize above
+freqL = new Uint8Array(1024);
+freqR = new Uint8Array(1024);
+
+/* -------------------------------------------------------------------- boot */
+let renderer = "no GL";
+if (!gl) {
+  fail("WebGL2 is not available in this browser, so there is nothing to show. " +
+       "The canvas options next door (experiments/visualizer.html) do not need it.");
+} else {
+  const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+  renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "GL";
+  // a software rasteriser will run every one of these and lie about the cost,
+  // which is the one thing this page must not do quietly
+  if (/swiftshader|llvmpipe|software/i.test(renderer)) {
+    renderer = renderer + " — SOFTWARE, fps here means nothing";
+  }
+  initGL();
+  resize();
+  requestAnimationFrame(frame);
 }
-buffers();
 </script>
 </body>
 </html>

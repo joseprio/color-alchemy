@@ -390,12 +390,19 @@ tools/css-diff.mjs         computed styles, minified stylesheet vs. raw
 tools/music-probe.mjs      captures the shipped page's own audio callback
 tools/responsive-probe.mjs the page at seven viewports, phone to laptop
 tools/audio-bench.mjs      ns per sample vs. the render-ahead budget
-tools/build-visualizer.mjs splices src/music.ts into the visualizer experiment
+tools/build-visualizer.mjs splices src/music.ts into both visualizer experiments
 
 experiments/menu-typography.html       the seven title settings the current one
                                        was chosen from
-experiments/visualizer.html            six spectrum-analyser options, on the
-                                       game's own music — not wired in yet
+experiments/visualizer.html            six spectrum-analyser options in canvas
+                                       2D, on the game's own music, all six on
+                                       the border — not wired in yet
+experiments/visualizer-gl.html         the same six slots as GL fragment
+                                       shaders, and the question the canvas page
+                                       does not ask: whether a FULL-FIELD
+                                       background can live behind a game about
+                                       colour. CLEAR MIDDLE is the switch, G the
+                                       mock board. Also not wired in
 experiments/discovery-animation.html   the six first-discovery sequences the
                                        shipped one (FRACTURE) was chosen from
 experiments/discovery-approach.html    nine ways for the pair to reach the
