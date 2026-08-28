@@ -295,15 +295,13 @@ export const ELEMENTS = ([
     r:[["artist","palette"],["palette","paper"],["artist","paper"]] },
   { id:"mermaid", e:"\u{1F9DC}\u{200D}\u{2640}\u{FE0F}",
     r:[["human","fish"]] },
-  // The Snowman KEEPS Human + Snow — Santa was briefly given it, and the
-  // Snowman had no second route to fall back on, so the swap stranded it
-  // outright. Santa comes off the Wizard instead, which is the better picture
-  // anyway: both are made of snow, and only one of them is magic. The two
-  // alternates below are what the swap paid as compensation, kept because
-  // they are good on their own — Snow + Charcoal is the coal face, Human + Ice
-  // the same intuition one element over.
+  // HUMAN + SNOW IS THE SNOWMAN'S ONLY ROUTE, and it is load-bearing: two of
+  // Water's recipes run back through the Snowman, so anything taking this pair
+  // strands it. Santa was briefly given it and had to pay two alternates back
+  // to keep the tree whole; Santa comes off the Wizard instead now, and those
+  // alternates went with the problem they were solving.
   { id:"snowman", e:"\u{26C4}",
-    r:[["human","snow"],["snow","charcoal"],["human","ice"]] },
+    r:[["human","snow"]] },
   { id:"santa", e:"\u{1F385}",
     r:[["wizard","snow"]] },
   { id:"robot", e:"\u{1F916}",
