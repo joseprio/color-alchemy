@@ -114,6 +114,7 @@ export const QUOTE: Record<string, string> = {
   painting: "I found I could say things with color and shapes that I couldn't say any other way.",
   mermaid: "We got no troubles, life is the bubbles, under the sea!",
   snowman: "Hi, everyone! I'm Olaf and I like warm hugs.",
+  santa: "Santa Claus is anyone who loves another and seeks to make them happy.",
   robot: "These aren't the droids you're looking for.",
   astronaut: "That's one small step for man, one giant leap for mankind.",
   zombie: "When there's no more room in hell, the dead will walk the earth.",

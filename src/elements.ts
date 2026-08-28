@@ -295,7 +295,16 @@ export const ELEMENTS = ([
     r:[["artist","palette"],["palette","paper"],["artist","paper"]] },
   { id:"mermaid", e:"\u{1F9DC}\u{200D}\u{2640}\u{FE0F}",
     r:[["human","fish"]] },
+  // SANTA TAKES THE PAIR THE SNOWMAN USED TO OWN, and unlike the Brown/Earth
+  // and Peanut/Tree swaps above, the Snowman had NO second route — Human +
+  // Snow was its only one, so handing it over strands the Snowman outright
+  // and takes two of Water's five recipes down with it. Hence the two given
+  // back, and the reason both are here rather than one: this pair must never
+  // be the last way to a Snowman again. Snow + Charcoal is the coal face, and
+  // Human + Ice is the old intuition landing one element over.
   { id:"snowman", e:"\u{26C4}",
+    r:[["snow","charcoal"],["human","ice"]] },
+  { id:"santa", e:"\u{1F385}",
     r:[["human","snow"]] },
   { id:"robot", e:"\u{1F916}",
     r:[["human","metal"]] },
