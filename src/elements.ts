@@ -237,8 +237,10 @@ export const ELEMENTS = ([
     r:[["stone","animal"],["animal","green"],["egg","lizard"]] },
   { id:"frog", e:"\u{1F438}",
     r:[["lizard","water"]] },
+  // Desert + Animal beside Animal + Sand: the Desert had one route in and
+  // NOTHING out until this, and a camel is the one creature it should make.
   { id:"camel", e:"\u{1F42A}",
-    r:[["animal","sand"]] },
+    r:[["animal","sand"],["desert","animal"]] },
   { id:"horse", e:"\u{1F434}",
     r:[["animal","field"]] },
   { id:"donkey", e:"\u{1FACF}",
@@ -398,11 +400,17 @@ export const ELEMENTS = ([
     r:[["bird","fire"],["ash","fire"]] },
   { id:"bee", e:"\u{1F41D}",
     r:[["animal","blossom"],["animal","yellow"]] },
-  // beside the Bee, whose own recipe is Animal + Blossom — measured at 13082
-  // against 13085 down among the blossoms, so the shape that pays here is the
-  // creature-off-a-flower one rather than the ["blossom", …] run
+  // ANY FLOWER PLUS A RAINBOW. Three routes saying one thing, which usually
+  // fails the two-directions test — but the Rose and the Sunflower are both
+  // CHILDREN of the Blossom, so a player who has already spent theirs on one
+  // is not sent back for another. Forgiving rather than redundant, and it gives
+  // the Rose and the Sunflower their first consumers: both were terminal.
+  //
+  // Still beside the Bee, whose own recipe is Animal + Blossom, even now that
+  // two of its three ingredients live at the far end of the table with the
+  // flowers: 13087 here against 13093 down there.
   { id:"butterfly", e:"\u{1F98B}",
-    r:[["blossom","rainbow"]] },
+    r:[["blossom","rainbow"],["rose","rainbow"],["sunflower","rainbow"]] },
   { id:"honey", e:"\u{1F36F}",
     r:[["bee","blossom"]] },
   { id:"bear", e:"\u{1F43B}",
