@@ -115,6 +115,7 @@ export const QUOTE: Record<string, string> = {
   painting: "I found I could say things with color and shapes that I couldn't say any other way.",
   clown: "Clowns are the pegs on which the circus is hung.",
   circus: "The circus arrives without warning.",
+  elephant: "They say an elephant never forgets. What they don't tell you is, you never forget an elephant.",
   mermaid: "We got no troubles, life is the bubbles, under the sea!",
   snowman: "Hi, everyone! I'm Olaf and I like warm hugs.",
   santa: "Santa Claus is anyone who loves another and seeks to make them happy.",

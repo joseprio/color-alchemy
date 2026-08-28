@@ -303,6 +303,11 @@ export const ELEMENTS = ([
     r:[["human","rainbow"]] },
   { id:"circus", e:"\u{1F3AA}",
     r:[["clown","house"]] },
+  // beside the Circus rather than up in the animals: "animal" appears a dozen
+  // times across the table and the packer knows it wherever this sits, while
+  // "circus" appears exactly once, so the rare string is the one worth hugging
+  { id:"elephant", e:"\u{1F418}",
+    r:[["circus","animal"]] },
   { id:"mermaid", e:"\u{1F9DC}\u{200D}\u{2640}\u{FE0F}",
     r:[["human","fish"]] },
   // HUMAN + SNOW IS THE SNOWMAN'S ONLY ROUTE, and it is load-bearing: two of
