@@ -135,7 +135,7 @@ function hud(): void {
   gl.innerHTML = cheated
     ? "Unlocked &mdash; this run does not score"
     : fullDone
-    ? "Complete. \u{1F451}"
+    ? "Complete. \u{1F3C6}"
     : questDone
       ? "Endgame: discover all " + ELEMENTS.length + " elements"
       : "Forge the \u{1F308} <b>Rainbow</b> and the \u{1F984} <b>Unicorn</b>";
@@ -844,7 +844,7 @@ function finishFull(questHtml: string): void {
   hud();
   SFX.grand();
   openOverlay(
-    '<div class="B">\u{1F451}</div>' +
+    '<div class="B">\u{1F3C6}</div>' +
     '<div class="T">GRAND ALCHEMIST</div>' +
     "<h2>All " + ELEMENTS.length + " elements</h2>" +
     (questHtml ? '<div class="L">quest also completed — in <b>' + moves + "</b> moves</div>" : "") +
@@ -1109,7 +1109,7 @@ export function boot(): void {
 // A run that completed the game returns to its completion screen on Continue.
 function showRestoredCompletion(): void {
   openOverlay(
-    '<div class="B">\u{1F451}</div>' +
+    '<div class="B">\u{1F3C6}</div>' +
     '<div class="T">GRAND ALCHEMIST</div>' +
     "<h2>All " + ELEMENTS.length + " elements</h2>" +
     '<div class="L">complete run: <b>' + moves + "</b> moves</div>" +

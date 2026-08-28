@@ -500,6 +500,13 @@ export const ELEMENTS = ([
     r:[["charcoal","lava"],["volcano","charcoal"]] },
   { id:"ring", e:"\u{1F48D}",
     r:[["metal","diamond"]] },
+  // U+1F451 was the COMPLETION BADGE until this commit — the HUD goal line and
+  // both goal overlays wore it — so the badge moved to the trophy to free it.
+  // Gold + Diamond is Metal + Diamond one rank up, the sentence the Ring above
+  // already taught; Gold + Metal is the cheaper way in, three steps shallower,
+  // for anyone who reaches the gold long before the charcoal and the lava.
+  { id:"crown", e:"\u{1F451}",
+    r:[["gold","diamond"],["gold","metal"]] },
   { id:"wedding", e:"\u{1F492}",
     r:[["human","ring"]] },
   { id:"baby", e:"\u{1F476}",
