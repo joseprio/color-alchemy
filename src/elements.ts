@@ -235,6 +235,8 @@ export const ELEMENTS = ([
     r:[["animal","cheese"]] },
   { id:"lizard", e:"\u{1F98E}",
     r:[["stone","animal"],["animal","green"],["egg","lizard"]] },
+  { id:"turtle", e:"\u{1F422}",
+    r:[["lizard","sea"]] },
   { id:"frog", e:"\u{1F438}",
     r:[["lizard","water"]] },
   // THE CAMEL GAVE ANIMAL + SAND TO THE CRAB and kept Desert + Animal, which
