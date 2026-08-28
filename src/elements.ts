@@ -310,7 +310,7 @@ export const ELEMENTS = ([
   { id:"bird", e:"\u{1F426}",
     r:[["air","animal"],["air","penguin"]] },
   { id:"chick", e:"\u{1F425}",
-    r:[["egg","bird"],["duck","egg"],["egg","flamingo"]] },
+    r:[["egg","bird"],["duck","egg"],["egg","flamingo"],["egg","swan"]] },
   { id:"penguin", e:"\u{1F427}",
     r:[["bird","ice"],["bird","black"]] },
   { id:"duck", e:"\u{1F986}",

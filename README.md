@@ -915,7 +915,7 @@ pairs - Violet + Yellow, Orange + Blue.
 | School | Teacher + House |
 | Doctor | Medicine + Human |
 | Bird | Air + Animal · Air + Penguin |
-| Chick | Egg + Bird · Duck + Egg · Egg + Flamingo |
+| Chick | Egg + Bird · Duck + Egg · Egg + Flamingo · Egg + Swan |
 | Penguin | Bird + Ice |
 | Duck | Bird + Water |
 | Fish | Animal + Water |
