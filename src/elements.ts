@@ -289,7 +289,7 @@ export const ELEMENTS = ([
   // ground the shoe is for is EARTH: there is no separate ground element, and
   // Human + Stone is already the Statue.
   { id:"shoe", e:"\u{1F45F}",
-    r:[["human","earth"]] },
+    r:[["human","earth"],["human","sand"]] },
   { id:"ninja", e:"\u{1F977}",
     r:[["human","black"]] },
   { id:"wizard", e:"\u{1F9D9}",
