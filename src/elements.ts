@@ -404,6 +404,18 @@ export const ELEMENTS = ([
     r:[["plant","acid"]] },
   { id:"potato", e:"\u{1F954}",
     r:[["plant","brown"],["farmer","field"]] },
+  // TWO ROUTES THAT SAY DIFFERENT THINGS. Orange + Plant is the table's own
+  // colour-plus-category idiom, the one Rose and Pumpkin and Flamingo already
+  // use; Earth + Orange is the Peanut argument instead — the orange thing that
+  // grows in the ground — so the second route comes at it from the soil rather
+  // than saying the first one again in other words.
+  { id:"carrot", e:"\u{1F955}",
+    r:[["orange","plant"],["earth","orange"]] },
+  // beside the Carrot, not up in the animals: "animal" is everywhere in this
+  // table and "carrot" is one line old, so the rare string is the one to hug —
+  // the Elephant measured three bytes UNDER its baseline on that reasoning
+  { id:"rabbit", e:"\u{1F407}",
+    r:[["animal","carrot"]] },
   { id:"cactus", e:"\u{1F335}",
     r:[["plant","sand"],["green","sand"]] },
   { id:"desert", e:"\u{1F3DC}\u{FE0F}",

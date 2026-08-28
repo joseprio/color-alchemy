@@ -157,6 +157,8 @@ export const QUOTE: Record<string, string> = {
   plant: "Grow where you are planted.",
   medicine: "To cure sometimes, to relieve often, to comfort always.",
   potato: "Boil 'em, mash 'em, stick 'em in a stew.",
+  carrot: "Carrots are a great thing to eat when you're hungry and want to stay that way.",
+  rabbit: "What's up, doc?",
   cactus: "Adapt to your environment, grow thick skin, and stay sharp.",
   desert: "A natural extension of the silent mind.",
   field: "Pray for a good harvest, but keep on plowing.",
