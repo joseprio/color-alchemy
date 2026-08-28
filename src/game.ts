@@ -260,13 +260,17 @@ function renderFocus(): void {
     // standingHint() goes null — which is why nothing has to clear it
     t.classList.toggle("g", !!h && h.includes(order[i]));
     // the name turns green the moment an element has nothing left to give
-    t.classList.toggle("S", !live[order[i]]);
-    // ...and the pair already spent. Not on the pick itself: an element is
-    // never tried against itself, so it can never have been tried. A SPENT
-    // PICK greys the whole board in one go: every pair it has left makes
-    // nothing or repeats something held, so there is nothing to single out.
+    const done = !live[order[i]];
+    t.classList.toggle("S", done);
+    // ...and the tile greys for any of three reasons, all of them the same
+    // sentence: there is nothing left down this pair. EITHER HALF being spent
+    // is enough — a spent element makes nothing new with anything, so it greys
+    // against every pick, and a spent PICK greys the whole board in one go —
+    // and so is having already tried the pair. Never on the pick itself: an
+    // element is never tried against itself, so it stays lit over whatever
+    // board it just proved.
     t.classList.toggle("x", !!p && i !== sel &&
-      (!live[p] || !!tried[rkey(p, order[i])]));
+      (done || !live[p] || !!tried[rkey(p, order[i])]));
   });
 }
 function gridCols(): number {

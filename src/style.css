@@ -146,15 +146,6 @@ body {
 }
 @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .t:hover { border-color: #3d5584; }
-/* NOTHING LEFT TO MAKE. Every combination this element has left either makes
-   nothing or remakes something already on the board — which is true of every
-   terminal element from the moment it is found, and of everything else
-   eventually. Only the NAME turns, and only slightly: this is a standing fact
-   about the ELEMENT, not a note about the move in hand, so it has to be
-   legible across a full board without competing with the two pick colours or
-   the hint's violet. Placed above .t.x so a spent pick's grey-out still wins
-   on every tile it greys — the immediate signal beats the standing one. */
-.t.S .n { color: #7dff9a; }
 /* ALREADY TRIED WITH THE PICK, AND IT MADE NOTHING. Border, ground, name and
    the ICON all give way together. The icon used to be exempt — the argument
    was that dimming the one square carrying the colour would be a lie about the
@@ -163,13 +154,27 @@ body {
    and a spent pick greys every tile at once now, which is where that showed
    worst. OPACITY AND NOT grayscale, so the exemption's point survives: the hue
    is still the element's own, only quieter, and the swatch never lies about
-   what colour it is. .35 is the value the drag ghost already uses.
+   what colour it is. .35 is the value the drag ghost already uses. The name is
+   the one part a spent element keeps — see .t.S below.
    Placed above every other tile state so a marked tile that is also hinted, or
    being dragged onto, still reads as those: the mark is the weakest thing a
    tile can say, and the first to give way. */
 .t.x { border-color: #16203a; background: #080c17cc; }
 .t.x .n { color: #45536c; }
 .t.x .o { opacity: .35; }
+/* NOTHING LEFT TO MAKE. Every combination this element has left either makes
+   nothing or remakes something already on the board — true of every terminal
+   element from the moment it is found, and of everything else eventually.
+   Only the NAME turns: this is a standing fact about the ELEMENT, not a note
+   about the move in hand, so it has to be legible across a full board without
+   competing with the two pick colours or the hint's violet.
+   Placed BELOW .t.x, and that is the whole point of the rule's position: a
+   spent element greys against EVERY pick, so if the grey name won here the
+   green would only ever show with nothing picked — the one moment nobody
+   needs it. Instead the two compose. The dimmed chrome and icon say NOT THIS
+   PAIR; the name that stays green says AND NEVER ANY PAIR, which is the
+   reason the tile is dim in the first place. */
+.t.S .n { color: #7dff9a; }
 /* A hint bought and not yet spent: BOTH named tiles hold a steady violet glow
    until the pair's result exists — no pulse, so it can sit there for as long
    as the answer goes unused. Placed ABOVE the pick and pulse rules on purpose:
