@@ -261,6 +261,8 @@ export const ELEMENTS = ([
     r:[["animal","nut"]] },
   { id:"monkey", e:"\u{1F412}",
     r:[["animal","tree"],["animal","peanut"]] },
+  { id:"orangutan", e:"\u{1F9A7}",
+    r:[["orange","monkey"]] },
   { id:"human", e:"\u{1F9CD}",
     r:[["monkey","tool"],["monkey","fire"],["clay","life"],["statue","life"]] },
   { id:"chef", e:"\u{1F468}\u{200D}\u{1F373}",
@@ -441,6 +443,12 @@ export const ELEMENTS = ([
     r:[["tree","sun"]] },
   { id:"banana", e:"\u{1F34C}",
     r:[["fruit","yellow"]] },
+  // Monkey + Banana is the pair everyone tries the moment they hold both, and
+  // Grey + Monkey is the same colour-plus-category move that makes the
+  // Orangutan two entries up — the diet and the colour, coming at it from
+  // different directions rather than saying one thing twice.
+  { id:"gorilla", e:"\u{1F98D}",
+    r:[["monkey","banana"],["grey","monkey"]] },
   { id:"coconut", e:"\u{1F965}",
     r:[["palm","fruit"]] },
   { id:"pumpkin", e:"\u{1F383}",
