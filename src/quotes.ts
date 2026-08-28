@@ -190,6 +190,7 @@ export const QUOTE: Record<string, string> = {
   king: "Hail to the king, baby.",
   castle: "Castles in the air are the only ones that cost nothing to keep up.",
   lion: "Remember who you are. You are my son, and the one true king.",
+  tiger: "The tiger will tear you apart, but it won't judge you.",
   wedding: "The best thing to hold onto in life is each other.",
   baby: "People who say they sleep like a baby usually don't have one.",
   blossom: "Where flowers bloom so does hope.",

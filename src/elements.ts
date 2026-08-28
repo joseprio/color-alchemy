@@ -522,6 +522,12 @@ export const ELEMENTS = ([
   // the beasts because "animal" is in a dozen recipes and "crown" is in two.
   { id:"lion", e:"\u{1F981}",
     r:[["animal","crown"]] },
+  // the table's second big cat, after the Cat and the Black Cat, and the
+  // colour-plus-category move once more: Animal + Orange is the Fox, so the
+  // orange version of the LION is the one striped big cat. Beside the Lion,
+  // whose id appears twice in the file against orange's dozen.
+  { id:"tiger", e:"\u{1F405}",
+    r:[["lion","orange"]] },
   { id:"wedding", e:"\u{1F492}",
     r:[["human","ring"]] },
   { id:"baby", e:"\u{1F476}",
