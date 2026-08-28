@@ -336,6 +336,12 @@ export const ELEMENTS = ([
     r:[["book","human"],["eyeglasses","human"]] },
   { id:"school", e:"\u{1F3EB}",
     r:[["teacher","house"]] },
+  // Human + Teacher is who teaches you, Human + School is where — two
+  // directions on one idea rather than one said twice. It also gives the
+  // SCHOOL its first consumer: it had one route in and nothing out. Placed
+  // here because "school" appeared exactly once in the file until now.
+  { id:"student", e:"\u{1F9D1}\u{200D}\u{1F393}",
+    r:[["human","teacher"],["human","school"]] },
   { id:"doctor", e:"\u{1F9D1}\u{200D}\u{2695}\u{FE0F}",
     r:[["medicine","human"]] },
   { id:"bird", e:"\u{1F426}",

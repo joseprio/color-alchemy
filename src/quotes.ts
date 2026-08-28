@@ -126,6 +126,7 @@ export const QUOTE: Record<string, string> = {
   zombie: "When there's no more room in hell, the dead will walk the earth.",
   teacher: "Those who know, do. Those that understand, teach.",
   school: "An investment in knowledge pays the best interest.",
+  student: "Always walk through life as if you have something new to learn, and you will.",
   doctor: "A good doctor treats the disease; the great doctor treats the patient who has the disease.",
   bird: "To have faith is to have wings.",
   chick: "Are you my mother?",
