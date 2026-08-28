@@ -297,6 +297,14 @@ export const ELEMENTS = ([
     r:[["ice","milk"],["chef","ice"]] },
   { id:"salad", e:"\u{1F957}",
     r:[["chef","plant"]] },
+  // IN THE FOOD, and it is the second measurement in a row favouring the
+  // NEIGHBOURHOOD'S SHAPE over string rarity: 13062 here against 13066 beside
+  // the Rat, though "rat" is in the file twice and "chef" seven times. The
+  // Burger, the Sushi, the Pizza and the Salad above are all `r:[["chef", …]]`
+  // and so is this, which appears to matter more than hugging a rare id —
+  // dropping it into that run came in THREE BYTES UNDER the build without it.
+  { id:"ratatouille", e:"\u{1F372}",
+    r:[["chef","rat"]] },
   { id:"eyeglasses", e:"\u{1F453}",
     r:[["human","glass"]] },
   // with the Eyeglasses, the table's other person-plus-material wearable. The
