@@ -189,6 +189,7 @@ export const QUOTE: Record<string, string> = {
   crown: "Uneasy lies the head that wears a crown.",
   king: "Hail to the king, baby.",
   castle: "Castles in the air are the only ones that cost nothing to keep up.",
+  lion: "Remember who you are. You are my son, and the one true king.",
   wedding: "The best thing to hold onto in life is each other.",
   baby: "People who say they sleep like a baby usually don't have one.",
   blossom: "Where flowers bloom so does hope.",

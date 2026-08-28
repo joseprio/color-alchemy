@@ -517,6 +517,11 @@ export const ELEMENTS = ([
   // and "house" is already in four recipes.
   { id:"castle", e:"\u{1F3F0}",
     r:[["king","house"],["stone","house"]] },
+  // fourth of the royal run and the second thing the Crown makes: the king of
+  // the animals, put together exactly that way. Kept here rather than up with
+  // the beasts because "animal" is in a dozen recipes and "crown" is in two.
+  { id:"lion", e:"\u{1F981}",
+    r:[["animal","crown"]] },
   { id:"wedding", e:"\u{1F492}",
     r:[["human","ring"]] },
   { id:"baby", e:"\u{1F476}",
