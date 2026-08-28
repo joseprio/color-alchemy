@@ -301,6 +301,8 @@ export const ELEMENTS = ([
   // person, and because "human" is the string every entry in this stretch uses
   { id:"clown", e:"\u{1F921}",
     r:[["human","rainbow"]] },
+  { id:"circus", e:"\u{1F3AA}",
+    r:[["clown","house"]] },
   { id:"mermaid", e:"\u{1F9DC}\u{200D}\u{2640}\u{FE0F}",
     r:[["human","fish"]] },
   // HUMAN + SNOW IS THE SNOWMAN'S ONLY ROUTE, and it is load-bearing: two of
