@@ -187,6 +187,8 @@ export const QUOTE: Record<string, string> = {
   diamond: "Life tries to crush you, but you choose whether to become dust or a diamond.",
   ring: "One ring to bring them all, and in the darkness bind them.",
   crown: "Uneasy lies the head that wears a crown.",
+  king: "Hail to the king, baby.",
+  castle: "Castles in the air are the only ones that cost nothing to keep up.",
   wedding: "The best thing to hold onto in life is each other.",
   baby: "People who say they sleep like a baby usually don't have one.",
   blossom: "Where flowers bloom so does hope.",

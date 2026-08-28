@@ -507,6 +507,16 @@ export const ELEMENTS = ([
   // for anyone who reaches the gold long before the charcoal and the lava.
   { id:"crown", e:"\u{1F451}",
     r:[["gold","diamond"],["gold","metal"]] },
+  // beside the Crown it comes from: "crown" is one line old here and "human"
+  // is in twenty-odd recipes, so the rare string is the one to hug
+  { id:"king", e:"\u{1FAC5}",
+    r:[["crown","human"]] },
+  // King + House is who it belongs to, Stone + House is what it is made of —
+  // two directions rather than one said twice. Beside the King for the same
+  // reason the King sits beside the Crown: "king" is the string one line up
+  // and "house" is already in four recipes.
+  { id:"castle", e:"\u{1F3F0}",
+    r:[["king","house"],["stone","house"]] },
   { id:"wedding", e:"\u{1F492}",
     r:[["human","ring"]] },
   { id:"baby", e:"\u{1F476}",
