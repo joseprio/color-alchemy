@@ -398,6 +398,11 @@ export const ELEMENTS = ([
     r:[["bird","fire"],["ash","fire"]] },
   { id:"bee", e:"\u{1F41D}",
     r:[["animal","blossom"],["animal","yellow"]] },
+  // beside the Bee, whose own recipe is Animal + Blossom — measured at 13082
+  // against 13085 down among the blossoms, so the shape that pays here is the
+  // creature-off-a-flower one rather than the ["blossom", …] run
+  { id:"butterfly", e:"\u{1F98B}",
+    r:[["blossom","rainbow"]] },
   { id:"honey", e:"\u{1F36F}",
     r:[["bee","blossom"]] },
   { id:"bear", e:"\u{1F43B}",

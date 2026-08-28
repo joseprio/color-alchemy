@@ -147,6 +147,7 @@ export const QUOTE: Record<string, string> = {
   peacock: "I'm a peacock, you gotta let me fly!",
   phoenix: "From the ashes, a fire shall be woken",
   bee: "Busy bees make more honey.",
+  butterfly: "Float like a butterfly, sting like a bee.",
   honey: "Life is the flower for which love is the honey.",
   bear: "Sometimes you eat the bear, and sometimes the bear eats you.",
   polarbear: "The undisputed king of the ice.",
