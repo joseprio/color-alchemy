@@ -431,6 +431,15 @@ export const ELEMENTS = ([
   // beside the Carrot, not up in the animals: "animal" is everywhere in this
   // table and "carrot" is one line old, so the rare string is the one to hug —
   // the Elephant measured three bytes UNDER its baseline on that reasoning
+  // WITH THE VEGETABLES, AND THE PLACEMENT RULE BENDS HERE. Everything since
+  // the Elephant has sat beside its RAREST ingredient — "violet" is in the
+  // file five times and "egg" eight, against "plant"'s twelve — but all three
+  // placements were built and the vegetables won: 13056 here, 13061 beside the
+  // Egg, 13067 beside the Violet. The reason is that this entry leans on
+  // "plant" TWICE, once in each recipe, so the string worth being near is not
+  // the rarest in the file but the one the entry itself repeats.
+  { id:"eggplant", e:"\u{1F346}",
+    r:[["egg","plant"],["violet","plant"]] },
   { id:"rabbit", e:"\u{1F407}",
     r:[["animal","carrot"]] },
   { id:"cactus", e:"\u{1F335}",

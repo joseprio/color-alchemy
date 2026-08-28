@@ -162,6 +162,7 @@ export const QUOTE: Record<string, string> = {
   medicine: "To cure sometimes, to relieve often, to comfort always.",
   potato: "Boil 'em, mash 'em, stick 'em in a stew.",
   carrot: "Carrots are a great thing to eat when you're hungry and want to stay that way.",
+  eggplant: "Very well, I will marry you if you promise not to make me eat eggplant.",
   rabbit: "What's up, doc?",
   cactus: "Adapt to your environment, grow thick skin, and stay sharp.",
   desert: "A natural extension of the silent mind.",
