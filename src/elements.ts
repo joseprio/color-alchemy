@@ -203,6 +203,8 @@ export const ELEMENTS = ([
     r:[["air","storm"]] },
   { id:"life", e:"\u{1F9EC}",
     r:[["lightning","water"],["sun","water"]] },
+  { id:"alien", e:"\u{1F47D}",
+    r:[["life","star"]] },
   { id:"jellyfish", e:"\u{1FABC}",
     r:[["water","life"]] },
   { id:"coral", e:"\u{1FAB8}",
