@@ -237,10 +237,16 @@ export const ELEMENTS = ([
     r:[["stone","animal"],["animal","green"],["egg","lizard"]] },
   { id:"frog", e:"\u{1F438}",
     r:[["lizard","water"]] },
-  // Desert + Animal beside Animal + Sand: the Desert had one route in and
-  // NOTHING out until this, and a camel is the one creature it should make.
+  // THE CAMEL GAVE ANIMAL + SAND TO THE CRAB and kept Desert + Animal, which
+  // it had been handed one commit earlier — that is the only reason the swap
+  // is safe, and it is the Snowman lesson applied in advance rather than
+  // repaired afterwards. Desert + Animal is the better sole route anyway: a
+  // desert says camel far more particularly than sand does, and sand is what
+  // the crab actually lives in.
   { id:"camel", e:"\u{1F42A}",
-    r:[["animal","sand"],["desert","animal"]] },
+    r:[["desert","animal"]] },
+  { id:"crab", e:"\u{1F980}",
+    r:[["animal","sand"]] },
   { id:"horse", e:"\u{1F434}",
     r:[["animal","field"]] },
   { id:"donkey", e:"\u{1FACF}",

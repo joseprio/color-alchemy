@@ -80,6 +80,7 @@ export const QUOTE: Record<string, string> = {
   lizard: "Life's better on a warm rock.",
   frog: "It's not easy being green.",
   camel: "Trust in God, but tie your camel.",
+  crab: "You can never teach a crab to walk straight.",
   horse: "My kingdom for a horse!",
   donkey: "Better a donkey that carries me than a horse that throws me.",
   sheep: "It is better to live one day as a lion than a hundred years as a sheep.",
