@@ -113,6 +113,7 @@ export const QUOTE: Record<string, string> = {
   farmer: "Cultivators of the earth are the most valuable citizens.",
   artist: "Inspiration exists, but it has to find you working.",
   painting: "I found I could say things with color and shapes that I couldn't say any other way.",
+  clown: "Clowns are the pegs on which the circus is hung.",
   mermaid: "We got no troubles, life is the bubbles, under the sea!",
   snowman: "Hi, everyone! I'm Olaf and I like warm hugs.",
   santa: "Santa Claus is anyone who loves another and seeks to make them happy.",

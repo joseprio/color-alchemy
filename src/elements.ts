@@ -297,6 +297,10 @@ export const ELEMENTS = ([
     r:[["human","palette"]] },
   { id:"painting", e:"\u{1F5BC}\u{FE0F}",
     r:[["artist","palette"],["palette","paper"],["artist","paper"]] },
+  // with the Artist and the Painting because it is the third colour-carrying
+  // person, and because "human" is the string every entry in this stretch uses
+  { id:"clown", e:"\u{1F921}",
+    r:[["human","rainbow"]] },
   { id:"mermaid", e:"\u{1F9DC}\u{200D}\u{2640}\u{FE0F}",
     r:[["human","fish"]] },
   // HUMAN + SNOW IS THE SNOWMAN'S ONLY ROUTE, and it is load-bearing: two of
