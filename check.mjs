@@ -270,22 +270,29 @@ check("fail: the cauldron shakes and the tiles do not",
   await evalJs(`document.getElementById('cd').classList.contains('x')`) &&
   !(await evalJs(`!!document.querySelector('.t.x')`)));
 // ...and the board is clean above because NOTHING IS PICKED — a loose pick is
-// spent by its mix. The dead-pair mark is a property of the pick, not of the
-// tile, so it only appears once there is a pair to be dead.
+// spent by its mix. The spent-pair mark is a property of the pick, not of the
+// tile, so it only appears once there is a pair to be spent.
 await click("green");
-check("dead: picking one half of a failed pair marks the other",
+check("tried: picking one half of a failed pair marks the other",
   await evalJs(`document.querySelector('[data-id=yellow]').classList.contains('x')`) &&
-  // red + green is Yellow, a recipe that worked, so red stays clean...
-  !(await evalJs(`document.querySelector('[data-id=red]').classList.contains('x')`)) &&
   // ...and an element is never tried against itself, so the pick never marks
   !(await evalJs(`document.querySelector('[data-id=green]').classList.contains('x')`)));
+// A SUCCESS MARKS TOO, which is the whole point of tracking tried pairs rather
+// than dead ones: red + green already made Yellow, Yellow is on the board, so
+// there is nothing left to find down that pair either.
+check("tried: a pair already performed is marked as well",
+  await evalJs(`document.querySelector('[data-id=red]').classList.contains('x')`));
 await release();
-check("dead: letting the pick go clears every mark",
+check("tried: letting the pick go clears every mark",
   !(await evalJs(`!!document.querySelector('.t.x')`)));
-// Stored with the CODEX, not the run: the tree does not change between runs, so
-// a dead end stays dead through a New game the way a discovered element does.
-check("dead: the memory rides with the codex",
-  ((await cellGet(SLOT.codex)) || {}).d.includes("green+yellow"));
+// Stored with the RUN, not the codex, and as a dictionary rather than a list:
+// "tried" is a fact about this run, so New game starts the search over, and a
+// success only counts as spent while its result is still on the board.
+const triedSave = ((await cellGet(SLOT.run)) || {}).t || {};
+check("tried: the memory rides with the run, failures and successes alike",
+  !!triedSave["green+yellow"] && !!triedSave["green+red"] &&
+  // ...and the codex no longer carries the old all-time dead-end list
+  !((await cellGet(SLOT.codex)) || {}).d);
 check("pick: a loose pick is spent by its mix — nothing stays picked",
   s.sel === -1 && s.pick === -1 &&
   !(await evalJs(`!!document.querySelector('.t.E')`)) &&
@@ -948,14 +955,23 @@ check("alt: Lava sets into Stone against Water, Rain or Air",
 check("alt: Lava + Stone melts back into Lava, a cyclic pair that costs a move",
   RECIPE['lava+stone'] === "lava");
 // The Tool is the other half of four recipes and, since the colours arrived,
-// the cheap way to none of them: the Wood is 12 through Brown against the
-// Tool's 17, the Sand 6 through Yellow against 12, the Black 14 through Earth
-// against 18, the Prism 10 through White against 14. The Tool is flavour now.
-check("alt: a Tool cuts Wood, grinds Stone into Sand, and works Charcoal into Black",
+// the cheap way to only one of them: the Wood is 12 through Brown against the
+// Tool's 17, the Black 14 through Earth against 18, the Prism 10 through White
+// against 14. It carves the Statue too, but Clay + Life gave the Human a
+// shallow route and a Human now carves the same Stone for less, so the Tool
+// is flavour there as well. The Artist is the third and dearest route.
+// It no longer grinds Stone into Sand: that pair carves now, and the Sand
+// keeps Earth + Air, Stone + Air and the Yellow shortcut without it.
+check("alt: a Tool cuts Wood, carves Stone into a Statue, and works Charcoal into Black",
   RECIPE['tool+tree'] === "wood" &&
-  RECIPE['stone+tool'] === "sand" &&
+  RECIPE['stone+tool'] === "statue" &&
+  RECIPE['human+stone'] === "statue" &&
   RECIPE['charcoal+tool'] === "black" &&
   RECIPE['charcoal+stone'] === "black");
+check("alt: the Sand keeps three routes after the Tool stopped grinding it",
+  RECIPE['air+earth'] === "sand" &&
+  RECIPE['air+stone'] === "sand" &&
+  RECIPE['earth+yellow'] === "sand");
 // The COLOUR SHORTCUTS. A plain colour is within three moves of the starters,
 // so laying one on a thing is the cheapest route the table has, and these are
 // the ones that MOVE a depth rather than tie it: Sand 6 against 8, Field 6
@@ -1193,36 +1209,50 @@ check(`encyclopedia: a row lists every route performed — White: ${whiteRoutes}
 // Five hints, each bought and then MADE so the next one is a fresh answer rather
 // than the standing one. With the priority on, every one is an ancestor of the
 // Rainbow or the Unicorn. With it off, each has roughly a one-in-three chance of
-// wandering, so five in a row is about a 1-in-13 pass — the failure this catches
-// is a regression, and it catches it most runs rather than every run. The counts
-// go in the label so a reader can see how strong the sample actually was.
+// wandering — the failure this catches is a regression, and it catches it most
+// runs rather than every run. The counts go in the label so a reader can see how
+// strong the sample actually was.
+//
+// Only hints taken with a quest-path pair ACTUALLY AVAILABLE are graded. The
+// narrowing in game.ts is deliberately a filter and not a veto — "if nothing
+// within reach is on the quest path the full list stands" — so a hint offered
+// when the path is momentarily exhausted is behaving correctly by wandering, and
+// grading it would fail the check for doing the documented thing. That state got
+// common enough to fail real builds as the tree grew past 120 elements. Grading
+// only the decidable turns keeps this a test of the PRIORITY rather than of how
+// the quest target happened to land.
 await reset();
 await run(PERFECT_QUEST.slice(0, 22));
-let onPath = 0, offered = 0, offPath = 0, wandered = "";
+let onPath = 0, offered = 0, offPath = 0, wandered = "", graded = 0, fellBack = 0;
 for (let i = 0; i < 5; i++) {
   s = await state();
   const want = questWants(s.found);
   // what the game could have said, and how much of it was a detour
-  let any = 0;
+  let any = 0, offHere = 0;
   for (const [k, id] of Object.entries(RECIPE)) {
     const [a, b] = k.split("+");
     if (s.found.includes(a) && s.found.includes(b) && !s.found.includes(id)) {
       any++;
-      if (!want.has(id)) offPath++;
+      if (!want.has(id)) offHere++;
     }
   }
   offered += any;
+  offPath += offHere;
+  const onAvail = any - offHere;   // quest-path pairs the hint could have picked
   await clearToast();
   await key("h");
   const pr = await hintedPair();
   if (!pr) break;
   const made = RECIPE[[pr[0], pr[1]].sort().join("+")];
-  if (want.has(made)) onPath++; else wandered += " " + made;
+  if (!onAvail) fellBack++;
+  else if (want.has(made)) { graded++; onPath++; }
+  else { graded++; wandered += " " + made; }
   await attempt(pr[0], pr[1]);      // spend it, so the next H is a new answer
   await release();
 }
-check(`hint: 5 hints, ${offPath} of ${offered} offers off the quest path, ${onPath} stayed on` + wandered,
-  offPath > 0 && onPath === 5);
+check(`hint: ${graded} graded of 5, ${offPath} of ${offered} offers off the quest path, ` +
+  `${onPath} stayed on` + (fellBack ? `, ${fellBack} with no path pair left` : "") + wandered,
+  offPath > 0 && graded > 0 && onPath === graded);
 
 check("no uncaught exceptions", t.exceptions.length === 0);
 if (t.exceptions.length) console.log(t.exceptions.join("\n"));

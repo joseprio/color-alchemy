@@ -57,6 +57,29 @@ if (cell[0] !== TREE) { cell[0] = TREE; cell[S_QUEST] = cell[S_FULL] = 0; }
 /* ------------------------------------------------------------------- state */
 let found = new Set<string>();      // discovered element ids (this run)
 const order: string[] = [];         // discovery order (drives the grid)
+// EVERY PAIR PUT IN THE CAULDRON THIS RUN, successes included. RUN state, so
+// it rides the run save and New game wipes it with the board. It was failures
+// only until now, under the name `dead`, and it lived with the all-time codex
+// instead. Two things fall out of the move:
+//   - THE SUCCESSES CAN JOIN IT, which is the point. A pair already performed
+//     greys out on the next pick of either half, instead of silently repeating
+//     itself and answering "already discovered" after the fact.
+//   - NO FILTER IS NEEDED AT EITHER END. `dead` claimed "nothing here, ever" —
+//     a statement about the TREE, which a balance patch could falsify, hence
+//     the mirrored load filters this replaces. "Tried" is a statement about
+//     the player within one run, and inside a run `found` only ever grows, so
+//     a tried pair that made something means you still hold that something.
+//     "Tried" and "nothing left to give" are therefore the same statement, and
+//     no second clause is needed to keep the board honest.
+// The price is that failures are no longer remembered across runs: New game
+// now genuinely starts the search over.
+//
+// A PLAIN OBJECT RATHER THAN A Set, because this one is persisted and a Set is
+// not JSON: as a Set it needs `[...tried]` on every save and a `.map` loop on
+// every load, where the object IS the saved shape and both ends become an
+// assignment. `__proto__` is the usual hazard with an object-as-dictionary and
+// cannot arise here — every key is rkey() output, so every key contains a "+".
+let tried: Record<string, 1> = {};
 // The codex is all-time knowledge, persisted separately from the run: every
 // element ever discovered (in first-discovery order) and every recipe ever
 // performed. New game wipes the board, never the codex — it is what the
@@ -65,15 +88,6 @@ const order: string[] = [];         // discovery order (drives the grid)
 // survives balance patches, with stale entries filtered on load.
 const codexF: string[] = [];
 const codexK = new Set<string>();
-// Pairs TRIED that made nothing. Knowledge like the two above and stored with
-// them: the tree does not change between runs, so a dead end found in one run
-// is still dead in the next, and the alternative is a player re-deriving the
-// same hundred failures every time. It is the cheap half of the codex — the
-// recipes above say what works, this says where there is nothing to find, and
-// in a tree of 101 elements the second is the bigger number by far.
-// Filtered on load like codexK, but the other way round: if a balance patch
-// gives a dead pair a recipe, the memory of it being dead has to go.
-const dead = new Set<string>();
 let moves = 0;                      // every combination attempt, incl. failures
 let questDone = false;              // Rainbow + Unicorn found this run
 let fullDone = false;               // all elements found this run
@@ -106,10 +120,10 @@ function reflow(el: HTMLElement): void {
 }
 
 function save(): void {
-  put(S_RUN, { f: order, m: moves, q: questDone, c: fullDone, x: cheated });
+  put(S_RUN, { f: order, t: tried, m: moves, q: questDone, c: fullDone, x: cheated });
 }
 function saveCodex(): void {
-  put(S_CODEX, { f: codexF, k: [...codexK], d: [...dead] });
+  put(S_CODEX, { f: codexF, k: [...codexK] });
 }
 
 /* -------------------------------------------------------------------- HUD */
@@ -210,10 +224,31 @@ function flash(...ids: string[]): void {
 }
 function renderFocus(): void {
   const h = standingHint();
-  // What the PICK has already been tried against, and made nothing of. Only
-  // ever while something is picked: with nothing in hand there is no pair to
-  // be dead, and a board that stayed half-greyed would just look broken.
+  // What the PICK has already been tried against this run — whether that made
+  // nothing or made something now on the board; either way there is nothing
+  // left to find there. Only ever while something is picked: with nothing in
+  // hand there is no pair to be spent, and a board that stayed half-greyed
+  // would just look broken.
   const p = sel >= 0 ? order[sel] : "";
+  // EVERY ID STILL WORTH MIXING: one named by a recipe of an element THIS RUN
+  // has not found. Anything else is SPENT — every combination it has left
+  // either makes nothing or remakes something already on the board. That
+  // includes the 40 terminal elements, which no recipe names at all and which
+  // are therefore spent from the moment they are discovered.
+  //
+  // Against `found`, the RUN, and deliberately not against the codex: a New
+  // game is a fresh search, so every label comes back with the empty board.
+  // The partner does not have to be in hand either — an id stays live while
+  // any recipe of a missing element names it, even one whose other half is
+  // still undiscovered. That only ever errs late, never early.
+  //
+  // Derived here rather than kept in state: one pass over the tree, against a
+  // render that only runs on an interaction, and derived state cannot drift
+  // out of step with `found`. It is monotonic anyway — the missing set only
+  // shrinks — so nothing ever un-spends and no label flickers.
+  const live: Record<string, 1> = {};
+  for (const el of ELEMENTS) if (!found.has(el.id))
+    (el.r || []).map(q => (live[q[0]] = live[q[1]] = 1));
   tiles.map((t, i) => {
     // one element wears one of the two: gold for a locked pick, cyan for a
     // loose one. Nothing else on the board is marked — a mix leaves the pair
@@ -224,9 +259,14 @@ function renderFocus(): void {
     // both halves of an unspent hint glow, and stop glowing the moment
     // standingHint() goes null — which is why nothing has to clear it
     t.classList.toggle("g", !!h && h.includes(order[i]));
-    // ...and the pair already known to make nothing. Not on the pick itself:
-    // an element is never tried against itself, so it can never be dead.
-    t.classList.toggle("x", !!p && i !== sel && dead.has(rkey(p, order[i])));
+    // the name turns green the moment an element has nothing left to give
+    t.classList.toggle("S", !live[order[i]]);
+    // ...and the pair already spent. Not on the pick itself: an element is
+    // never tried against itself, so it can never have been tried. A SPENT
+    // PICK greys the whole board in one go: every pair it has left makes
+    // nothing or repeats something held, so there is nothing to single out.
+    t.classList.toggle("x", !!p && i !== sel &&
+      (!live[p] || !!tried[rkey(p, order[i])]));
   });
 }
 function gridCols(): number {
@@ -507,6 +547,10 @@ export function attempt(aId: string, bId: string): void {
   moves++;
   const k = rkey(aId, bId);
   const res = RECIPE[k];
+  // Remembered from here on, so the next pick of either half says so on the
+  // board. Unguarded and unsaved: it is run state, and the save() at the tail
+  // of this function carries it either way.
+  tried[k] = 1;
   if (res && !codexK.has(k)) { codexK.add(k); saveCodex(); }
   slotA = aId;
   slotB = bId;
@@ -526,13 +570,13 @@ export function attempt(aId: string, bId: string): void {
     sweep(1500);
   } else {
     cq.innerHTML = "<i>nothing happens</i>";
-    // remembered from here on, so the next pick of either half says so on the
-    // board. Guarded because a pair tried twice must not rewrite the save.
-    if (!dead.has(k)) { dead.add(k); saveCodex(); }
     SFX.fail();
     sweep(1100);
   }
   paintCauldron();
+  // a discovery can be the one that spends an ingredient — or both halves of
+  // the pair — so the labels are re-derived here rather than at the next tap
+  renderFocus();
   checkMilestones();
   // re-arm both one-shots: the same pair tried twice has to react twice
   cd.classList.remove("x");
@@ -868,7 +912,6 @@ function wipeAll(i: number): void {
   [S_RUN, S_QUEST, S_FULL, S_CODEX].map(i => put(i, 0));
   codexF.length = 0;
   codexK.clear();
-  dead.clear();
   reset();
   paintMenu();
   // deliberately NOT closeMenu(): New game means "start playing", this means
@@ -998,6 +1041,7 @@ export function reset(): void {
   order.length = 0;
   tiles.length = 0;
   gd.innerHTML = "";
+  tried = {};
   moves = 0;
   questDone = fullDone = cheated = false;
   sel = -1;
@@ -1031,16 +1075,12 @@ export function boot(): void {
         .map(id => { if (!codexF.includes(id)) codexF.push(id); });
       (cx.k && cx.k.map ? (cx.k as string[]) : []).filter(k => RECIPE[k])
         .map(k => codexK.add(k));
-      // the reverse filter: a pair that HAS a recipe is not a dead end, however
-      // it got into an old save
-      (cx.d && cx.d.map ? (cx.d as string[]) : []).filter(k => !RECIPE[k])
-        .map(k => dead.add(k));
     }
   } catch {}
   STARTERS.map(id => { if (!codexF.includes(id)) codexF.push(id); });
 
   // then the saved run
-  let run: { f?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean } | null = null;
+  let run: { f?: unknown; t?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean } | null = null;
   run = cell[S_RUN] || null;
   if (run && run.f && (run.f as string[]).map) {
     const ids = (run.f as string[]).filter(id => BY_ID[id]);
@@ -1049,6 +1089,7 @@ export function boot(): void {
     // migrate pre-codex saves: a run's discoveries and combos are knowledge
     ids.map(id => { if (!codexF.includes(id)) codexF.push(id); });
     if (run.k && (run.k as string[]).map) (run.k as string[]).filter(k => RECIPE[k]).map(k => codexK.add(k));
+    tried = (run.t as Record<string, 1>) || {};
     moves = Math.max(0, (run.m as number) | 0);
     questDone = !!run.q;
     fullDone = !!run.c;
