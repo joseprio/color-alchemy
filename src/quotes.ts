@@ -69,6 +69,7 @@ export const QUOTE: Record<string, string> = {
   tornado: "I've a feeling we're not in Kansas anymore.",
   life: "It finds a way.",
   alien: "If it's just us, it seems like an awful waste of space.",
+  ufo: "Not constructed by any power on Earth.",
   jellyfish: "Go with the flow.",
   coral: "Individual coral polyps are tiny, but together they build structures visible from space.",
   egg: "Which came first?",

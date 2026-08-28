@@ -205,6 +205,10 @@ export const ELEMENTS = ([
     r:[["lightning","water"],["sun","water"]] },
   { id:"alien", e:"\u{1F47D}",
     r:[["life","star"]] },
+  // one of the few ids the derived name gets wrong — "Ufo" — so it pays for an
+  // explicit n, the way Black Cat and Crystal Ball do
+  { id:"ufo",n:"UFO", e:"\u{1F6F8}",
+    r:[["alien","sky"]] },
   { id:"jellyfish", e:"\u{1FABC}",
     r:[["water","life"]] },
   { id:"coral", e:"\u{1FAB8}",
