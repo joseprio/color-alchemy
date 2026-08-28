@@ -870,12 +870,14 @@ pairs - Violet + Yellow, Orange + Blue.
 | Earth | Brown + Matter |
 | Clay | Earth + Water |
 | Pottery | Clay + Fire |
+| Hospital | Doctor + House |
 | Beer | Gold + Water |
 | Wine | Red + Water |
 | Lava | Earth + Fire · Lava + Stone |
 | Volcano | Lava + Earth |
 | Stone | Lava + Water · Lava + Rain · Lava + Air |
-| Metal | Fire + Stone |
+| Metal | Fire + Stone · Rust + Acid |
+| Rust | Metal + Air · Metal + Water · Metal + Salt · Red + Metal · Orange + Metal |
 | Tool | Fire + Metal |
 | Sand | Earth + Air · Stone + Air · Stone + Tool |
 | Glass | Sand + Fire · Sand + Electricity · Sand + Lightning |
@@ -889,8 +891,11 @@ pairs - Violet + Yellow, Orange + Blue.
 | Rain | Cloud + Water |
 | Lightning | Cloud + Electricity |
 | Storm | Lightning + Rain · Electricity + Rain |
+| Umbrella | Rain + Tool · Storm + Tool · Human + Rain · Human + Storm |
 | Tornado | Air + Storm |
 | Life | Lightning + Water |
+| Jellyfish | Water + Life |
+| Coral | Sea + Life |
 | Egg | Stone + Life |
 | Animal | Earth + Life |
 | Lizard | Stone + Animal · Egg + Lizard |
@@ -902,19 +907,29 @@ pairs - Violet + Yellow, Orange + Blue.
 | Dog | Wolf + Bone · Dog + Wolf |
 | Cow | Animal + Plant |
 | Milk | Cow + Water |
+| Cat | Animal + Yarn · Animal + Milk |
+| Black Cat | Cat + Black · Cat + Night · Cat + Wizard |
 | Cheese | Acid + Milk |
 | Squirrel | Animal + Tree |
+| Fireworks | Party + Sky · Party + Night |
+| School | Teacher + House |
+| Doctor | Medicine + Human |
 | Bird | Air + Animal · Air + Penguin |
 | Chick | Egg + Bird · Duck + Egg · Egg + Flamingo |
 | Penguin | Bird + Ice |
 | Duck | Bird + Water |
 | Fish | Animal + Water |
+| Sea | Island + Water · Fish + Water · Mermaid + House |
+| Octopus | Animal + Sea · Animal + Coral |
+| Salt | Sea + Fire · Sea + Sun · White + Stone |
+| Shark | Grey + Fish · White + Fish |
 | Owl | Bird + Night |
 | Flamingo | Bird + Pink |
+| Swan | White + Duck · White + Bird |
 | Peacock | Bird + Rainbow |
 | Phoenix | Bird + Fire · Ash + Fire |
-| Bee | Animal + Flower |
-| Honey | Bee + Flower |
+| Bee | Animal + Blossom |
+| Honey | Bee + Blossom |
 | Bear | Animal + Honey |
 | Polar Bear | Bear + Ice · Bear + Snow · Bear + White |
 | Acid | Green + Water |
@@ -928,11 +943,16 @@ pairs - Violet + Yellow, Orange + Blue.
 | Crystal Ball | Magic + Glass |
 | Unicorn | Horse + Magic · Animal + Magic |
 | Plant | Earth + Sun · Life + Sun · Green + Life |
+| Medicine | Plant + Acid |
 | Cactus | Plant + Sand |
 | Field | Earth + Plant |
 | Park | Field + Water |
 | Tree | Water + Plant |
+| Palm | Sand + Tree |
+| Island | Sand + Palm |
 | Fruit | Tree + Sun |
+| Banana | Fruit + Yellow |
+| Coconut | Palm + Fruit |
 | Pumpkin | Fruit + Orange |
 | Wood | Tree + Tool |
 | Charcoal | Wood + Fire · Tree + Fire |
@@ -947,6 +967,8 @@ pairs - Violet + Yellow, Orange + Blue.
 | Grey | Black + White |
 | Diamond | Charcoal + Lava · Volcano + Charcoal |
 | Ring | Metal + Diamond |
-| Flower | Plant + Pink |
-| Sunflower | Sun + Flower · Flower + Yellow |
-| Rose | Flower + Red |
+| Wedding | Human + Ring |
+| Baby | Human + Life · Wedding + Life |
+| Blossom | Plant + Pink |
+| Sunflower | Sun + Blossom · Blossom + Yellow |
+| Rose | Blossom + Red |
