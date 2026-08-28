@@ -76,6 +76,7 @@ export const QUOTE: Record<string, string> = {
   egg: "Which came first?",
   cooking: "A recipe has no soul. You, as the cook, must bring soul to the recipe.",
   animal: "All animals are equal, but some are more equal than others.",
+  rat: "The trouble with the rat race is that even if you win, you're still a rat.",
   lizard: "Life's better on a warm rock.",
   frog: "It's not easy being green.",
   camel: "Trust in God, but tie your camel.",

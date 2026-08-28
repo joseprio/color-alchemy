@@ -223,6 +223,16 @@ export const ELEMENTS = ([
     r:[["egg","fire"],["egg","tool"]] },
   { id:"animal", e:"\u{1F43E}",
     r:[["earth","life"]] },
+  // IN THE ANIMALS, and measured: 13065 here against 13069 beside the Cheese.
+  // That is the rare-string rule losing twice running — "cheese" is in the file
+  // four times and "animal" thirty-two — so what the Eggplant found is not the
+  // whole story either. The likelier reading is that neither rarity nor repeats
+  // are the thing: it is the NEIGHBOURHOOD'S SHAPE. Every entry around this one
+  // is `{ id, e, r:[["animal", …]] }`, so a new one costs almost nothing here,
+  // and the vegetables won the Eggplant for the same reason rather than for its
+  // doubled "plant". Build both before believing any of it.
+  { id:"rat", e:"\u{1F400}",
+    r:[["animal","cheese"]] },
   { id:"lizard", e:"\u{1F98E}",
     r:[["stone","animal"],["animal","green"],["egg","lizard"]] },
   { id:"frog", e:"\u{1F438}",
