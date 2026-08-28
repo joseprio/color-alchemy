@@ -40,6 +40,7 @@ export const QUOTE: Record<string, string> = {
   pottery: "Who is the Potter, pray, and who the Pot?",
   brick: "Even a brick wants to be something.",
   house: "May your house always be too small for all your friends.",
+  window: "A room without a view is a body without a soul.",
   hospital: "A house of hope.",
   beer: "Beer is proof that God loves us and wants us to be happy.",
   wine: "Wine is sunlight, held together by water.",

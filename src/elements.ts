@@ -107,6 +107,10 @@ export const ELEMENTS = ([
     r:[["clay","air"],["clay","sun"],["clay","red"]] },
   { id:"house", e:"\u{1F3E0}",
     r:[["brick","tool"],["brick","wood"],["brick","human"]] },
+  // beside the House rather than the Glass: "house" is in the file eight times
+  // and "glass" thirteen, so the House is the rarer of its two ingredients
+  { id:"window", e:"\u{1FA9F}",
+    r:[["glass","house"]] },
   { id:"hospital", e:"\u{1F3E5}",
     r:[["doctor","house"]] },
   { id:"beer", e:"\u{1F37A}",
