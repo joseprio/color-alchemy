@@ -285,6 +285,11 @@ export const ELEMENTS = ([
     r:[["chef","plant"]] },
   { id:"eyeglasses", e:"\u{1F453}",
     r:[["human","glass"]] },
+  // with the Eyeglasses, the table's other person-plus-material wearable. The
+  // ground the shoe is for is EARTH: there is no separate ground element, and
+  // Human + Stone is already the Statue.
+  { id:"shoe", e:"\u{1F45F}",
+    r:[["human","earth"]] },
   { id:"ninja", e:"\u{1F977}",
     r:[["human","black"]] },
   { id:"wizard", e:"\u{1F9D9}",

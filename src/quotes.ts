@@ -107,6 +107,7 @@ export const QUOTE: Record<string, string> = {
   icecream: "Tomorrow we can eat broccoli, but today is for ice cream.",
   salad: "A salad is not a meal, it is a style.",
   eyeglasses: "Words are like eyeglasses; they blur everything that they do not make clear.",
+  shoe: "It's not the mountain ahead to climb that wears you out; it's the pebble in your shoe.",
   ninja: "Only a ninja can stop a ninja.",
   wizard: "Do not meddle in the affairs of wizards, for they are subtle and quick to anger.",
   vampire: "Evil is a point of view.",
