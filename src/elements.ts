@@ -254,7 +254,7 @@ export const ELEMENTS = ([
   { id:"squirrel", e:"\u{1F43F}\u{FE0F}",
     r:[["animal","nut"]] },
   { id:"monkey", e:"\u{1F412}",
-    r:[["animal","tree"]] },
+    r:[["animal","tree"],["animal","peanut"]] },
   { id:"human", e:"\u{1F9CD}",
     r:[["monkey","tool"],["monkey","fire"],["clay","life"],["statue","life"]] },
   { id:"chef", e:"\u{1F468}\u{200D}\u{1F373}",
@@ -390,8 +390,13 @@ export const ELEMENTS = ([
     r:[["earth","plant"],["earth","green"]] },
   { id:"park", e:"\u{1F3DE}\u{FE0F}",
     r:[["field","water"]] },
+  // TREE AND NUT MAKE EACH OTHER — Blossom + Tree is the Nut, a wet Nut is the
+  // Tree. Cyclic the way Magic and the Crystal Ball are, and it resolves for
+  // the same reason: Tree keeps Water + Plant, a route that does not run
+  // through Nut, so the pair always has one independent way in. Nut needs no
+  // second route of its own, but Tree must never lose that one.
   { id:"tree", e:"\u{1F333}",
-    r:[["water","plant"],["nut","earth"]] },
+    r:[["water","plant"],["nut","water"],["nut","rain"]] },
   { id:"palm", e:"\u{1F334}",
     r:[["sand","tree"]] },
   { id:"island", e:"\u{1F3DD}\u{FE0F}",
@@ -456,6 +461,14 @@ export const ELEMENTS = ([
     r:[["blossom","pink"]] },
   { id:"nut", e:"\u{1F330}",
     r:[["blossom","tree"]] },
+  // PEANUT TAKES THE PAIR TREE USED TO OWN — the Brown/Earth swap again, and
+  // safe for the same reason it was there: Tree keeps Water + Plant, a route
+  // that does not run through Nut, and eight recipes are downstream of Tree.
+  // The pair fits better here anyway; a peanut is the nut that grows in the
+  // ground. Placed against Nut so the id it is built from is the string
+  // immediately above it.
+  { id:"peanut", e:"\u{1F95C}",
+    r:[["nut","earth"]] },
   { id:"sunflower", e:"\u{1F33B}",
     r:[["sun","blossom"],["blossom","yellow"]] },
   { id:"rose", e:"\u{1F339}",

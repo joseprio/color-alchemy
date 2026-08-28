@@ -947,7 +947,7 @@ pairs - Violet + Yellow, Orange + Blue.
 | Cactus | Plant + Sand |
 | Field | Earth + Plant |
 | Park | Field + Water |
-| Tree | Water + Plant |
+| Tree | Water + Plant · Nut + Water · Nut + Rain |
 | Palm | Sand + Tree |
 | Island | Sand + Palm |
 | Fruit | Tree + Sun |

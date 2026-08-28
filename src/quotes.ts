@@ -92,7 +92,7 @@ export const QUOTE: Record<string, string> = {
   blackcat: "All cats are black in the dark.",
   cheese: "The nectar of the Gods.",
   squirrel: "You can't keep a squirrel on the ground.",
-  monkey: "Pay peanuts, get monkeys.",
+  monkey: "Even a monkey can fall from a tree.",
   human: "To err is human; to forgive, divine.",
   chef: "This lamb is so raw, it's still singing Mary Had a Little Lamb!",
   burger: "The cornerstone of any nutritious breakfast.",
@@ -180,6 +180,7 @@ export const QUOTE: Record<string, string> = {
   blossom: "Where flowers bloom so does hope.",
   cherryblossom: "Under the cherry blossoms, none are strangers.",
   nut: "God gives the nuts, but he does not crack them.",
+  peanut: "If you pay peanuts, you get monkeys.",
   sunflower: "Wherever the sun goes, the sunflower will follow.",
   rose: "A rose by any other name would smell as sweet.",
 };
