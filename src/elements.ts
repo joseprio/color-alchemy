@@ -115,7 +115,13 @@ export const ELEMENTS = ([
     r:[["doctor","house"]] },
   { id:"beer", e:"\u{1F37A}",
     r:[["gold","water"]] },
+  // Blood TAKES Red + Water, the pair the Wine used to own. The Wine is not
+  // lost: it comes back from the three light reds, and that is what makes
+  // the swap safe — Pink, Magenta and Violet all sit above Water in the
+  // tree, so every route to a Wine is open the moment the Water is.
   { id:"wine", e:"\u{1F377}",
+    r:[["pink","water"],["magenta","water"],["violet","water"]] },
+  { id:"blood", e:"\u{1FA78}",
     r:[["red","water"]] },
   { id:"coffee", e:"\u{2615}",
     r:[["black","water"],["brown","milk"],["black","milk"]] },
@@ -130,6 +136,12 @@ export const ELEMENTS = ([
     r:[["lava","earth"]] },
   { id:"mountain", e:"\u{26F0}\u{FE0F}",
     r:[["volcano","rain"],["volcano","water"]] },
+  // Animal + habitat, the idiom the Camel, the Crab and the Horse already
+  // teach — and the Mountain was the last node of its depth with nothing
+  // at all downstream of it. Placed against Mountain because "mountain" is
+  // the string one line up and "animal" is in thirty recipes.
+  { id:"goat", e:"\u{1F410}",
+    r:[["animal","mountain"]] },
   { id:"stone", e:"\u{1FAA8}",
     r:[["lava","water"],["lava","rain"],["lava","air"],["grey","matter"]] },
   { id:"metal", c:"#c3ced9",
@@ -221,8 +233,12 @@ export const ELEMENTS = ([
     r:[["stone","life"]] },
   { id:"cooking", e:"\u{1F373}",
     r:[["egg","fire"],["egg","tool"]] },
+  // The Blood is the second way into the Animal, and the one that stops it
+  // being a single-route node: Life in the Earth is a plant kingdom, Life in
+  // the Blood is an animal one. "life" trails both pairs so the repeat is
+  // exact — a near-miss is what costs roadroller real bits.
   { id:"animal", e:"\u{1F43E}",
-    r:[["earth","life"]] },
+    r:[["earth","life"],["blood","life"]] },
   // IN THE ANIMALS, and measured: 13065 here against 13069 beside the Cheese.
   // That is the rare-string rule losing twice running — "cheese" is in the file
   // four times and "animal" thirty-two — so what the Eggplant found is not the
@@ -237,6 +253,13 @@ export const ELEMENTS = ([
     r:[["stone","animal"],["animal","green"],["egg","lizard"]] },
   { id:"turtle", e:"\u{1F422}",
     r:[["lizard","sea"]] },
+  // The third thing the Lizard makes, and the two directions the reptiles were
+  // missing: the Desert one and the Tree one. Kept in the Lizard's own run
+  // because "lizard" is the string on both sides of this entry — the Turtle
+  // above and the Frog below — where "desert" is in two recipes and "tree" in
+  // nine, so the rare string is the one worth hugging.
+  { id:"snake", e:"\u{1F40D}",
+    r:[["desert","lizard"],["tree","lizard"]] },
   { id:"frog", e:"\u{1F438}",
     r:[["lizard","water"]] },
   // THE CAMEL GAVE ANIMAL + SAND TO THE CRAB and kept Desert + Animal, which
@@ -259,6 +282,17 @@ export const ELEMENTS = ([
     r:[["sheep","tool"]] },
   { id:"scarf", e:"\u{1F9E3}",
     r:[["human","yarn"]] },
+  // Figure + material is the effigy, the sentence the Statue, the Snowman and
+  // the Robot all say with Human on one side; this is that with the Bear on it
+  // instead, and Yarn is the only soft material the table has. It is also the
+  // first thing the Bear makes that is not a Polar Bear or its own Bone.
+  // Kept in the Yarn run beside the Scarf — both of Yarn's consumers now sit
+  // together — because "yarn" is three occurrences against "bear"'s seven.
+  // Two directions rather than one said twice, the Castle's move: Yarn is what
+  // it is made of, the Baby is who it is for. "bear" leads both pairs so the
+  // repeat is exact where a near-miss would cost real bits.
+  { id:"teddybear",n:"Teddy Bear", e:"\u{1F9F8}",
+    r:[["bear","yarn"],["bear","baby"]] },
   { id:"hippo", e:"\u{1F99B}",
     r:[["horse","water"]] },
   { id:"wolf", e:"\u{1F43A}",
@@ -326,12 +360,39 @@ export const ELEMENTS = ([
     r:[["human","black"]] },
   { id:"wizard", e:"\u{1F9D9}",
     r:[["human","magic"],["human","crystalball"],["owl","book"]] },
+  // Two directions, not one said twice: the Bat is what TURNS you, the Blood
+  // is what keeps you. It is also the first thing the Blood feeds that is not
+  // an Animal, and it moves the Vampire a depth (9, against the Bat route's
+  // 10).
+  // The pair reads ["blood","human"] and NOT ["human","blood"], which is the
+  // repeat rule losing by a byte: 13190 against 13191. Leading with "human"
+  // would have made an exact repeat of the pair beside it and this whole run
+  // is `["human", …]` — it still costs more, because "blood" is the rare
+  // string and putting it first is what lets the common one close the pair.
+  // One byte, measured both ways, like everything else here.
   { id:"vampire", e:"\u{1F9DB}",
-    r:[["human","bat"]] },
+    r:[["human","bat"],["blood","human"]] },
   { id:"statue", e:"\u{1F5FF}",
     r:[["human","stone"],["stone","tool"],["artist","stone"]] },
   { id:"farmer", e:"\u{1F9D1}\u{200D}\u{1F33E}",
     r:[["human","field"]] },
+  // BETWEEN THE FARMER AND THE ARTIST, and it is the EMOJI that chose the
+  // seat, not the recipe: all three are \u{1F9D1}\u{200D} plus one glyph,
+  // so eleven characters of this entry are an exact repeat of the line above.
+  // 13194 here against 13203 beside the Doctor — which is also a person ZWJ,
+  // but two entries further out and behind a four-escape emoji of its own.
+  // The fire pair is ["fire","human"], one byte under ["human","fire"] (13194
+  // vs 13195), the same way round the Vampire's Blood went. The RED pair goes
+  // the other way and by eight: ["human","red"] 13200, ["red","human"] 13208.
+  // So there is no rule here either — leading with the rare string won the
+  // Blood and the Fire, and leading with the repeat wins the Red. Both orders
+  // are one build apart; measure the pair, do not reason about it.
+  //
+  // Red + Human is the plain-colour way in the Earth, the Cloud and the Animal
+  // already have: same depth as the Fire route (9), so it is a second door at
+  // the same height rather than a shortcut past one.
+  { id:"firefighter", e:"\u{1F9D1}\u{200D}\u{1F692}",
+    r:[["fire","human"],["human","red"]] },
   { id:"artist", e:"\u{1F9D1}\u{200D}\u{1F3A8}",
     r:[["human","palette"]] },
   { id:"painting", e:"\u{1F5BC}\u{FE0F}",
@@ -347,6 +408,15 @@ export const ELEMENTS = ([
   // "circus" appears exactly once, so the rare string is the one worth hugging
   { id:"elephant", e:"\u{1F418}",
     r:[["circus","animal"]] },
+  // A named animal plus a colour, the table's most-worn idiom — the Donkey,
+  // the Fox, the Black Cat, the Orangutan, the Shark, the Swan, the Polar
+  // Bear and the Tiger are all this sentence. Brown alone would be ambiguous
+  // against a dozen beasts, but against the ELEPHANT it has one answer. Snow
+  // is the second direction: brown is what it looks like, the ice age is what
+  // it is. Pressed against the Elephant, which was a leaf until now and whose
+  // id is a single occurrence in the file against brown's six.
+  { id:"mammoth", e:"\u{1F9A3}",
+    r:[["brown","elephant"],["elephant","snow"]] },
   { id:"mermaid", e:"\u{1F9DC}\u{200D}\u{2640}\u{FE0F}",
     r:[["human","fish"]] },
   // HUMAN + SNOW IS THE SNOWMAN'S ONLY ROUTE, and it is load-bearing: two of
@@ -400,6 +470,22 @@ export const ELEMENTS = ([
     r:[["animal","night"]] },
   { id:"flamingo", e:"\u{1F9A9}",
     r:[["bird","pink"]] },
+  // Bird + Pink is the Flamingo one line up; Animal + Pink is that same
+  // sentence one category wider, the colour idiom the Fox and the Polar Bear
+  // already teach. Kept beside the Flamingo rather than up with the beasts
+  // because "pink" is in three recipes and "animal" is in thirty-one — the
+  // rare string is the one to hug, and both of pink's animals now sit
+  // together.
+  { id:"pig", e:"\u{1F416}",
+    r:[["animal","pink"]] },
+  // What the Pig is for: the first thing it makes, and the bridge from the
+  // beasts into the food run the Burger and the Pizza already hold. Two
+  // directions rather than one said twice — Cooking is the process, the Chef
+  // is who does it. Pressed against the Pig above because "pig" is the rarest
+  // string in either recipe (one occurrence before this entry, against five
+  // for "cooking" and ten for "chef"), and this entry spends it twice.
+  { id:"bacon", e:"\u{1F953}",
+    r:[["cooking","pig"],["chef","pig"]] },
   { id:"swan", e:"\u{1F9A2}",
     r:[["white","duck"],["white","bird"]] },
   { id:"peacock", e:"\u{1F99A}",
@@ -408,6 +494,14 @@ export const ELEMENTS = ([
     r:[["bird","fire"],["ash","fire"]] },
   { id:"bee", e:"\u{1F41D}",
     r:[["animal","blossom"],["animal","yellow"]] },
+  // IN THE INSECTS, not beside the Blood: 13186 here against 13192 up there,
+  // even though "blood" is in the file three times and "animal" thirty-four.
+  // The rare-string rule loses again, and for the reason the Rat block gives —
+  // every entry down here is already `r:[["animal", …]]`, so the shape is paid
+  // for and this one rides it. The Bee is the neighbour it earns: both are
+  // small fliers off the same Animal.
+  { id:"mosquito", e:"\u{1F99F}",
+    r:[["blood","animal"]] },
   // ANY FLOWER PLUS A RAINBOW. Three routes saying one thing, which usually
   // fails the two-directions test — but the Rose and the Sunflower are both
   // CHILDREN of the Blossom, so a player who has already spent theirs on one
@@ -518,6 +612,12 @@ export const ELEMENTS = ([
     r:[["fruit","orange"]] },
   { id:"wood", e:"\u{1FAB5}",
     r:[["tree","tool"],["brown","tree"]] },
+  // Animal + habitat once more, but the noun is what the beast is FOR rather
+  // than where it lives — Wood is the thing a beaver fells and builds with.
+  // Placed against the Wood above, not up with the beasts, because "wood" is
+  // in ten recipes against "animal"'s forty.
+  { id:"beaver", e:"\u{1F9AB}",
+    r:[["animal","wood"]] },
   { id:"charcoal", c:"#8a3a14",
     bg:"radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%)," +
        "radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%)," +
