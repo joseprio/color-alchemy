@@ -236,8 +236,9 @@ export const ELEMENTS = ([
     r:[["lightning","water"],["sun","water"]] },
   { id:"alien", e:"\u{1F47D}",
     r:[["life","star"]] },
-  // one of the few ids the derived name gets wrong — "Ufo" — so it pays for an
-  // explicit n, the way Black Cat and Crystal Ball do
+  // The one acronym, and the id spells it: the derivation only ever uppercases
+  // a WORD'S FIRST LETTER, so "uFO" comes back out as "UFO" and the last n
+  // field in the table went with it.
   { id:"uFO", e:"\u{1F6F8}",
     r:[["alien","sky"]] },
   { id:"jellyfish", e:"\u{1FABC}",

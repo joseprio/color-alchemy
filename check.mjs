@@ -165,7 +165,7 @@ check("boot: COLOR and AlchemY come out the same width", await evalJs(`(() => {
 // genuinely gone. `npm run build-dev` is the build that has them.
 const DEVBUILD = await evalJs(
   `[...document.querySelectorAll('#mu button')].some(b => b.textContent === 'Unlock all')`);
-const MENU_FRESH = "New game,Highscore,Encyclopedia" +
+const MENU_FRESH = "New game,Highscores,Encyclopedia" +
   (DEVBUILD ? ",Unlock all,Reset everything" : "");
 check("boot: a fresh boot offers no Continue, having nothing to continue",
   (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`)) ===
@@ -818,7 +818,11 @@ check("black: the one color no mixing of lights reaches, so it comes from the ma
 
 // --- highscore screen: quest best visible, full best still hidden ---------
 await key("Escape");
-await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Highscore').click()`);
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Highscores').click()`);
+// The head is the button's own label uppercased, not a second string in caps,
+// so the casing is now behaviour rather than a literal and is checked as such.
+check("highscore: the panel head is the menu label in caps",
+  (await evalJs(`document.getElementById('mh').textContent`)) === "HIGHSCORES");
 check("highscore: shows the quest best",
   await evalJs(`document.getElementById('ml').textContent.includes('${questMoves} moves')`));
 check("highscore: the complete-run best stays hidden",
@@ -829,7 +833,7 @@ check("highscore: the complete-run best stays hidden",
 await evalJs(`document.getElementById('mb').click()`);
 check("highscore: Back puts the button column back",
   (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`))
-    .includes("Highscore") &&
+    .includes("Highscores") &&
   !(await evalJs(`!!document.getElementById('ml')`)));
 // Back closed the panel, so ONE Escape leaves the menu — a second would reopen it
 await key("Escape");

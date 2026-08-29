@@ -857,7 +857,12 @@ function finishFull(questHtml: string): void {
 /* ------------------------------------------------------- title screen menu */
 // Boot lands here; Escape / Start / the HUD "Menu" button reopen it. The
 // title floats over the bare background (body.M hides the game UI), and
-// Highscore / Encyclopedia write their subscreen into #mu, over the column.
+// Highscores / Encyclopedia write their subscreen into #mu, over the column.
+// The panel head is the BUTTON'S OWN LABEL, uppercased at write time, rather
+// than a second string saying the same word in caps: "Highscore" against
+// "HIGHSCORES" was a near-miss repeat, and a near miss is what roadroller
+// actually pays for. Worth 13 B, and 6 more were on the table for dropping the
+// caps altogether — declined, the letter-spaced head is the look.
 let mCur = 0;
 let panel = false;         // the subscreen is up, and #ti.j says so
 let armIdx = -1;           // menu button awaiting its confirming second press
@@ -933,8 +938,8 @@ function continueGame(): void {
 const MENU: [string, (i: number) => void][] = [
   ["Continue", continueGame],
   ["New game", newGame],
-  ["Highscore", () => openPanel("HIGHSCORES", highscoreHtml())],
-  ["Encyclopedia", () => openPanel("ENCYCLOPEDIA", encycloHtml())],
+  ["Highscores", () => openPanel("Highscores", highscoreHtml())],
+  ["Encyclopedia", () => openPanel("Encyclopedia", encycloHtml())],
 ];
 // DEVELOPMENT TOOLS, and not in the shipped build. Pushed inside an if rather
 // than spread into the list above so that with __DEV__ a literal false closure
@@ -974,7 +979,7 @@ function closeMenu(): void {
   document.body.classList.remove("M");
 }
 function openPanel(head: string, listHtml: string): void {
-  mu.innerHTML = '<div id="mh">' + head + '</div><div id="ml">' + listHtml +
+  mu.innerHTML = '<div id="mh">' + head.toUpperCase() + '</div><div id="ml">' + listHtml +
     '</div><button id="mb">Back</button>';
   mb.onclick = menuBack;   // the button is rebuilt with the panel, so is this
   panel = true;
