@@ -1,14 +1,29 @@
-// The element tree. n = display name (OPTIONAL — omitted when it is just the id
-// with a capital, which is the one field roadroller genuinely pays for: a
-// near-miss repeat of a string it has already seen costs real bits where an
-// exact repeat costs almost none, so omitting the derivable ones is worth
-// ~380 B packed; it is filled in below so every consumer sees a plain string),
+// The element tree. THERE IS NO n FIELD ANY MORE: the display name is DERIVED
+// from the id, one capital per word, and the id carries whatever spacing or
+// casing that takes — "teddy bear" -> "Teddy Bear", and "uFO" -> "UFO", which
+// is the one acronym and the reason the derivation only ever touches a word's
+// first letter. That is the whole trick: a written-out name is a NEAR-MISS
+// repeat of a string roadroller has already seen, and a near miss costs real
+// bits where an exact repeat costs almost none. Dropping the derivable ones was
+// worth ~380 B packed; dropping the last nine, by spacing their ids, was worth
+// a further 56 B measured. A space is safe everywhere an id goes — dataset
+// values, the "a+b" RECIPE keys, and JSON in the one save entry — and n is
+// filled in below, so every consumer still sees a plain string.
 // c = colour swatch, bg = custom swatch background (any CSS background stack),
 // e = emoji icon, s = inline SVG body on a 0 0 32 32 viewBox (rendered as an
 // <svg class="s">, so it picks up the square swatches' size rules, and c still
 // supplies the glow), r = recipes (unordered pairs of ids). Several recipes may
 // make one element, and an alternate may be cyclic (Lava + Stone melts back
 // into Lava) — that is flavour for a pair players try, never a cheaper route.
+//
+// THE PAIRS STAY NESTED, and this was measured rather than assumed. Flattening
+// r to ["red","green","red","cyan", …] takes 835 chars out of the chunk and
+// puts 195 B BACK ON the zip — 13134 -> 13329 with both fits redone, and
+// 13200 -> 13387 with the reorder off on both sides, so it is not an artefact
+// of a stale fn-order. The brackets are the cheapest bytes in this file to
+// predict and they earn it twice over: "[" and "]," tell roadroller which HALF
+// of a pair an id is, and flattened every separator is the same comma. Cheap
+// punctuation that buys context is not the same as waste.
 //
 // MATTER IS THE THROAT OF THE TREE: it is the sole route to Earth, Air and
 // Water, so nearly everything is unreachable until it is found. Deliberate —
@@ -223,7 +238,7 @@ export const ELEMENTS = ([
     r:[["life","star"]] },
   // one of the few ids the derived name gets wrong — "Ufo" — so it pays for an
   // explicit n, the way Black Cat and Crystal Ball do
-  { id:"ufo",n:"UFO", e:"\u{1F6F8}",
+  { id:"uFO", e:"\u{1F6F8}",
     r:[["alien","sky"]] },
   { id:"jellyfish", e:"\u{1FABC}",
     r:[["water","life"]] },
@@ -291,7 +306,7 @@ export const ELEMENTS = ([
   // Two directions rather than one said twice, the Castle's move: Yarn is what
   // it is made of, the Baby is who it is for. "bear" leads both pairs so the
   // repeat is exact where a near-miss would cost real bits.
-  { id:"teddybear",n:"Teddy Bear", e:"\u{1F9F8}",
+  { id:"teddy bear", e:"\u{1F9F8}",
     r:[["bear","yarn"],["bear","baby"]] },
   { id:"hippo", e:"\u{1F99B}",
     r:[["horse","water"]] },
@@ -301,7 +316,7 @@ export const ELEMENTS = ([
     r:[["orange","wolf"],["animal","orange"]] },
   { id:"bone", e:"\u{1F9B4}",
     r:[["animal","fire"],["wolf","fire"],["horse","fire"],["unicorn","fire"],
-       ["bear","fire"],["polarbear","fire"],["dog","fire"],["cow","fire"],
+       ["bear","fire"],["polar bear","fire"],["dog","fire"],["cow","fire"],
        ["bear","horse"],["wolf","horse"],["bear","dog"]] },
   { id:"dog", e:"\u{1F415}",
     r:[["wolf","bone"],["dog","wolf"]] },
@@ -311,7 +326,7 @@ export const ELEMENTS = ([
     r:[["cow","water"],["white","water"]] },
   { id:"cat", e:"\u{1F408}",
     r:[["animal","yarn"],["animal","milk"]] },
-  { id:"blackcat",n:"Black Cat", e:"\u{1F408}\u{200D}\u{2B1B}",
+  { id:"black cat", e:"\u{1F408}\u{200D}\u{2B1B}",
     r:[["cat","black"],["cat","night"],["cat","wizard"]] },
   { id:"cheese", e:"\u{1F9C0}",
     r:[["acid","milk"],["milk","yellow"]] },
@@ -329,15 +344,15 @@ export const ELEMENTS = ([
     r:[["chef","cow"],["cooking","cow"]] },
   { id:"sushi", e:"\u{1F363}",
     r:[["chef","fish"]] },
-  { id:"frenchfries",n:"French Fries", e:"\u{1F35F}",
+  { id:"french fries", e:"\u{1F35F}",
     r:[["potato","chef"],["potato","cooking"]] },
   { id:"pizza", e:"\u{1F355}",
     r:[["cheese","cooking"],["cheese","chef"]] },
   { id:"party", e:"\u{1F389}",
-    r:[["beer","pizza"],["beer","sushi"],["cheese","wine"],["burger","frenchfries"]] },
+    r:[["beer","pizza"],["beer","sushi"],["cheese","wine"],["burger","french fries"]] },
   { id:"fireworks", e:"\u{1F386}",
     r:[["party","sky"],["party","night"]] },
-  { id:"icecream",n:"Ice Cream", e:"\u{1F368}",
+  { id:"ice cream", e:"\u{1F368}",
     r:[["ice","milk"],["chef","ice"]] },
   { id:"salad", e:"\u{1F957}",
     r:[["chef","plant"]] },
@@ -359,7 +374,7 @@ export const ELEMENTS = ([
   { id:"ninja", e:"\u{1F977}",
     r:[["human","black"]] },
   { id:"wizard", e:"\u{1F9D9}",
-    r:[["human","magic"],["human","crystalball"],["owl","book"]] },
+    r:[["human","magic"],["human","crystal ball"],["owl","book"]] },
   // Two directions, not one said twice: the Bat is what TURNS you, the Blood
   // is what keeps you. It is also the first thing the Blood feeds that is not
   // an Animal, and it moves the Vampire a depth (9, against the Bat route's
@@ -517,13 +532,13 @@ export const ELEMENTS = ([
     r:[["bee","blossom"]] },
   { id:"bear", e:"\u{1F43B}",
     r:[["animal","honey"]] },
-  { id:"polarbear",n:"Polar Bear", e:"\u{1F43B}\u{200D}\u{2744}\u{FE0F}",
+  { id:"polar bear", e:"\u{1F43B}\u{200D}\u{2744}\u{FE0F}",
     r:[["bear","ice"],["bear","snow"],["bear","white"],["animal","white"]] },
   { id:"acid", e:"\u{1F9EA}",
     r:[["green","water"]] },
   { id:"electricity", e:"⚡",
     r:[["acid","metal"],["kite","lightning"]] },
-  { id:"lightbulb", n:"Light Bulb", e:"\u{1F4A1}",
+  { id:"light bulb", e:"\u{1F4A1}",
     r:[["electricity","glass"]] },
   { id:"ice", e:"\u{1F9CA}",
     r:[["cyan","water"],["water","night"]] },
@@ -541,10 +556,10 @@ export const ELEMENTS = ([
     r:[["diamond","glass"],["glass","tool"],["glass","white"]] },
   { id:"rainbow", e:"\u{1F308}",
     r:[["white","prism"],["sun","rain"],["prism","sun"],
-       ["lightbulb","prism"]] },
+       ["light bulb","prism"]] },
   { id:"magic", e:"\u{1FA84}",
-    r:[["wood","star"],["pumpkin","night"],["rainbow","crystalball"],["crystalball","wizard"]] },
-  { id:"crystalball",n:"Crystal Ball", e:"\u{1F52E}",
+    r:[["wood","star"],["pumpkin","night"],["rainbow","crystal ball"],["crystal ball","wizard"]] },
+  { id:"crystal ball", e:"\u{1F52E}",
     r:[["magic","glass"],["violet","glass"],["magic","mirror"]] },
   { id:"unicorn", e:"\u{1F984}",
     r:[["horse","magic"],["animal","magic"]] },
@@ -692,7 +707,7 @@ export const ELEMENTS = ([
     r:[["human","life"],["wedding","life"]] },
   { id:"blossom", e:"\u{1F33C}",
     r:[["plant","pink"],["life","plant"]] },
-  { id:"cherryblossom",n:"Cherry Blossom", e:"\u{1F338}",
+  { id:"cherry blossom", e:"\u{1F338}",
     r:[["blossom","pink"]] },
   { id:"nut", e:"\u{1F330}",
     r:[["blossom","tree"]] },
@@ -708,7 +723,7 @@ export const ELEMENTS = ([
     r:[["sun","blossom"],["blossom","yellow"]] },
   { id:"rose", e:"\u{1F339}",
     r:[["blossom","red"],["plant","red"]] },
-] as RawDef[]).map(e => (e.n = e.n || e.id[0].toUpperCase() + e.id.slice(1), e)) as ElementDef[];
+] as RawDef[]).map(e => (e.n = e.id.replace(/(^| )./g, (c) => c.toUpperCase()), e)) as ElementDef[];
 
 export const STARTERS = ["red", "green", "blue"];
 

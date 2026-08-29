@@ -100,7 +100,7 @@ for (const chunk of ENTRIES) {
   const id = chunk.slice(0, chunk.indexOf('\"'));
   const r = chunk.match(/\br:\[([\s\S]*?)\]\s*\},/);
   if (r) {
-    for (const pr of r[1].matchAll(/\["([a-z0-9]+)","([a-z0-9]+)"\]/g)) {
+    for (const pr of r[1].matchAll(/\["([a-zA-Z0-9 ]+)","([a-zA-Z0-9 ]+)"\]/g)) {
       RECIPE[[pr[1], pr[2]].sort().join("+")] = id;
     }
   }
@@ -985,7 +985,7 @@ check("alt: a plain colour is the short way in, on Earth, Cloud, Animal and Glas
   RECIPE['earth+green'] === "field" &&
   RECIPE['cloud+yellow'] === "lightning" &&
   RECIPE['cloud+orange'] === "lightning" &&
-  RECIPE['animal+white'] === "polarbear" &&
+  RECIPE['animal+white'] === "polar bear" &&
   RECIPE['animal+green'] === "lizard" &&
   RECIPE['animal+yellow'] === "bee" &&
   RECIPE['animal+orange'] === "fox" &&
@@ -1033,17 +1033,17 @@ check("alt: a Blue Animal is a Fish, the same as an Animal in Water",
 // Stone) neither half of this one is a no-op, and the Crystal Ball stops
 // being the one deep element that nothing used.
 check("alt: Magic and the Crystal Ball make each other, and both stay reachable",
-  RECIPE['glass+violet'] === "crystalball" &&
-  RECIPE['glass+magic'] === "crystalball" &&
-  RECIPE['crystalball+rainbow'] === "magic" &&
+  RECIPE['glass+violet'] === "crystal ball" &&
+  RECIPE['glass+magic'] === "crystal ball" &&
+  RECIPE['crystal ball+rainbow'] === "magic" &&
   RECIPE['star+wood'] === "magic" &&
   RECIPE['night+pumpkin'] === "magic");
 check("alt: Prism + Sun is also a Rainbow",
   RECIPE['prism+sun'] === "rainbow");
 check("alt: a Light Bulb through a Prism is a Rainbow too",
-  RECIPE['lightbulb+prism'] === "rainbow");
+  RECIPE['light bulb+prism'] === "rainbow");
 check("alt: Glass + Electricity lights a Light Bulb, the only route to one",
-  RECIPE['electricity+glass'] === "lightbulb");
+  RECIPE['electricity+glass'] === "light bulb");
 check("alt: Rain + Electricity is a Storm too, skipping the Lightning",
   RECIPE['electricity+rain'] === "storm" &&
   RECIPE['lightning+rain'] === "storm");
