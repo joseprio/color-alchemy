@@ -728,8 +728,13 @@ export function obGo(): void {
 function closeOverlay(): void {
   ov.classList.remove("w");
   oc.innerHTML = ""; // the hidden best must not linger in the DOM
-  cancelAnimationFrame(fwRaf);
-  fw.width = 0;      // resizing the bitmap IS the clear, and it is one word
+  // Behind __DIRECTOR__ with the rest of the fireworks: in a shipping build
+  // this is the last reference to fwRaf and to the canvas, and closure needs
+  // every one of them gone before it will delete the effect itself.
+  if (__DIRECTOR__) {
+    cancelAnimationFrame(fwRaf);
+    fw.width = 0;    // resizing the bitmap IS the clear, and it is one word
+  }
 }
 
 /* ------------------------------------------------------ completion fireworks */
@@ -831,7 +836,7 @@ function checkMilestones(): void {
       [["Keep playing", () => { closeOverlay(); hud(); }],
        ["New game", () => { closeOverlay(); reset(); }]],
     );
-    fireworks(1.6);
+    if (__DIRECTOR__) fireworks(1.6);
     return;
   }
   if (!fullDone && found.size === ELEMENTS.length) finishFull("");
@@ -851,7 +856,7 @@ function finishFull(questHtml: string): void {
     '<div class="L">complete run: <b>' + moves + "</b> moves</div>" + f,
     [["New game", () => { closeOverlay(); reset(); }]],
   );
-  fireworks(3.2);
+  if (__DIRECTOR__) fireworks(3.2);
 }
 
 /* ------------------------------------------------------- title screen menu */

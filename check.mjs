@@ -869,9 +869,20 @@ check("full: the completion screen cancels the discovery card here too",
 // untouched <canvas> reports a default width of 300, so `> 0` holds whether or
 // not the effect ever ran. It passed against a build whose fireworks had been
 // switched off entirely, and only failed once the element itself was removed.
-const fwWidth = await evalJs(`document.getElementById('fw').width`);
-check("full: the fireworks canvas is live behind the card",
-  fwWidth > 0 && fwWidth !== 300);
+// THE FIREWORKS ARE DIRECTOR'S-CUT ONLY, and worth 444 B of budget. The effect
+// sits behind __DIRECTOR__ in src/game.ts, so closure deletes it from a shipping
+// build and the build strips the canvas with it (data-director in the template)
+// and its rules (the director markers in src/style.css). The assertion INVERTS
+// by build rather than being skipped, the way the development-tool checks below
+// do, so both cuts are actually tested.
+const FIREWORKS = await evalJs(`!!document.getElementById('fw')`);
+if (FIREWORKS) {
+  const fwWidth = await evalJs(`document.getElementById('fw').width`);
+  check("full: the fireworks canvas is live behind the card", fwWidth > 0 && fwWidth !== 300);
+} else {
+  check("full: no fireworks canvas — the effect is director's-cut only",
+    !(await evalJs(`!!document.querySelector('#ov canvas')`)));
+}
 await shot("complete");
 
 // --- new game keeps bests, hides the hidden one ---------------------------

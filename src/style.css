@@ -350,7 +350,9 @@ f {
   .t.g { animation: none; }
   /* a trail system with no motion is a blank canvas, so the fireworks do not
      get a still — they get nothing, and the card stands on its own */
+  /*>director*/
   #fw { display: none; }
+  /*<director*/
 }
 
 .v {
@@ -358,10 +360,18 @@ f {
   align-items: center; justify-content: center; background: #030409cc;
 }
 .v.w { display: flex; }
-/* The completion fireworks. z-index: -1 inside .v — which IS a stacking context,
-   being positioned with a z-index — puts the canvas above the veil's own
-   background and below the card, in one property instead of a rule for each. */
+/* The completion fireworks, DIRECTOR'S CUT ONLY. The effect itself is behind
+   __DIRECTOR__ in src/game.ts and closure deletes it from a shipping build,
+   which leaves no canvas for these rules to style; the director markers below
+   cut them the same way. rollup.config.mjs documents the markers — they cannot
+   be spelled out here, because a CSS comment quoting one would be matched by
+   the very regex it describes.
+   z-index: -1 inside .v — which IS a stacking context, being positioned with a
+   z-index — puts the canvas above the veil's own background and below the card,
+   in one property instead of a rule for each. */
+/*>director*/
 #fw { position: absolute; inset: 0; z-index: -1; }
+/*<director*/
 .A {
   background: #0c1122; border: 1px solid #33e9e9; border-radius: 14px;
   padding: 26px 34px; text-align: center; max-width: min(88vw, 420px);

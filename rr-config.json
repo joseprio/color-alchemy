@@ -23,9 +23,9 @@
   "precision": 15,
   "mixerContextBits": 8,
   "mixerRecipInitialWeight": 10,
-  "recipLearningRate": 500,
+  "recipLearningRate": 520,
   "_fittedTo": {
-    "hash": "fa76b1437462",
-    "bytes": 47381
+    "hash": "cc4abf8cb6c0",
+    "bytes": 46138
   }
 }

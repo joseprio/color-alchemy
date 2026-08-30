@@ -33,10 +33,7 @@ import { minify as minifyHtml } from "html-minifier-next";
 // the SAME cssnano pass postbuild.mjs hands to html-minifier, and injected as
 // the __MARKUP__ constant. Read ONCE at config load: a watch-mode rebuild does
 // NOT pick up edits to style.css, so restart the watcher after touching it.
-const minCss = execSync("npx postcss", { input: readFileSync("src/style.css", "utf8") }).toString().trim();
-if (/<\/script|[\`]|\$\{/.test(minCss)) {
-  throw new Error("style.css contains a sequence unsafe inside an inline script");
-}
+// The minified text is built below, once DIRECTOR is known.
 
 // Substitutes the CSS text for the __MARKUP__ token in src/css.ts. Listed
 // before typescript() so it sees the raw source; galaxy-raid does the same job
@@ -78,6 +75,24 @@ const OUT_DIR = DIRECTOR ? "dist/director" : "dist";
 // `production` alone, so "what a director build skips" is one grep.
 const golf = production && !DIRECTOR;
 
+// DIRECTOR-ONLY RULES. src/style.css marks spans that style something only the
+// director's cut has — currently the fireworks canvas, whose effect is behind
+// __DIRECTOR__ in src/game.ts and which closure deletes from a shipping build,
+// canvas and all. The markers are CSS comments; a shipping build cuts
+// everything between them, a director build drops just the markers. Done on the
+// RAW text, before postcss, so cssnano never sees the dead rules and cannot
+// merge one into a live selector.
+const cutDirectorCss = (css) =>
+  DIRECTOR
+    ? css.replace(/\/\*[><]director\*\//g, "")
+    : css.replace(/\/\*>director\*\/[\s\S]*?\/\*<director\*\//g, "");
+const minCss = execSync("npx postcss", {
+  input: cutDirectorCss(readFileSync("src/style.css", "utf8")),
+}).toString().trim();
+if (/<\/script|[\`]|\$\{/.test(minCss)) {
+  throw new Error("style.css contains a sequence unsafe inside an inline script");
+}
+
 const defines = {
   name: "defines",
   transform(code, id) {
@@ -116,10 +131,30 @@ const BODY_MIN_OPTS = {
   removeRedundantAttributes: true,
   removeTagWhitespace: true,
 };
+// An element carrying `data-director` exists only for the director's cut — the
+// fireworks canvas is the one, and closure deletes the effect that draws to it
+// from a shipping build. A shipping build drops the whole element, a director
+// build keeps it and drops just the attribute. The partner of cutDirectorCss
+// above, and the two must stay in step: the canvas and the rules that style it
+// are one feature and have to leave together.
+//
+// EMPTY ELEMENTS ONLY. The cut removes an open tag and the close tag straight
+// after it; a marked element with children would lose its tags and leave the
+// children behind in a shipping build, silently. There is no such element
+// today, and the throw is what keeps it that way.
+const cutDirectorHtml = (html) => {
+  if (DIRECTOR) return html.replace(/ data-director/g, "");
+  for (const m of html.matchAll(/<(\w+)[^>]*\sdata-director[^>]*>/g)) {
+    if (!html.slice(m.index + m[0].length).startsWith(`</${m[1]}>`)) {
+      throw new Error(`template: data-director on a non-empty <${m[1]}> — only empty elements can be cut this way`);
+    }
+  }
+  return html.replace(/<(\w+)[^>]*\sdata-director[^>]*><\/\1>/g, "");
+};
 const bodyOf = (html) => {
   const m = html.replace(/<!--[\s\S]*?-->/g, "").match(/<body>([\s\S]*)<\/body>/);
   if (!m) throw new Error("template: no <body> … </body> to lift the markup out of");
-  return m[1];
+  return cutDirectorHtml(m[1]);
 };
 const injectBody = {
   name: "inject-body",
