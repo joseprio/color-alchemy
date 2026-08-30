@@ -1,0 +1,336 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — what an Oasis should look like. Open it in a browser;
+     nothing to build. Press 1-4 to jump to an option, C to hide the notes.
+
+     WHY THIS EXPERIMENT EXISTS. Every element added lately took an emoji and
+     was done in one line. The Oasis cannot: there is no oasis emoji. The
+     nearest, U+1F3DD DESERT ISLAND, was already the wrong picture — an island
+     in the SEA, close to the opposite of water enclosed by sand — and it is
+     now moot: ISLAND (Sand + Palm) TOOK IT. Option 01 below is kept, struck
+     through, because the reasoning against it is what makes the case for the
+     rest, and because it is the option a reader will otherwise propose again.
+
+     So the Oasis has no emoji left to take. The live choice is 02, 03 or 04,
+     and each costs a different number of bytes. That is the whole subject.
+
+     THE RENDERER DECIDES MORE THAN IT LOOKS. src/game.ts iconHtml() is three
+     branches in this order:
+
+         if (el.s)            -> <svg class="s" viewBox="0 0 32 32">
+         if (el.c || el.bg)   -> <div class="s" style="background:...">
+         return el.e
+
+     Two consequences drive every card below.
+
+       1. AN EMOJI CANNOT HAVE A GLOW. The c/bg branch runs BEFORE el.e, so an
+          element carrying both renders the swatch and the emoji never shows.
+          The glow is --g (the colour plus "55") on .s, and .s only exists in
+          the first two branches. Nothing in the table has both e and c —
+          checked, all 151 — and that is the renderer doing it, not a style
+          convention. It is also why option 01 would have shipped glowless.
+
+       2. ONE ARTWORK IS ASKED TO WORK AT THREE SIZES. .s is 32px on a board
+          tile, 62px in the discovery card ingredient row (#ds .g .s), and
+          110px as the discovery hero (#ds .r .s). An SVG that reads at 110
+          can mush at 32. Every option below is shown at all three, because
+          32px is where it either survives or does not.
+
+     THE COSTS ARE MEASURED, NOT ESTIMATED. Each figure is a real npm run build
+     of that exact variant, all four against one 12602 B baseline — 27 B below
+     the current bundle, Island and Fireworks having landed since. The whole
+     size-golf tail ran every time: closure ADVANCED, terser, roadroller. The
+     DELTAS are what to trust, not the absolutes; re-measure after one lands,
+     because roadroller remodels around whatever is already there.
+
+     WHAT IS NOT IN QUESTION. The recipe is Palm + Desert. Desert is a leaf
+     used as an ingredient exactly zero times, so the Oasis is the first thing
+     that would give it a job. That argues for it whichever picture wins. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — the Oasis swatch</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    background-attachment: fixed;
+    padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  h2 { font-size: 14px; letter-spacing: .12em; margin: 0; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 90ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 22px; }
+  kbd { background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+        padding: 1px 6px; color: #8fb4d8; }
+  .wrap { max-width: 1100px; }
+
+  /* ---- the game's own tile rules, copied out of src/style.css verbatim ---- */
+  .t {
+    width: 92px; padding: 10px 4px 8px; text-align: center;
+    background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+    user-select: none;
+  }
+  .o { height: 42px; display: flex; align-items: center; justify-content: center;
+       font-size: 32px; line-height: 1; }
+  .s { width: 32px; height: 32px; border-radius: 6px;
+       box-shadow: 0 0 10px 1px var(--g, transparent); }
+  .n { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
+  /* the two larger sizes the discovery card uses */
+  .g62 .s { width: 62px; height: 62px; border-radius: 12px; }
+  .g62 { font-size: 62px; line-height: 1; }
+  .r110 .s { width: 110px; height: 110px; border-radius: 22px; }
+  .r110 { font-size: 110px; line-height: 1; }
+
+  /* ---- experiment chrome ---- */
+  .ref { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+         padding: 16px 18px; margin: 0 0 26px; }
+  .card { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+          padding: 16px 18px; margin: 0 0 20px; scroll-margin-top: 20px; }
+  .card.on { border-color: #3d5584; box-shadow: 0 0 0 1px #3d558444; }
+  .card.dead { opacity: .55; border-style: dashed; }
+  .card.dead h2 { text-decoration: line-through; }
+  .hd { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .num { color: #55708e; }
+  .cost { margin-left: auto; color: #ffd75e; font-size: 13px; }
+  .cost small { color: #55708e; }
+  .cost.gone { color: #ff7b72; }
+  .sub { color: #8fb4d8; margin: 2px 0 14px; max-width: 88ch; }
+  .row { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; margin: 0 0 14px; }
+  .cell { text-align: center; }
+  .cap { color: #55708e; font-size: 11px; margin-top: 6px; }
+  .strip { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;
+           padding: 12px; border: 1px dashed #1b2540; border-radius: 10px;
+           background: #05070fcc; }
+  .strip .t { width: 76px; }
+  .me { border-color: #ffd75e88 !important; background: #14120acc !important; }
+  .notes { margin: 14px 0 0; padding: 0; list-style: none; }
+  .notes li { margin: 4px 0; padding-left: 18px; text-indent: -18px; color: #a8c4e4; }
+  .notes li.y::before { content: "+ "; color: #5fd08a; }
+  .notes li.n::before { content: "- "; color: #ff7b72; }
+  .notes li.i::before { content: "? "; color: #8fb4d8; }
+  .hide .notes { display: none; }
+  code { color: #ffd75e; background: #101528; border-radius: 4px; padding: 1px 5px; }
+  .verdict { border: 1px solid #3d5584; background: #0a1428cc; }
+  .verdict h2 { color: #ffd75e; }
+  table { border-collapse: collapse; margin: 10px 0 0; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 18px 4px 0; }
+  th { color: #55708e; font-weight: 400; }
+  tr.gone td { color: #55708e; text-decoration: line-through; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>THE OASIS SWATCH</h1>
+<p class="lede">Ways to draw an element that has <b>no emoji</b>. Each is shown
+at the three sizes the game renders <code>.s</code> at, then dropped into a
+strip beside its real neighbours — the tiles a player actually sees it next to.
+Costs are <b>measured builds</b>, not estimates. <b>Option 01 is dead:</b>
+Island took U+1F3DD, so only 02-04 are live. Current bundle is 12629 B of
+13312 — <b>683 B of headroom</b>, the tree at 151 elements.</p>
+<p class="keys"><kbd>1</kbd>-<kbd>4</kbd> jump to an option &nbsp;·&nbsp;
+<kbd>C</kbd> toggle notes</p>
+
+<div class="ref">
+  <h2>WHAT IT LANDS NEXT TO</h2>
+  <p class="sub">The problem in one row. Desert, Palm and Island are emoji;
+  Sand is an abstract swatch. An Oasis made of emoji would have to survive
+  being fourth in a line of sand-toned pictograms — and Island has now taken
+  the last one that was going spare.</p>
+  <div class="strip" id="refstrip"></div>
+</div>
+
+<div class="card dead" id="a">
+  <div class="hd"><span class="num">01</span><h2>THE DESERT-ISLAND EMOJI</h2>
+    <span class="cost gone">TAKEN BY ISLAND <small>no longer available</small></span></div>
+  <p class="sub"><b>Ruled out — Island (Sand + Palm) now ships this emoji.</b>
+  It was the one-line answer and the cheapest thing on this page, at +20 B
+  measured. It was also the only option that was arguably <em>wrong</em>:
+  U+1F3DD is a DESERT ISLAND, land ringed by sea, where an oasis is the inverse
+  figure — water ringed by land. Island is the right owner of it. Kept here so
+  the reasoning survives, and so nobody proposes it a second time.</p>
+  <div class="row" id="a-sizes"></div>
+  <div class="strip" id="a-strip"></div>
+  <ul class="notes">
+    <li class="n">UNAVAILABLE: Island holds U+1F3DD. Two elements cannot share a
+        glyph — the board would show the same tile picture twice.</li>
+    <li class="i">Was the cheapest at +20 B, and legible at 32px.</li>
+    <li class="n">Semantically inverted: sea around land, not sand around water.</li>
+    <li class="n">Its palm silhouette repeats Palm at 32px — and now Island too,
+        both of which are the Oasis's own relatives.</li>
+    <li class="n">No glow. The c/bg branch precedes el.e, so an emoji element
+        cannot carry <code>--g</code> — it would sit dark beside Sand and Field.</li>
+  </ul>
+</div>
+
+<div class="card" id="b">
+  <div class="hd"><span class="num">02</span><h2>THE HORIZON BAND</h2>
+    <span class="cost">+27 B <small>measured</small></span></div>
+  <p class="sub">The <code>field</code> idiom, reused exactly: one
+  <code>linear-gradient</code>, a hard stop, sand above and water below. Field
+  already teaches the player that a two-band swatch means "a place, seen side
+  on", so this costs nothing to learn.</p>
+  <div class="row" id="b-sizes"></div>
+  <div class="strip" id="b-strip"></div>
+  <ul class="notes">
+    <li class="y">Precedent is in the table already — Field is this exact shape.</li>
+    <li class="y">Glows, and the glow is water-blue: it reads as wet at a glance.</li>
+    <li class="y">Scales perfectly. A hard-stop gradient is size-independent.</li>
+    <li class="y">Cheapest of the three live options.</li>
+    <li class="n">Reads as a SHORE — water meeting land at a line — which is a
+        beach, not an oasis. The enclosure is the whole idea and it is missing.</li>
+    <li class="i">Nearly indistinguishable from Field in shape at 32px; only the
+        colour separates them.</li>
+  </ul>
+</div>
+
+<div class="card" id="c">
+  <div class="hd"><span class="num">03</span><h2>THE POOL IN THE SAND</h2>
+    <span class="cost">+43 B <small>measured</small></span></div>
+  <p class="sub">A <code>radial-gradient</code> ellipse of water sitting on
+  Sand's own diagonal ground — literally Sand's swatch with a pool cut into it.
+  This is the only option whose <em>figure</em> is the definition of the word:
+  water enclosed by sand.</p>
+  <div class="row" id="c-sizes"></div>
+  <div class="strip" id="c-strip"></div>
+  <ul class="notes">
+    <li class="y">Semantically exact — enclosure, not adjacency.</li>
+    <li class="y">Visibly a descendant of Sand, which is half its ancestry.</li>
+    <li class="y">Glows water-blue and scales cleanly to 110px.</li>
+    <li class="y">Distinct from every emoji neighbour at 32px, which is more
+        than option 02 can claim against Field.</li>
+    <li class="n">16 B more than the horizon for a difference some players will
+        never consciously register.</li>
+    <li class="i">The ellipse must stay clear of the 6px corner radius at 32px
+        or it clips — the geometry here is already inside that margin.</li>
+  </ul>
+</div>
+
+<div class="card" id="d">
+  <div class="hd"><span class="num">04</span><h2>THE DRAWN OASIS</h2>
+    <span class="cost">+84 B <small>measured</small></span></div>
+  <p class="sub">Inline SVG on the 0 0 32 32 viewBox, the <code>matter</code>
+  route: a pool, a trunk, two fronds. The only option that says "oasis" with no
+  interpretation required — and it costs 12% of the remaining headroom.</p>
+  <div class="row" id="d-sizes"></div>
+  <div class="strip" id="d-strip"></div>
+  <ul class="notes">
+    <li class="y">Unmistakable at 62px and 110px. Nothing else reads as clearly.</li>
+    <li class="y">Vector, so the discovery hero is genuinely sharp.</li>
+    <li class="n">+84 B — four times what the emoji would have cost, against
+        683 B left in the budget.</li>
+    <li class="n">At 32px the fronds collapse into a dark smudge above a blue
+        bar. Look at the leftmost cell: that is the size it ships at most.</li>
+    <li class="n">Reintroduces the palm silhouette that option 01 was faulted
+        for, only now hand-drawn — and Island is right beside it.</li>
+  </ul>
+</div>
+
+<div class="card verdict">
+  <div class="hd"><h2>WHERE THIS COMES OUT</h2></div>
+  <p class="sub"><b>Option 03, the pool</b> — and the case got stronger, because
+  the cheap escape hatch is gone. Island took U+1F3DD, so there is no emoji to
+  retreat to if the budget tightens: the Oasis is a swatch or it is nothing.
+  03 is the only option whose shape means what the word means, it inherits
+  Sand's ground so its ancestry is visible, it glows where an emoji could not,
+  and at +43 B it is 6% of the 683 B left rather than 12%. Option 02 is the
+  value pick if 16 B matters more than the enclosure reading — but note it is
+  the one option that is hard to tell from Field at tile size. Option 04 loses
+  at the size it is mostly seen.</p>
+  <table>
+    <tr><th>option</th><th>cost</th><th>glows</th><th>reads at 32px</th><th>means "oasis"</th></tr>
+    <tr class="gone"><td>01 emoji</td><td>taken</td><td>no</td><td>yes</td><td>inverted</td></tr>
+    <tr><td>02 horizon</td><td>+27 B</td><td>yes</td><td>vs. Field, poorly</td><td>shore</td></tr>
+    <tr><td>03 pool</td><td>+43 B</td><td>yes</td><td>yes</td><td>yes</td></tr>
+    <tr><td>04 svg</td><td>+84 B</td><td>yes</td><td>poorly</td><td>yes</td></tr>
+  </table>
+</div>
+</div>
+
+<script>
+// The four candidates, written exactly as they would appear in src/elements.ts.
+const SAND_BG =
+  "radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%)," +
+  "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
+  "radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%)," +
+  "linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)";
+
+const OPT = {
+  a: { id: "oasis", n: "Oasis", e: "\u{1F3DD}\u{FE0F}" },
+  b: { id: "oasis", n: "Oasis", c: "#2f9fd0",
+       bg: "linear-gradient(180deg, #ecd08a 0 46%, #2f9fd0 46%, #1d6f9c 100%)" },
+  c: { id: "oasis", n: "Oasis", c: "#2f9fd0",
+       bg: "radial-gradient(ellipse 60% 34% at 50% 58%, #2f9fd0 0 70%, #1d6f9c 72%, transparent 74%)," +
+           "linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)" },
+  d: { id: "oasis", n: "Oasis", c: "#2f9fd0",
+       s: "<ellipse cx='16' cy='23' rx='11' ry='5' fill='#2f9fd0'/>" +
+          "<path d='M16 23V10' stroke='#6b4a2a' stroke-width='2'/>" +
+          "<path d='M16 10c-5-4-9-2-10 1 4-2 7-1 10 1z' fill='#3f8c36'/>" +
+          "<path d='M16 10c5-4 9-2 10 1-4-2-7-1-10 1z' fill='#4fa845'/>" },
+};
+
+// The real neighbours, read out of src/elements.ts.
+const NEIGH = [
+  { id: "sand", n: "Sand", c: "#e0c078", bg: SAND_BG },
+  { id: "cactus", n: "Cactus", e: "\u{1F335}" },
+  { id: "desert", n: "Desert", e: "\u{1F3DC}\u{FE0F}" },
+  { id: "palm", n: "Palm", e: "\u{1F334}" },
+  { id: "island", n: "Island", e: "\u{1F3DD}\u{FE0F}" },
+  { id: "water", n: "Water", e: "\u{1F4A7}" },
+  { id: "field", n: "Field", c: "#5fb54a",
+    bg: "linear-gradient(180deg, #a8dbff 0%, #7ec8ff 46%, #5fb54a 46%, #3f8c36 100%)" },
+];
+
+// iconHtml(), mirrored branch for branch from src/game.ts.
+function iconHtml(el) {
+  if (el.s) {
+    return '<svg class="s" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' +
+           el.s + "</svg>";
+  }
+  if (el.c || el.bg) {
+    return '<div class="s" style="background:' + (el.bg || el.c) +
+           ";--g:" + (el.c || "#8a5cf0") + '55"></div>';
+  }
+  return el.e || "";
+}
+const tile = (el, cls) =>
+  '<div class="t ' + (cls || "") + '"><div class="o">' + iconHtml(el) +
+  '</div><div class="n">' + el.n + "</div></div>";
+
+// The three sizes .s is rendered at, side by side, then the finished tile.
+function sizes(el) {
+  const at = (wrap, cap) =>
+    '<div class="cell"><div class="' + wrap + '">' + iconHtml(el) +
+    '</div><div class="cap">' + cap + "</div></div>";
+  return at("", "32px · board tile") +
+         at("g62", "62px · card row") +
+         at("r110", "110px · card hero") +
+         '<div class="cell">' + tile(el, "me") + '<div class="cap">in situ</div></div>';
+}
+
+document.getElementById("refstrip").innerHTML = NEIGH.map(e => tile(e)).join("");
+for (const k of ["a", "b", "c", "d"]) {
+  document.getElementById(k + "-sizes").innerHTML = sizes(OPT[k]);
+  // the candidate dropped into the run it actually ships in
+  document.getElementById(k + "-strip").innerHTML =
+    tile(NEIGH[0]) + tile(NEIGH[2]) + tile(NEIGH[3]) + tile(NEIGH[4]) +
+    tile(OPT[k], "me") + tile(NEIGH[5]);
+}
+
+addEventListener("keydown", ev => {
+  if (ev.key === "c" || ev.key === "C") { document.body.classList.toggle("hide"); return; }
+  const n = "1234".indexOf(ev.key);
+  if (n >= 0) {
+    const card = document.getElementById("abcd"[n]);
+    document.querySelectorAll(".card").forEach(c => c.classList.remove("on"));
+    card.classList.add("on");
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+</script>
+</body>
+</html>

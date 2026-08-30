@@ -1,0 +1,426 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — what a Rust tile should look like. Open it in a browser;
+     nothing to build. Press 1-5 to jump to an option, C to hide the notes.
+
+     THE SECOND ELEMENT WITH NO EMOJI. Oasis was the first (see
+     oasis-swatch.html). Rust is the same problem wearing different clothes:
+     Unicode has no rust, and the nearest thing, U+1F529 NUT AND BOLT, is a
+     picture of HARDWARE, not of corrosion. So Rust has to be drawn, and the
+     drawing costs bytes. That is the subject.
+
+     WHERE RUST HAS TO LIVE IN THE PALETTE. Read the warm end of the table
+     before proposing anything, because it is busier than it looks:
+
+       Brown     #8b5a2b   flat, no bg
+       Orange    #ff9430   flat, no bg
+       Sand      #e0c078   mottled tan, three grain dots over a diagonal
+       Charcoal  face is near-black (#2c2c2f..#171719); #8a3a14 is only
+                 its GLOW, an ember colour
+       Ash       grey face (#b3aca4..#625b55) with one #ff6a2a ember speck
+       Metal     #c3ced9, brushed steel: a specular streak over a vertical
+                 light-to-dark-to-light ramp
+
+     So the warm FACES are Brown, Orange and Sand. Charcoal and Ash are
+     grey-faced with warm accents — but Charcoal already glows burnt orange,
+     which is the exact hue a rust swatch wants. Any Rust that is simply a
+     warm square has to fight all five.
+
+     CHOSEN: OPTION 03, AT THE HEAVY SETTING (03c). The three stages in that
+     card differ only in how far the corrosion has spread, and all three were
+     built: +61, +63 and +60 B. Intensity is byte-neutral, so the choice is
+     purely visual. 03a read grey-first at 32px and sat too close to Metal;
+     03c reads orange-first while keeping one band of bare steel, and that band
+     is the whole reason option 03 beats option 04.
+
+     THE MOVE THAT SETTLES IT. Rust is not a material, it is a SURFACE EVENT ON
+     STEEL. Nothing else in the table shows one material eating another, so a
+     swatch that keeps Metal visible underneath is automatically unlike every
+     neighbour — and it makes Rust visibly a child of Metal, which is what it
+     is. That is option 03, and it is why it wins despite costing the most of
+     the three affordable ones.
+
+     THE RENDERER CONSTRAINTS ARE THE SAME TWO AS OASIS. iconHtml() in
+     src/game.ts runs `if (el.s)`, then `if (el.c || el.bg)`, then `el.e`, so
+     (1) AN EMOJI CANNOT HAVE A GLOW — the swatch branch precedes el.e, and .s
+     is what carries --g, so option 01 ships dark; and (2) ONE ARTWORK MUST
+     WORK AT 32px on a board tile, 62px in the discovery card row, and 110px
+     as the discovery hero. Every option is shown at all three.
+
+     COSTS ARE MEASURED. Five real npm run build runs against one 12685 B
+     baseline, the tree at 157 elements, whole size-golf tail included. Trust
+     the deltas, not the absolutes, and re-measure after one lands — roadroller
+     remodels around whatever is already in the table.
+
+     THE RECIPE IS ASSUMED, NOT PROPOSED HERE. Metal + Water and Metal + Salt,
+     both free. Worth noting only because Salt is a leaf with no consumers at
+     all right now, so Rust would be the first thing to give it a job — the
+     same argument Desert gets in the Oasis experiment. Metal + Acid is NOT
+     available: it already makes Electricity. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — the Rust tile</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #2a1207 0%, transparent 60%);
+    background-attachment: fixed;
+    padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  h2 { font-size: 14px; letter-spacing: .12em; margin: 0; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 90ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 22px; }
+  kbd { background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+        padding: 1px 6px; color: #8fb4d8; }
+  .wrap { max-width: 1100px; }
+
+  /* ---- the game's own tile rules, copied out of src/style.css verbatim ---- */
+  .t {
+    width: 92px; padding: 10px 4px 8px; text-align: center;
+    background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+    user-select: none;
+  }
+  .o { height: 42px; display: flex; align-items: center; justify-content: center;
+       font-size: 32px; line-height: 1; }
+  .s { width: 32px; height: 32px; border-radius: 6px;
+       box-shadow: 0 0 10px 1px var(--g, transparent); }
+  .n { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
+  .g62 .s { width: 62px; height: 62px; border-radius: 12px; }
+  .g62 { font-size: 62px; line-height: 1; }
+  .r110 .s { width: 110px; height: 110px; border-radius: 22px; }
+  .r110 { font-size: 110px; line-height: 1; }
+
+  /* ---- experiment chrome ---- */
+  .ref { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+         padding: 16px 18px; margin: 0 0 26px; }
+  .card { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+          padding: 16px 18px; margin: 0 0 20px; scroll-margin-top: 20px; }
+  .card.on { border-color: #3d5584; box-shadow: 0 0 0 1px #3d558444; }
+  .hd { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .num { color: #55708e; }
+  .cost { margin-left: auto; color: #ffd75e; font-size: 13px; }
+  .cost small { color: #55708e; }
+  .sub { color: #8fb4d8; margin: 2px 0 14px; max-width: 88ch; }
+  .row { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; margin: 0 0 14px; }
+  .cell { text-align: center; }
+  .cap { color: #55708e; font-size: 11px; margin-top: 6px; }
+  .strip { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;
+           padding: 12px; border: 1px dashed #1b2540; border-radius: 10px;
+           background: #05070fcc; }
+  .strip .t { width: 76px; }
+  .me { border-color: #ffd75e88 !important; background: #14120acc !important; }
+  .notes { margin: 14px 0 0; padding: 0; list-style: none; }
+  .notes li { margin: 4px 0; padding-left: 18px; text-indent: -18px; color: #a8c4e4; }
+  .notes li.y::before { content: "+ "; color: #5fd08a; }
+  .notes li.n::before { content: "- "; color: #ff7b72; }
+  .notes li.i::before { content: "? "; color: #8fb4d8; }
+  .hide .notes { display: none; }
+  code { color: #ffd75e; background: #101528; border-radius: 4px; padding: 1px 5px; }
+  .stage { color: #a8c4e4; background: #101528; border: 1px solid #2a3555;
+           border-radius: 8px; padding: 10px 12px; margin: 0 0 16px; max-width: 88ch; }
+  .stage b { color: #ffd75e; }
+  .stage-hd { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+              color: #ffd75e; font-weight: 700; letter-spacing: .1em;
+              margin: 18px 0 8px; padding-top: 12px; border-top: 1px solid #1b2540; }
+  .stage-hd span { color: #8fb4d8; font-weight: 400; letter-spacing: 0; }
+  .stage-hd .cost { color: #ffd75e; }
+  .verdict { border: 1px solid #3d5584; background: #0a1428cc; }
+  .verdict h2 { color: #ffd75e; }
+  table { border-collapse: collapse; margin: 10px 0 0; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 18px 4px 0; }
+  th { color: #55708e; font-weight: 400; }
+  .win td { color: #ffd75e; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>THE RUST TILE</h1>
+<p class="lede">Five ways to draw the table's <b>second element with no emoji</b>.
+Each is shown at the three sizes the game renders <code>.s</code> at, then
+dropped in beside the warm swatches it has to stay distinct from. Costs are
+<b>measured builds</b> against a 12685 B baseline — 157 elements,
+<b>627 B of headroom</b>.</p>
+<p class="keys"><kbd>1</kbd>-<kbd>5</kbd> jump to an option &nbsp;·&nbsp;
+<kbd>C</kbd> toggle notes</p>
+
+<div class="ref">
+  <h2>THE CROWDED WARM END</h2>
+  <p class="sub">The real constraint, in one row. Brown and Orange are flat
+  fills; Sand is mottled tan. Charcoal and Ash have grey faces — but Charcoal
+  <em>glows</em> <code>#8a3a14</code>, an ember hue a rust swatch would fight
+  for. Metal is on the end because Rust comes from it, and looking unlike its
+  own parent is the one thing this swatch must not do.</p>
+  <div class="strip" id="refstrip"></div>
+</div>
+
+<div class="card" id="a">
+  <div class="hd"><span class="num">01</span><h2>THE NUT AND BOLT</h2>
+    <span class="cost">+11 B <small>measured</small></span></div>
+  <p class="sub">U+1F529, the closest emoji Unicode offers, and the cheapest
+  thing on this page — <b>cheaper even than a flat colour</b>, which is worth
+  a pause. It is also a picture of clean hardware. Nothing about it is corroded.</p>
+  <div class="row" id="a-sizes"></div>
+  <div class="strip" id="a-strip"></div>
+  <ul class="notes">
+    <li class="y">Cheapest by 5 B, and legible at 32px — emoji are drawn for it.</li>
+    <li class="y">Costs less than option 02 because an emoji escape shares its
+        shape with dozens already in the table, while <code>#b7410e</code> is a
+        brand-new seven-character string roadroller has never seen.</li>
+    <li class="n">It depicts a fastener, not corrosion. A player reads "Bolt".</li>
+    <li class="n">No glow — the c/bg branch precedes <code>el.e</code>, so it
+        sits dark between Metal and Charcoal, which both glow.</li>
+    <li class="n">Says nothing about Metal, its parent.</li>
+  </ul>
+</div>
+
+<div class="card" id="b">
+  <div class="hd"><span class="num">02</span><h2>THE FLAT FILL</h2>
+    <span class="cost">+16 B <small>measured</small></span></div>
+  <p class="sub">One hex, <code>c:"#b7410e"</code>, no <code>bg</code> — the
+  Brown and Orange treatment. The cheapest actual swatch, and the cheapest
+  option that glows.</p>
+  <div class="row" id="b-sizes"></div>
+  <div class="strip" id="b-strip"></div>
+  <ul class="notes">
+    <li class="y">Glows, and in the right hue.</li>
+    <li class="y">Precedent is the oldest in the table — the pure colours are
+        exactly this.</li>
+    <li class="y">Perfectly scale-independent.</li>
+    <li class="n">It is a plain orange-brown square in a table that already has
+        Brown and Orange as plain squares. At 32px it is a third one.</li>
+    <li class="n">Rust is a texture. A flat fill is the one thing rust is not.</li>
+  </ul>
+</div>
+
+<div class="card" id="c">
+  <div class="hd"><span class="num">03</span><h2>CORROSION ON STEEL</h2>
+    <span class="cost">+61 B <small>measured</small></span></div>
+  <p class="sub">Rust blooms eating into a cool steel ground. The only option in
+  which <b>two materials are visible at once</b> — which is what rust actually
+  is, and what makes it unmistakably a child of Metal. <b>Chosen.</b> What is
+  left is how far the corrosion has got, in three stages below.</p>
+
+  <p class="stage"><b>THE INTENSITY IS FREE.</b> All three were built and
+  measured: <b>+61 B</b>, <b>+63 B</b>, <b>+60 B</b>. A gradient stop costs the
+  same whatever colour it names, and the heaviest version is the
+  <em>cheapest</em> of the three by a byte. So this is a pure design choice with
+  no budget argument on either side — pick the one that looks right.</p>
+
+  <div class="stage-hd">03a &nbsp;<span>EARLY — steel dominant, the original</span>
+    <span class="cost">+61 B</span></div>
+  <div class="row" id="c1-sizes"></div>
+  <div class="strip" id="c1-strip"></div>
+
+  <div class="stage-hd">03b &nbsp;<span>ADVANCED — four blooms grown until steel is only the gaps</span>
+    <span class="cost">+63 B</span></div>
+  <div class="row" id="c2-sizes"></div>
+  <div class="strip" id="c2-strip"></div>
+
+  <div class="stage-hd">03c &nbsp;<span>HEAVY — the ground itself is rust; steel survives as one band</span>
+    <span class="cost">+60 B</span></div>
+  <div class="row" id="c3-sizes"></div>
+  <div class="strip" id="c3-strip"></div>
+
+  <ul class="notes">
+    <li class="y">Unlike every neighbour by construction: nothing else in the
+        table shows one material consuming another.</li>
+    <li class="y">Visibly descends from Metal — the grey is Metal's own ramp, so
+        the ancestry reads without a caption.</li>
+    <li class="y">Reads as rust at 32px, where the blooms are still soft blobs
+        rather than detail.</li>
+    <li class="y">Glows warm against Metal's cool tile — the pair sit well together.</li>
+    <li class="n">~60 B whichever stage wins: roughly 10% of the remaining
+        headroom, and four times the flat fill.</li>
+    <li class="i"><b>03a was too shy.</b> At 32px the blooms read as three marks
+        on a steel plate rather than as corrosion, and the tile is grey first,
+        orange second — so it sat closer to Metal than to anything warm.</li>
+    <li class="i"><b>03c inverts that</b> and makes the tile read orange first.
+        The steel band has to stay: without it this collapses into option 04 at
+        twice the price, since the surviving metal is the whole idea.</li>
+  </ul>
+</div>
+
+<div class="card" id="d">
+  <div class="hd"><span class="num">04</span><h2>MOTTLED RUST</h2>
+    <span class="cost">+38 B <small>measured</small></span></div>
+  <p class="sub">The Sand and Charcoal idiom applied straight: two speckles over
+  a diagonal rust ramp. Structurally it is the table's house style for a rough
+  material — which is its strength and its problem.</p>
+  <div class="row" id="d-sizes"></div>
+  <div class="strip" id="d-strip"></div>
+  <ul class="notes">
+    <li class="y">23 B cheaper than option 03 and still textured, not flat.</li>
+    <li class="y">Uses an idiom the table has already established three times.</li>
+    <li class="n">Being the house style is the trap: at 32px it is one more
+        speckled warm square in a row that already has Sand, and it glows the
+        same ember family as Charcoal.</li>
+    <li class="n">Shows no metal, so nothing connects it to its parent.</li>
+    <li class="i">The strongest case for it is budget: if 03 is unaffordable
+        later, this is what it degrades to.</li>
+  </ul>
+</div>
+
+<div class="card" id="e">
+  <div class="hd"><span class="num">05</span><h2>THE CORRODED PLATE</h2>
+    <span class="cost">+112 B <small>measured</small></span></div>
+  <p class="sub">Inline SVG on the 0 0 32 32 viewBox, the <code>matter</code>
+  route: a steel plate with rust eating across it and two pits. The most
+  literal, and by a distance the most expensive thing on this page.</p>
+  <div class="row" id="e-sizes"></div>
+  <div class="strip" id="e-strip"></div>
+  <ul class="notes">
+    <li class="y">Unambiguous at 110px, and genuinely sharp as the hero.</li>
+    <li class="y">Only option that reads as an <em>object</em> that has rusted.</li>
+    <li class="n">+112 B — 18% of the remaining headroom for one tile.</li>
+    <li class="n">At 32px the pits vanish and the ragged edge reads as noise;
+        it becomes a worse version of option 03 at four times the size.</li>
+    <li class="n">A rectangular plate inside a rounded 32px square wastes the
+        corners, so it looks smaller than every swatch beside it.</li>
+  </ul>
+</div>
+
+<div class="card verdict">
+  <div class="hd"><h2>WHERE THIS COMES OUT</h2></div>
+  <p class="sub"><b>Option 03 is chosen</b> — for the same reason the pool won
+  the Oasis: it is the only one whose picture <em>is</em> the definition. Rust
+  is not a colour, it is steel being eaten, and 03 is the only option where both
+  materials are present. It inherits Metal's ground, so the parent is legible at
+  a glance — and in a warm end of the palette that already holds Brown, Orange,
+  Sand and Charcoal's ember glow, being the only two-material swatch is the
+  cheapest distinctiveness available.<br><br>
+  <b>Of the three stages, take 03c.</b> 03a was too shy: at 32px it reads grey
+  first and orange second, which puts it nearer Metal than to anything that
+  looks corroded. 03c inverts the ratio so the tile is orange first while one
+  band of bare steel survives — and that band is not decoration, it is the
+  entire argument for option 03 over option 04, so it must not be dropped. 03b
+  is the honest middle if 03c reads as too far gone. All three cost the same
+  within 3 B, so nothing but the look is at stake.<br><br>
+  <b>Option 04 is the fallback</b> if ~60 B is too rich; it keeps the texture and
+  loses the meaning. <b>Option 02 is honest but forgettable.</b> Option 01 is
+  the wrong picture, and option 05 loses at the size it is mostly seen — the
+  same verdict the SVG got in the Oasis experiment, for the same reason.</p>
+  <table>
+    <tr><th>option</th><th>cost</th><th>glows</th><th>reads at 32px</th><th>says "rust"</th><th>shows its parent</th></tr>
+    <tr><td>01 nut and bolt</td><td>+11 B</td><td>no</td><td>yes</td><td>no, says "bolt"</td><td>no</td></tr>
+    <tr><td>02 flat fill</td><td>+16 B</td><td>yes</td><td>yes</td><td>colour only</td><td>no</td></tr>
+    <tr class="win"><td>03c on steel</td><td>+60 B</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td></tr>
+    <tr><td>04 mottled</td><td>+38 B</td><td>yes</td><td>vs. Sand, poorly</td><td>texture only</td><td>no</td></tr>
+    <tr><td>05 plate</td><td>+112 B</td><td>yes</td><td>poorly</td><td>yes</td><td>yes</td></tr>
+  </table>
+</div>
+</div>
+
+<script>
+// The five candidates, written exactly as they would appear in src/elements.ts.
+const OPT = {
+  a: { id: "rust", n: "Rust", e: "\u{1F529}" },
+  b: { id: "rust", n: "Rust", c: "#b7410e" },
+  // 03a — early: steel dominant, the version first measured at +61 B
+  c1: { id: "rust", n: "Rust", c: "#c1571f",
+        bg: "radial-gradient(circle at 32% 34%, #d2691ecc 0 16%, transparent 30%)," +
+            "radial-gradient(circle at 68% 60%, #a33f0bbb 0 13%, transparent 26%)," +
+            "radial-gradient(circle at 54% 22%, #e08b3f99 0 9%, transparent 18%)," +
+            "linear-gradient(120deg, #8f9aa6 0 46%, #6f7b88 46% 100%)" },
+  // 03b — advanced: blooms grown, a fourth added, steel is now the gaps
+  c2: { id: "rust", n: "Rust", c: "#c1571f",
+        bg: "radial-gradient(circle at 30% 32%, #d2691ee6 0 26%, transparent 44%)," +
+            "radial-gradient(circle at 70% 62%, #a33f0bdd 0 24%, transparent 42%)," +
+            "radial-gradient(circle at 52% 18%, #e08b3fcc 0 16%, transparent 30%)," +
+            "radial-gradient(circle at 18% 78%, #8a2f08cc 0 14%, transparent 28%)," +
+            "linear-gradient(120deg, #8f9aa6 0 46%, #6f7b88 46% 100%)" },
+  // 03c — heavy: the ground is rust, steel survives as one bright band
+  c3: { id: "rust", n: "Rust", c: "#c1571f",
+        bg: "radial-gradient(circle at 26% 30%, #d2691ef2 0 34%, transparent 52%)," +
+            "radial-gradient(circle at 72% 64%, #a33f0be6 0 30%, transparent 50%)," +
+            "radial-gradient(circle at 56% 16%, #e08b3fd9 0 20%, transparent 36%)," +
+            "linear-gradient(120deg, #9aa6b2 0 22%, #b7410e 22% 100%)" },
+  d: { id: "rust", n: "Rust", c: "#b7410e",
+       bg: "radial-gradient(circle at 34% 38%, #d2691ecc 0 4%, transparent 8%)," +
+           "radial-gradient(circle at 68% 66%, #8a2f08aa 0 3%, transparent 7%)," +
+           "linear-gradient(150deg, #b7410e 0%, #7d2c07 100%)" },
+  e: { id: "rust", n: "Rust", c: "#b7410e",
+       s: "<rect x='3' y='7' width='26' height='18' rx='3' fill='#8f9aa6'/>" +
+          "<path d='M6 12c4-3 8 1 12-1s6 2 8 0v10c-3 2-6-1-9 1s-7-2-11 0z' fill='#b7410e'/>" +
+          "<circle cx='10' cy='11' r='1.6' fill='#7d2c07'/>" +
+          "<circle cx='22' cy='20' r='1.3' fill='#7d2c07'/>" },
+};
+
+// The warm end of the table, read verbatim out of src/elements.ts.
+const NEIGH = [
+  { id: "brown", n: "Brown", c: "#8b5a2b" },
+  { id: "orange", n: "Orange", c: "#ff9430" },
+  { id: "sand", n: "Sand", c: "#e0c078",
+    bg: "radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%)," +
+        "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
+        "radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%)," +
+        "linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)" },
+  { id: "charcoal", n: "Charcoal", c: "#8a3a14",
+    bg: "radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%)," +
+        "radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%)," +
+        "linear-gradient(125deg, #2c2c2f 0 28%, #171719 28% 44%, #333338 44% 60%," +
+        "#1b1b1e 60% 78%, #27272b 78% 100%)" },
+  { id: "ash", n: "Ash", c: "#b9b3ad",
+    bg: "radial-gradient(circle at 28% 30%, #efece8cc 0 6%, transparent 12%)," +
+        "radial-gradient(circle at 70% 64%, #ff6a2aaa 0 3%, transparent 8%)," +
+        "linear-gradient(140deg, #b3aca4 0%, #8a827b 46%, #625b55 100%)" },
+  { id: "metal", n: "Metal", c: "#c3ced9",
+    bg: "linear-gradient(120deg, transparent 0 30%, #ffffffaa 30% 38%, transparent 38% 62%," +
+        "#ffffff55 62% 68%, transparent 68%)," +
+        "linear-gradient(180deg, #e6edf3 0%, #aab6c2 38%, #6e7a86 62%, #cdd7e0 100%)" },
+];
+
+// iconHtml(), mirrored branch for branch from src/game.ts.
+function iconHtml(el) {
+  if (el.s) {
+    return '<svg class="s" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' +
+           el.s + "</svg>";
+  }
+  if (el.c || el.bg) {
+    return '<div class="s" style="background:' + (el.bg || el.c) +
+           ";--g:" + (el.c || "#8a5cf0") + '55"></div>';
+  }
+  return el.e || "";
+}
+const tile = (el, cls) =>
+  '<div class="t ' + (cls || "") + '"><div class="o">' + iconHtml(el) +
+  '</div><div class="n">' + el.n + "</div></div>";
+
+// The three sizes .s is rendered at, side by side, then the finished tile.
+function sizes(el) {
+  const at = (wrap, cap) =>
+    '<div class="cell"><div class="' + wrap + '">' + iconHtml(el) +
+    '</div><div class="cap">' + cap + "</div></div>";
+  return at("", "32px · board tile") +
+         at("g62", "62px · card row") +
+         at("r110", "110px · card hero") +
+         '<div class="cell">' + tile(el, "me") + '<div class="cap">in situ</div></div>';
+}
+
+document.getElementById("refstrip").innerHTML = NEIGH.map(e => tile(e)).join("");
+for (const k of ["a", "b", "c1", "c2", "c3", "d", "e"]) {
+  document.getElementById(k + "-sizes").innerHTML = sizes(OPT[k]);
+  // the candidate between its parent and the swatches it must not echo
+  document.getElementById(k + "-strip").innerHTML =
+    tile(NEIGH[5]) + tile(OPT[k], "me") + tile(NEIGH[2]) +
+    tile(NEIGH[3]) + tile(NEIGH[0]) + tile(NEIGH[1]);
+}
+
+addEventListener("keydown", ev => {
+  if (ev.key === "c" || ev.key === "C") { document.body.classList.toggle("hide"); return; }
+  const n = "12345".indexOf(ev.key);
+  if (n >= 0) {
+    const card = document.getElementById("abcde"[n]);
+    document.querySelectorAll(".card").forEach(c => c.classList.remove("on"));
+    card.classList.add("on");
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+</script>
+</body>
+</html>

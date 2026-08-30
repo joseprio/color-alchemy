@@ -1,0 +1,375 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — what an Oil tile should look like. Open it in a browser;
+     nothing to build. Press 1-5 to jump to an option, C to hide the notes.
+
+     THE THIRD ELEMENT WITH NO EMOJI, and the hardest of the three. Oasis had
+     no glyph at all; Rust had one that meant hardware. Oil has U+1F6E2 OIL
+     DRUM, which is a picture of the BARREL — the container, not the substance.
+     Same failure as Rust wearing a different hat.
+
+     BUT OIL HAS A SECOND PROBLEM RUST DID NOT: THE DARK END IS FULL.
+     Three swatches are already near-black, and each solved the same problem a
+     different way:
+
+       Black     face #17191f -> #000000 on a 155deg ramp, with ONE soft
+                 top-left sheen blob. Glows GREY (#5b6472), deliberately: its
+                 own comment says a plain black square would vanish into the
+                 tile, so the sheen and the grey glow are what rescue it.
+       Charcoal  a five-stop faceted slab, #2c2c2f/#171719/#333338/#1b1b1e,
+                 with two warm specks. Glows EMBER (#8a3a14).
+       Night     #7b3fd0 -> #241047 -> #04060c with six white stars.
+                 Glows VIOLET (#8a56e0).
+
+     So the tile ground itself (#0c1122) is already dark, and the three
+     incumbents each bought their legibility with a distinct glow and a
+     distinct surface treatment. A fourth dark swatch that is merely dark is
+     invisible twice over: against the tile, and against its neighbours.
+
+     THE MOVE THAT SETTLES IT. Oil has one visual signature nothing else in
+     this table can claim: THIN-FILM IRIDESCENCE, the petrol rainbow that
+     floats on a black slick. The game owns a spectrum already — Prism draws
+     one, Rainbow is an emoji — but neither puts a spectrum ON black, and a
+     spectrum on black is what a slick is. That is option 04, and unlike Rust,
+     the winning option here is also the second most expensive.
+
+     THE RENDERER CONSTRAINTS ARE THE SAME TWO AS BEFORE. iconHtml() in
+     src/game.ts runs `if (el.s)`, then `if (el.c || el.bg)`, then `el.e`, so
+     (1) AN EMOJI CANNOT HAVE A GLOW, which matters more here than anywhere:
+     a dark emoji with no glow on a dark tile is the worst case in the game;
+     and (2) ONE ARTWORK MUST WORK AT 32px on a board tile, 62px in the
+     discovery card row, and 110px as the discovery hero. All three are shown.
+
+     COSTS ARE MEASURED. Five real npm run build runs against one 12821 B
+     baseline, whole size-golf tail included. Octopus landed between the
+     measurements and the writing, so the live bundle is 11 B past that;
+     trust the deltas, not the absolutes.
+
+     THE RECIPE IS ASSUMED, NOT PROPOSED HERE. Bone + Earth and Plant + Stone,
+     both free — dead things pressed under rock, which is what oil is. Named
+     only so the tiles below have something to sit under. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — the Oil tile</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #101a2e 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #0d2620 0%, transparent 60%);
+    background-attachment: fixed;
+    padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  h2 { font-size: 14px; letter-spacing: .12em; margin: 0; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 90ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 22px; }
+  kbd { background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+        padding: 1px 6px; color: #8fb4d8; }
+  .wrap { max-width: 1100px; }
+
+  /* ---- the game's own tile rules, copied out of src/style.css verbatim ---- */
+  .t {
+    width: 92px; padding: 10px 4px 8px; text-align: center;
+    background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+    user-select: none;
+  }
+  .o { height: 42px; display: flex; align-items: center; justify-content: center;
+       font-size: 32px; line-height: 1; }
+  .s { width: 32px; height: 32px; border-radius: 6px;
+       box-shadow: 0 0 10px 1px var(--g, transparent); }
+  .n { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
+  .g62 .s { width: 62px; height: 62px; border-radius: 12px; }
+  .g62 { font-size: 62px; line-height: 1; }
+  .r110 .s { width: 110px; height: 110px; border-radius: 22px; }
+  .r110 { font-size: 110px; line-height: 1; }
+
+  /* ---- experiment chrome ---- */
+  .ref { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+         padding: 16px 18px; margin: 0 0 26px; }
+  .card { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+          padding: 16px 18px; margin: 0 0 20px; scroll-margin-top: 20px; }
+  .card.on { border-color: #3d5584; box-shadow: 0 0 0 1px #3d558444; }
+  .hd { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .num { color: #55708e; }
+  .cost { margin-left: auto; color: #ffd75e; font-size: 13px; }
+  .cost small { color: #55708e; }
+  .sub { color: #8fb4d8; margin: 2px 0 14px; max-width: 88ch; }
+  .row { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; margin: 0 0 14px; }
+  .cell { text-align: center; }
+  .cap { color: #55708e; font-size: 11px; margin-top: 6px; }
+  .strip { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;
+           padding: 12px; border: 1px dashed #1b2540; border-radius: 10px;
+           background: #05070fcc; }
+  .strip .t { width: 76px; }
+  .me { border-color: #ffd75e88 !important; background: #14120acc !important; }
+  .notes { margin: 14px 0 0; padding: 0; list-style: none; }
+  .notes li { margin: 4px 0; padding-left: 18px; text-indent: -18px; color: #a8c4e4; }
+  .notes li.y::before { content: "+ "; color: #5fd08a; }
+  .notes li.n::before { content: "- "; color: #ff7b72; }
+  .notes li.i::before { content: "? "; color: #8fb4d8; }
+  .hide .notes { display: none; }
+  code { color: #ffd75e; background: #101528; border-radius: 4px; padding: 1px 5px; }
+  .verdict { border: 1px solid #3d5584; background: #0a1428cc; }
+  .verdict h2 { color: #ffd75e; }
+  table { border-collapse: collapse; margin: 10px 0 0; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 18px 4px 0; }
+  th { color: #55708e; font-weight: 400; }
+  .win td { color: #ffd75e; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>THE OIL TILE</h1>
+<p class="lede">Five ways to draw the table's <b>third element with no emoji</b>
+— and the first that has to survive a <b>dark end of the palette that is
+already full</b>. Each is shown at the three sizes the game renders
+<code>.s</code> at, then dropped in beside the three near-black swatches it
+must not echo. Costs are <b>measured builds</b> against a 12821 B baseline.</p>
+<p class="keys"><kbd>1</kbd>-<kbd>5</kbd> jump to an option &nbsp;·&nbsp;
+<kbd>C</kbd> toggle notes</p>
+
+<div class="ref">
+  <h2>THREE DARK SWATCHES ALREADY</h2>
+  <p class="sub">The real constraint. Black, Charcoal and Night are all
+  near-black, and each bought its legibility differently: Black with a sheen
+  blob and a <em>grey</em> glow, Charcoal with a faceted slab and an
+  <em>ember</em> glow, Night with stars and a <em>violet</em> glow. Black's own
+  comment in <code>elements.ts</code> says why — a plain black square vanishes
+  into the tile. A fourth dark swatch has to earn its place the same way.</p>
+  <div class="strip" id="refstrip"></div>
+</div>
+
+<div class="card" id="a">
+  <div class="hd"><span class="num">01</span><h2>THE OIL DRUM</h2>
+    <span class="cost">+10 B <small>measured</small></span></div>
+  <p class="sub">U+1F6E2, the only emoji in the neighbourhood, and the cheapest
+  thing here. It is a picture of the <b>barrel</b> — the container oil is
+  shipped in, not the substance. Rust had exactly this problem with the nut
+  and bolt.</p>
+  <div class="row" id="a-sizes"></div>
+  <div class="strip" id="a-strip"></div>
+  <ul class="notes">
+    <li class="y">Cheapest, by 2 B, and needs no design decision to maintain.</li>
+    <li class="n">Depicts the container, not the contents. A player reads "Barrel".</li>
+    <li class="n"><b>The worst no-glow case in the game.</b> Emoji cannot carry
+        <code>--g</code>, and this one is a dark object on a dark tile between
+        three neighbours that all glow. It is the only option that gets
+        <em>harder</em> to see because of where it sits.</li>
+    <li class="n">Industrial, where every other route to Oil is geological.</li>
+  </ul>
+</div>
+
+<div class="card" id="b">
+  <div class="hd"><span class="num">02</span><h2>THE FLAT FILL</h2>
+    <span class="cost">+12 B <small>measured</small></span></div>
+  <p class="sub">One hex, <code>c:"#1c1c24"</code>, no <code>bg</code>. Cheap,
+  and it does glow — but it walks straight into the trap Black documented and
+  then avoided.</p>
+  <div class="row" id="b-sizes"></div>
+  <div class="strip" id="b-strip"></div>
+  <ul class="notes">
+    <li class="y">Second cheapest, and unlike option 01 it carries a glow.</li>
+    <li class="n"><b>It nearly vanishes.</b> The tile ground is
+        <code>#0c1122</code>; a <code>#1c1c24</code> face is barely a shade off
+        it, so the swatch reads as a hole rather than an object.</li>
+    <li class="n">A dark flat fill also makes the glow do all the work, and a
+        dark glow is a dim one.</li>
+    <li class="i">Black solved this exact problem with a sheen blob and a
+        deliberately GREY glow. Any flat-dark option has to do the same, at
+        which point it is no longer flat.</li>
+  </ul>
+</div>
+
+<div class="card" id="c">
+  <div class="hd"><span class="num">03</span><h2>THE GLOSSY POOL</h2>
+    <span class="cost">+47 B <small>measured</small></span></div>
+  <p class="sub">Black made <em>wet</em>: the same dark ramp, but with a broad
+  specular highlight that reads as a liquid surface rather than a solid. The
+  cheapest option that is unmistakably not one of the three incumbents.</p>
+  <div class="row" id="c-sizes"></div>
+  <div class="strip" id="c-strip"></div>
+  <ul class="notes">
+    <li class="y">Says LIQUID, which is the one thing Black, Charcoal and Night
+        all fail to say — they are a colour, a solid and a sky.</li>
+    <li class="y">Survives at 32px: a big soft highlight is the shape that
+        scales down best.</li>
+    <li class="y">14 B cheaper than the slick, and much cheaper than the SVG.</li>
+    <li class="n">Its kinship with Black is a little too close. At tile size it
+        reads as "Black, but shinier", which is a weak identity for an element
+        with its own recipe.</li>
+    <li class="i">The honest budget pick if the slick is too rich.</li>
+  </ul>
+</div>
+
+<div class="card" id="d">
+  <div class="hd"><span class="num">04</span><h2>THE IRIDESCENT SLICK</h2>
+    <span class="cost">+75 B <small>measured</small></span></div>
+  <p class="sub">A petrol rainbow floating on black — thin-film interference,
+  the one thing oil looks like and <b>nothing else in this table does</b>. The
+  spectrum uses the game's own six hues, so it belongs to the palette rather
+  than importing a new one.</p>
+  <div class="row" id="d-sizes"></div>
+  <div class="strip" id="d-strip"></div>
+  <ul class="notes">
+    <li class="y">Unique by construction. The game owns a spectrum — Prism
+        draws one, Rainbow is an emoji — but neither puts one ON black, and a
+        spectrum on black is exactly what a slick is.</li>
+    <li class="y">Solves the dark-end problem instead of fighting it: the
+        blackness is the ground the colour sits on, so being dark is now an
+        asset rather than a collision.</li>
+    <li class="y">Glows petrol-teal (<code>#3fa88f</code>), a hue no neighbour
+        uses — Black is grey, Charcoal ember, Night violet.</li>
+    <li class="y">Reads at 32px, because the bands are wide and soft.</li>
+    <li class="n">+75 B, about 15% of the remaining headroom, and second most
+        expensive on the page.</li>
+    <li class="i">Bands are held at <code>55</code> alpha on purpose. Push them
+        brighter and it stops being oil and becomes Rainbow with the lights off.</li>
+  </ul>
+</div>
+
+<div class="card" id="e">
+  <div class="hd"><span class="num">05</span><h2>THE DROP</h2>
+    <span class="cost">+89 B <small>measured</small></span></div>
+  <p class="sub">Inline SVG on the 0 0 32 32 viewBox: a single black droplet
+  with a highlight and a slick pooling under it. The most literal, the most
+  expensive, and the option that fits the 32px square worst.</p>
+  <div class="row" id="e-sizes"></div>
+  <div class="strip" id="e-strip"></div>
+  <ul class="notes">
+    <li class="y">Unambiguous at 110px — a drop is a drop.</li>
+    <li class="y">The only option that reads as a discrete OBJECT rather than a
+        material sample.</li>
+    <li class="n">+89 B, the dearest here.</li>
+    <li class="n">A drop is tall and narrow; it leaves the rounded square's
+        corners empty, so it looks smaller than every swatch beside it — the
+        same fault the Rust plate had for the opposite reason.</li>
+    <li class="n">At 32px the highlight and the pool both disappear, leaving a
+        dark blob on a dark tile, which is option 01 again at nine times the price.</li>
+  </ul>
+</div>
+
+<div class="card verdict">
+  <div class="hd"><h2>WHERE THIS COMES OUT</h2></div>
+  <p class="sub"><b>Option 04, the iridescent slick.</b> It is the only one that
+  turns the problem into the answer: three neighbours are already dark, so being
+  dark is not a way to stand out — but being <em>dark with a spectrum on it</em>
+  is, and it happens to be precisely what oil looks like. It also takes a glow
+  hue nothing else in the table uses, which is the cheapest legibility available
+  at the dark end.<br><br>
+  Note this breaks the pattern of the previous two experiments: for the Oasis
+  and for Rust the winning option was the middle of the price range. Here it is
+  second-dearest, because the cheap options are not merely duller — they are
+  actively invisible. Option 01 is a dark emoji with no glow on a dark tile, and
+  option 02 is a shade off the tile ground. <b>Option 03 is the real fallback</b>
+  at 28 B less: it says "liquid", which is enough, but it reads as Black with a
+  shine. Option 05 loses at 32px, the same way the SVG lost in both earlier
+  experiments.</p>
+  <table>
+    <tr><th>option</th><th>cost</th><th>glows</th><th>reads at 32px</th><th>says "oil"</th><th>distinct from Black</th></tr>
+    <tr><td>01 oil drum</td><td>+10 B</td><td>no</td><td>barely</td><td>says "barrel"</td><td>yes</td></tr>
+    <tr><td>02 flat fill</td><td>+12 B</td><td>yes</td><td>no</td><td>colour only</td><td>no</td></tr>
+    <tr><td>03 glossy pool</td><td>+47 B</td><td>yes</td><td>yes</td><td>says "liquid"</td><td>barely</td></tr>
+    <tr class="win"><td>04 slick</td><td>+75 B</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td></tr>
+    <tr><td>05 drop</td><td>+89 B</td><td>yes</td><td>poorly</td><td>yes</td><td>yes</td></tr>
+  </table>
+</div>
+</div>
+
+<script>
+// The five candidates, written exactly as they would appear in src/elements.ts.
+const OPT = {
+  a: { id: "oil", n: "Oil", e: "\u{1F6E2}\u{FE0F}" },
+  b: { id: "oil", n: "Oil", c: "#1c1c24" },
+  c: { id: "oil", n: "Oil", c: "#3b4250",
+       bg: "radial-gradient(ellipse 42% 22% at 34% 26%, #ffffff66 0 40%, transparent 100%)," +
+           "radial-gradient(circle at 70% 74%, #2a3340aa 0 22%, transparent 46%)," +
+           "linear-gradient(160deg, #1b1f27 0%, #0d0f14 58%, #05060a 100%)" },
+  d: { id: "oil", n: "Oil", c: "#3fa88f",
+       bg: "linear-gradient(115deg, #ff3b3055 0 12%, #ffdc3255 12% 25%, #34d15855 25% 38%," +
+           "#33e9e955 38% 52%, #2f6bff55 52% 66%, #9a4dff55 66% 80%, transparent 80%)," +
+           "radial-gradient(ellipse 40% 20% at 32% 24%, #ffffff44 0 40%, transparent 100%)," +
+           "linear-gradient(160deg, #14141c 0%, #0a0a10 60%, #05050a 100%)" },
+  e: { id: "oil", n: "Oil", c: "#3fa88f",
+       s: "<path d='M16 4C10 13 6 18 6 22a10 10 0 0 0 20 0c0-4-4-9-10-18z' fill='#0f1016' stroke='#3fa88f' stroke-width='1.4'/>" +
+          "<path d='M12 20a5 5 0 0 1 3-5' stroke='#ffffff88' stroke-width='2' fill='none' stroke-linecap='round'/>" +
+          "<ellipse cx='19' cy='23' rx='4' ry='2.4' fill='#33e9e955'/>" },
+};
+
+// The dark end of the table, read verbatim out of src/elements.ts.
+const NEIGH = [
+  { id: "black", n: "Black", c: "#5b6472",
+    bg: "radial-gradient(circle at 30% 26%, #2a2f3a 0 18%, transparent 42%)," +
+        "linear-gradient(155deg, #17191f 0%, #0a0b0e 55%, #000000 100%)" },
+  { id: "charcoal", n: "Charcoal", c: "#8a3a14",
+    bg: "radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%)," +
+        "radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%)," +
+        "linear-gradient(125deg, #2c2c2f 0 28%, #171719 28% 44%, #333338 44% 60%," +
+        "#1b1b1e 60% 78%, #27272b 78% 100%)" },
+  { id: "night", n: "Night", c: "#8a56e0",
+    bg: "radial-gradient(circle at 22% 28%, #fff 0 4%, transparent 8%)," +
+        "radial-gradient(circle at 65% 16%, #fff 0 3%, transparent 6%)," +
+        "radial-gradient(circle at 82% 52%, #ffffffcc 0 3.5%, transparent 7%)," +
+        "radial-gradient(circle at 38% 62%, #ffffffbb 0 3%, transparent 6%)," +
+        "radial-gradient(circle at 58% 84%, #fff 0 2.5%, transparent 5%)," +
+        "radial-gradient(circle at 12% 76%, #ffffff99 0 3%, transparent 6%)," +
+        "linear-gradient(160deg, #7b3fd0 0%, #241047 45%, #04060c 100%)" },
+  { id: "grey", n: "Grey", c: "#7f8894" },
+  { id: "ash", n: "Ash", c: "#b9b3ad",
+    bg: "radial-gradient(circle at 28% 30%, #efece8cc 0 6%, transparent 12%)," +
+        "radial-gradient(circle at 70% 64%, #ff6a2aaa 0 3%, transparent 8%)," +
+        "linear-gradient(140deg, #b3aca4 0%, #8a827b 46%, #625b55 100%)" },
+];
+
+// iconHtml(), mirrored branch for branch from src/game.ts.
+function iconHtml(el) {
+  if (el.s) {
+    return '<svg class="s" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' +
+           el.s + "</svg>";
+  }
+  if (el.c || el.bg) {
+    return '<div class="s" style="background:' + (el.bg || el.c) +
+           ";--g:" + (el.c || "#8a5cf0") + '55"></div>';
+  }
+  return el.e || "";
+}
+const tile = (el, cls) =>
+  '<div class="t ' + (cls || "") + '"><div class="o">' + iconHtml(el) +
+  '</div><div class="n">' + el.n + "</div></div>";
+
+// The three sizes .s is rendered at, side by side, then the finished tile.
+function sizes(el) {
+  const at = (wrap, cap) =>
+    '<div class="cell"><div class="' + wrap + '">' + iconHtml(el) +
+    '</div><div class="cap">' + cap + "</div></div>";
+  return at("", "32px · board tile") +
+         at("g62", "62px · card row") +
+         at("r110", "110px · card hero") +
+         '<div class="cell">' + tile(el, "me") + '<div class="cap">in situ</div></div>';
+}
+
+document.getElementById("refstrip").innerHTML = NEIGH.map(e => tile(e)).join("");
+for (const k of ["a", "b", "c", "d", "e"]) {
+  document.getElementById(k + "-sizes").innerHTML = sizes(OPT[k]);
+  // the candidate wedged into the dark run it has to survive
+  document.getElementById(k + "-strip").innerHTML =
+    tile(NEIGH[0]) + tile(NEIGH[1]) + tile(OPT[k], "me") +
+    tile(NEIGH[2]) + tile(NEIGH[3]) + tile(NEIGH[4]);
+}
+
+addEventListener("keydown", ev => {
+  if (ev.key === "c" || ev.key === "C") { document.body.classList.toggle("hide"); return; }
+  const n = "12345".indexOf(ev.key);
+  if (n >= 0) {
+    const card = document.getElementById("abcde"[n]);
+    document.querySelectorAll(".card").forEach(c => c.classList.remove("on"));
+    card.classList.add("on");
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+</script>
+</body>
+</html>

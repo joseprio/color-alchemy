@@ -1,0 +1,638 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — what a Sulfur tile should look like, and what should make
+     it. Open it in a browser; nothing to build. Press 1-6 to jump to an option,
+     C to hide the notes.
+
+     THE THIRD ELEMENT WITH NO EMOJI. Oasis was the first, Rust the second (see
+     oasis-swatch.html and rust-tile.html). Sulfur is the hardest of the three,
+     because Unicode DOES have a sign for it — U+1F70D ALCHEMICAL SYMBOL FOR
+     SULPHUR — and that sign is a trap: it lives in a text-presentation block
+     with no colour font behind it, so it renders in whatever the page font is,
+     or as tofu. An emoji that is not an emoji.
+
+     WHERE SULFUR HAS TO LIVE IN THE PALETTE. The yellow end, read off the
+     table before proposing anything:
+
+       Yellow    #ffdc32   flat, no bg
+       Gold      #f7c948   flat, no bg
+       Sand      #e0c078   mottled tan, three grain dots over a diagonal
+       Ash       grey face (#b3aca4..#625b55), one #ff6a2a ember speck
+       Charcoal  near-black face, #8a3a14 ember GLOW
+       Lava      black crust bands over an orange ramp
+
+     So the yellow FACES are Yellow, Gold and Sand — three flat-to-mottled
+     squares in the same hue family. A fourth plain yellow square is the one
+     thing this swatch cannot be, and Sulfur's own parent, Yellow, is the
+     brightest of the three.
+
+     THE MOVE THAT SETTLES IT. Rust won by being a SURFACE EVENT — two
+     materials in one swatch. Sulfur cannot reuse that move without spending
+     Rust's distinctiveness (option 04 is exactly that, measured, and it is
+     why 04 loses). What Sulfur has instead is HABIT: it is the table's only
+     crystalline mineral, and facets — flat planes meeting at hard edges — are
+     a structure no swatch in the table has. Sand speckles, Metal streaks,
+     Charcoal bands, Rust blooms, Lava crusts; nothing facets.
+
+     THERE ARE TWO WAYS TO DRAW A FACET AND THEY ARE NOT EQUAL. Option 05
+     stacks hard-stop LINEAR gradients: cheap, because the table is already
+     full of linear-gradient, but the result is a lit slab, and a bright
+     diagonal seam over a two-tone ramp is what Metal and Glass already look
+     like. Option 06 uses ONE CONIC gradient, whose wedges all meet at a
+     point, which is what a cut crystal seen from above actually is. That is
+     the chosen tile, and the 17 B between them is almost entirely the cost of
+     the string `conic-gradient` — a construct that appears nowhere in src/
+     today, so roadroller has never seen it.
+
+     THE HUE IS HALF THE ARGUMENT. Native sulfur is GREENISH yellow
+     (#e8e017 family), where Yellow is #ffdc32 and Gold is #f7c948 — both warm.
+     One step toward green separates Sulfur from both at 32px more cheaply than
+     any amount of texture does, which is why 05b beats 05a for 7 B.
+
+     THE RENDERER CONSTRAINTS ARE THE SAME TWO AS OASIS AND RUST. iconHtml()
+     in src/game.ts runs `if (el.s)`, then `if (el.c || el.bg)`, then `el.e`,
+     so (1) AN EMOJI CANNOT HAVE A GLOW — the swatch branch precedes el.e, so
+     option 01 ships dark; and (2) ONE ARTWORK MUST WORK at 32px on a board
+     tile, 62px in the discovery card row, and 110px as the discovery hero.
+     Every option is shown at all three.
+
+     COSTS ARE MEASURED. Thirteen real `npm run build` runs against one 12832 B
+     baseline — the tree at 165 elements and 313 recipes, whole size-golf tail
+     included, 480 B of headroom. Every option carries the SAME id, name and
+     two recipes, so the delta is the artwork alone. Trust the deltas, not the
+     absolutes, and re-measure after one lands — roadroller remodels around
+     whatever is already in the table.
+
+     THE RECIPE IS PROPOSED HERE, unlike in the Rust experiment, because
+     Sulfur's parents are not obvious the way Metal + Water was. See the first
+     card. Short version: Volcano + Yellow, with Mountain + Yellow as the
+     alternate that gives a leaf a job. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — the Sulfur tile</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #2a2a08 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #2a1207 0%, transparent 60%);
+    background-attachment: fixed;
+    padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  h2 { font-size: 14px; letter-spacing: .12em; margin: 0; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 90ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 22px; }
+  kbd { background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+        padding: 1px 6px; color: #8fb4d8; }
+  .wrap { max-width: 1100px; }
+
+  /* ---- the game's own tile rules, copied out of src/style.css verbatim ---- */
+  .t {
+    width: 92px; padding: 10px 4px 8px; text-align: center;
+    background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+    user-select: none;
+  }
+  .o { height: 42px; display: flex; align-items: center; justify-content: center;
+       font-size: 32px; line-height: 1; }
+  .s { width: 32px; height: 32px; border-radius: 6px;
+       box-shadow: 0 0 10px 1px var(--g, transparent); }
+  .n { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
+  .g62 .s { width: 62px; height: 62px; border-radius: 12px; }
+  .g62 { font-size: 62px; line-height: 1; }
+  .r110 .s { width: 110px; height: 110px; border-radius: 22px; }
+  .r110 { font-size: 110px; line-height: 1; }
+
+  /* ---- experiment chrome ---- */
+  .ref { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+         padding: 16px 18px; margin: 0 0 26px; }
+  .card { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+          padding: 16px 18px; margin: 0 0 20px; scroll-margin-top: 20px; }
+  .card.on { border-color: #3d5584; box-shadow: 0 0 0 1px #3d558444; }
+  .hd { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .num { color: #55708e; }
+  .cost { margin-left: auto; color: #ffd75e; font-size: 13px; }
+  .cost small { color: #55708e; }
+  .sub { color: #8fb4d8; margin: 2px 0 14px; max-width: 88ch; }
+  .row { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; margin: 0 0 14px; }
+  .cell { text-align: center; }
+  .cap { color: #55708e; font-size: 11px; margin-top: 6px; }
+  .strip { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;
+           padding: 12px; border: 1px dashed #1b2540; border-radius: 10px;
+           background: #05070fcc; }
+  .strip .t { width: 76px; }
+  .me { border-color: #ffd75e88 !important; background: #14120acc !important; }
+  .notes { margin: 14px 0 0; padding: 0; list-style: none; }
+  .notes li { margin: 4px 0; padding-left: 18px; text-indent: -18px; color: #a8c4e4; }
+  .notes li.y::before { content: "+ "; color: #5fd08a; }
+  .notes li.n::before { content: "- "; color: #ff7b72; }
+  .notes li.i::before { content: "? "; color: #8fb4d8; }
+  .hide .notes { display: none; }
+  code { color: #ffd75e; background: #101528; border-radius: 4px; padding: 1px 5px; }
+  .stage { color: #a8c4e4; background: #101528; border: 1px solid #2a3555;
+           border-radius: 8px; padding: 10px 12px; margin: 0 0 16px; max-width: 88ch; }
+  .stage b { color: #ffd75e; }
+  .stage-hd { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+              color: #ffd75e; font-weight: 700; letter-spacing: .1em;
+              margin: 18px 0 8px; padding-top: 12px; border-top: 1px solid #1b2540; }
+  .stage-hd span { color: #8fb4d8; font-weight: 400; letter-spacing: 0; }
+  .stage-hd .cost { color: #ffd75e; }
+  .verdict { border: 1px solid #3d5584; background: #0a1428cc; }
+  .verdict h2 { color: #ffd75e; }
+  .recipe { border: 1px solid #4a4416; background: #12110acc; }
+  .recipe h2 { color: #ffd75e; }
+  table { border-collapse: collapse; margin: 10px 0 0; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 18px 4px 0; }
+  th { color: #55708e; font-weight: 400; }
+  .win td { color: #ffd75e; }
+  td.no { color: #ff7b72; }
+  .pair { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+  .pair .t { width: 76px; }
+  .pair .cap { margin: 0 0 0 14px; max-width: 52ch; text-align: left; }
+  .op { color: #55708e; font-size: 20px; padding: 0 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>THE SULFUR TILE</h1>
+<p class="lede">A recipe, then seven ways to draw the table's <b>third element
+with no emoji</b>. Each drawing is shown at the three sizes the game renders
+<code>.s</code> at, then dropped in beside the yellow swatches it has to stay
+distinct from. Costs are <b>measured builds</b> against a 12832 B baseline —
+165 elements, 313 recipes, <b>480 B of headroom</b>.</p>
+<p class="keys"><kbd>1</kbd>-<kbd>7</kbd> jump to an option &nbsp;·&nbsp;
+<kbd>C</kbd> toggle notes</p>
+
+<div class="card recipe" id="r">
+  <div class="hd"><h2>THE RECIPE</h2>
+    <span class="cost">+1 B <small>per alternate route, measured</small></span></div>
+  <p class="sub"><b>Volcano + Yellow</b>, with <b>Mountain + Yellow</b> and
+  optionally <b>Volcano + Salt</b> as alternates. Every pair below was checked
+  against the 313 recipes in the table today; all of them are free — except
+  Volcano + Water, which already makes Mountain and is the pair most players
+  will try first.</p>
+
+  <div id="pairs"></div>
+
+  <p class="stage"><b>WHY YELLOW IS THE RIGHT SECOND INGREDIENT.</b> Thirteen
+  recipes already use Yellow as <em>"the yellow version of X"</em> — Gold, Sand,
+  Star, Lightning, Cheese, Bee, Banana, Sunflower. A player who has met any two
+  of those reads Volcano + Yellow without a hint, which is the whole test. The
+  picture is real too: native sulfur is the yellow crust that grows around a
+  volcanic vent, so this is not a colour pun, it is where the mineral comes
+  from.</p>
+
+  <p class="stage"><b>WHY MOUNTAIN + YELLOW IS WORTH THE SECOND ROUTE.</b>
+  Mountain is one of the table's <b>total leaves</b>: two ways in, zero recipes
+  out. Sulfur is the first thing that could give it a job — the same argument
+  Desert gets in the Oasis experiment and Salt gets in the Rust one. And the
+  route is honest: sulfur is mined out of mountains as well as scraped off
+  vents.<br><br>
+  <b>Volcano + Salt</b> is the third candidate and the prettiest by lore: salt
+  and sulfur are two of the alchemists' <em>tria prima</em>, and Salt is still a
+  near-leaf with Rust as its only consumer. It is the weakest to
+  <em>guess</em>, though, which is what keeps it third.</p>
+
+  <p class="stage"><b>ALTERNATES ARE ALMOST FREE.</b> Measured on identical
+  artwork: one route <b>+47 B</b>, two routes <b>+48 B</b>, three routes
+  <b>+54 B</b>. The second costs a byte and the third six, because every
+  ingredient id is a string roadroller has already seen a few lines earlier —
+  an exact repeat costs almost nothing. So how many ways in Sulfur gets is a
+  design question, not a budget one.</p>
+
+  <ul class="notes">
+    <li class="i"><b>Where Sulfur goes next</b>, so it is not one more leaf:
+        Gunpowder (Sulfur + Charcoal, 🧨) is the obvious child, and Acid could
+        take a second route from Sulfur + Water — sulfuric acid — for about a
+        byte. Neither is proposed here.</li>
+    <li class="n"><b>Volcano + Water is taken</b>: it makes Mountain.</li>
+    <li class="n"><b>Fire + Yellow, Stone + Yellow and Lava + Yellow</b> are all
+        free and all rejected. Fire and Stone are the two most overloaded
+        ingredients in the table — thirteen recipes each — and none of the three
+        says <em>sulfur</em> rather than <em>hot yellow thing</em>.</li>
+    <li class="i">Sulfur would be the <b>fourth consumer of Volcano</b>, after
+        Mountain and Diamond. That is a well-connected parent, not an
+        overloaded one.</li>
+  </ul>
+</div>
+
+<div class="ref">
+  <h2>THE CROWDED YELLOW END</h2>
+  <p class="sub">The real constraint, in one row. Yellow and Gold are flat
+  fills; Sand is mottled tan. Ash and Charcoal are the grey-faced pair, in
+  because any sulfur-crust-on-dark-rock swatch has to beat them. Rust is here
+  because option 04 borrows its structure. Lava, Volcano and Mountain close the
+  strip — those are the parents, and looking unrelated to them is a cost, not a
+  saving.</p>
+  <div class="strip" id="refstrip"></div>
+</div>
+
+<div class="card" id="a">
+  <div class="hd"><span class="num">01</span><h2>THE ALCHEMICAL SIGN</h2>
+    <span class="cost">+15 B <small>measured</small></span></div>
+  <p class="sub">U+1F70D, <b>the sign alchemy actually used for sulfur</b>, set
+  as <code>e</code>. It is the only option that is literally correct, and the
+  only one whose appearance this page cannot promise you: it is a
+  <b>text-presentation</b> codepoint in the Alchemical Symbols block, so no
+  colour emoji font covers it. Whatever it looks like below is your system
+  font's answer, and a missing glyph is tofu.</p>
+  <div class="row" id="a-sizes"></div>
+  <div class="strip" id="a-strip"></div>
+  <ul class="notes">
+    <li class="y">Historically exact — a triangle over a cross is what the sign
+        has meant since the 15th century.</li>
+    <li class="n"><b>It is not an emoji.</b> Every other <code>e</code> in the
+        table resolves in a colour font on every platform the game targets;
+        this one resolves in the UI font or not at all.</li>
+    <li class="n">No glow — the c/bg branch precedes <code>el.e</code>, so it
+        sits dark between Gold and Lava, which both glow.</li>
+    <li class="n">Monochrome by definition, in a game whose subject is colour.</li>
+    <li class="n">Dearer than a flat colour, the reverse of the Rust result: a
+        lone codepoint from a block the table has never touched is a brand-new
+        string, where <code>#d8d81c</code> at least rhymes with eighty other
+        hexes.</li>
+  </ul>
+</div>
+
+<div class="card" id="b">
+  <div class="hd"><span class="num">02</span><h2>THE FLAT FILL</h2>
+    <span class="cost">+11 B <small>measured</small></span></div>
+  <p class="sub">One hex, <code>c:"#d8d81c"</code>, no <code>bg</code> — the
+  Yellow and Gold treatment. The cheapest thing on this page, and, in that same
+  reversal, <b>cheaper than the emoji</b>.</p>
+  <div class="row" id="b-sizes"></div>
+  <div class="strip" id="b-strip"></div>
+  <ul class="notes">
+    <li class="y">Cheapest by 4 B, glows, and is perfectly scale-independent.</li>
+    <li class="y">The greenish hue alone does real work — it is visibly neither
+        Yellow nor Gold.</li>
+    <li class="n">It is a plain yellow square in a table that already has two
+        plain yellow squares and a mottled one. At 32px it is a fourth.</li>
+    <li class="n">Sulfur's whole identity is that it is a <em>crystal</em>. A
+        flat fill throws that away to save 37 B.</li>
+  </ul>
+</div>
+
+<div class="card" id="c">
+  <div class="hd"><span class="num">03</span><h2>BRIMSTONE POWDER</h2>
+    <span class="cost">+38 B <small>measured</small></span></div>
+  <p class="sub">The Sand idiom applied straight: three grain dots over a
+  diagonal two-stop ramp, in sulfur yellow. Structurally it is the table's
+  house style for a loose material — which is its strength and its problem.</p>
+  <div class="row" id="c-sizes"></div>
+  <div class="strip" id="c-strip"></div>
+  <ul class="notes">
+    <li class="y">10 B cheaper than the facets, and textured rather than flat.</li>
+    <li class="y">Milled sulfur really is a powder, so the picture is not wrong.</li>
+    <li class="n">Being the house style is the trap, exactly as it was for Rust:
+        at 32px this is Sand in a different hue, and Sand is three tiles away.</li>
+    <li class="n">The dots are 3% radii — the first thing to disappear at 32px,
+        which is the size the tile is seen at most.</li>
+  </ul>
+</div>
+
+<div class="card" id="d">
+  <div class="hd"><span class="num">04</span><h2>CRUST ON BASALT</h2>
+    <span class="cost">+52 B <small>measured</small></span></div>
+  <p class="sub">Rust's winning move, reapplied: yellow fumarole crust blooming
+  over dark volcanic rock, with one band of bare basalt surviving. Two materials
+  in one swatch, and it names its parent — Volcano — the way Rust names Metal.</p>
+  <div class="row" id="d-sizes"></div>
+  <div class="strip" id="d-strip"></div>
+  <ul class="notes">
+    <li class="y">Shows where sulfur comes from, not just what colour it is.</li>
+    <li class="y">The dark ground buys more separation from Yellow, Gold and
+        Sand than any hue shift can.</li>
+    <li class="n"><b>It spends Rust's distinctiveness.</b> Rust was chosen
+        <em>because</em> nothing else in the table showed one material eating
+        another. Build this and that sentence stops being true, and two
+        blooms-on-a-dark-ground swatches now have to be told apart by hue alone.</li>
+    <li class="n">4 B dearer than 05b, for a structure the table already owns.</li>
+    <li class="i">If Rust had not shipped, this would win. It is the strongest
+        <em>picture</em> on the page; it is just the second one.</li>
+  </ul>
+</div>
+
+<div class="card" id="e">
+  <div class="hd"><span class="num">05</span><h2>FACETS, THE CHEAP WAY</h2>
+    <span class="cost">+41 → +66 B <small>measured</small></span></div>
+  <p class="sub">Hard-stop <b>linear</b> gradients stacked as flat planes — a
+  bright plane from the top left, a dark one from the bottom right, one specular
+  seam across both. Cheap, because <code>linear-gradient</code> is the string
+  the table is built out of. Three settings below, and then the reason this
+  loses to option 06.</p>
+
+  <p class="stage"><b>UNLIKE RUST'S THREE STAGES, THESE DO NOT COST THE SAME:</b>
+  <b>+41 B</b>, <b>+48 B</b>, <b>+66 B</b>. 05a is cheapest because its yellows
+  are near-repeats of hexes already in the table; 05b pays 7 B to move the whole
+  swatch toward green; 05c pays another 18 B for a dark matrix wedge — which is
+  where it starts buying option 04's argument at option 04's price.</p>
+
+  <div class="stage-hd">05a &nbsp;<span>LEMON — warm, high-key facets</span>
+    <span class="cost">+41 B</span></div>
+  <div class="row" id="e1-sizes"></div>
+  <div class="strip" id="e1-strip"></div>
+
+  <div class="stage-hd">05b &nbsp;<span>BRIMSTONE — the mineral hue, one step toward green</span>
+    <span class="cost">+48 B</span></div>
+  <div class="row" id="e2-sizes"></div>
+  <div class="strip" id="e2-strip"></div>
+
+  <div class="stage-hd">05c &nbsp;<span>IN MATRIX — the same facets, bedded in dark rock</span>
+    <span class="cost">+66 B</span></div>
+  <div class="row" id="e3-sizes"></div>
+  <div class="strip" id="e3-strip"></div>
+
+  <ul class="notes">
+    <li class="y">The cheapest thing on this page that is neither flat nor a
+        borrowed idiom, and the planes survive to 32px because they are large
+        flat areas, not detail.</li>
+    <li class="y">Says <em>mineral</em> without borrowing Rust's structure — the
+        one thing option 04 cannot do.</li>
+    <li class="y">Glows sulfur yellow, so it reads as its own colour beside Gold
+        rather than as a dimmer Yellow.</li>
+    <li class="n"><b>It reads as a lit slab, not a crystal.</b> Two planes and a
+        bright diagonal seam is the shape Metal and Glass already have; only the
+        hue keeps it out of their family. Option 06 is the fix.</li>
+    <li class="n">~48 B is 10% of the remaining headroom for one tile.</li>
+    <li class="i"><b>05a is too close to Yellow.</b> The facets are visible but
+        the hue is not doing its share, so at 32px the tile reads as a shaded
+        Yellow rather than as a different substance.</li>
+    <li class="i"><b>05c</b> half-repeats option 04, so if the dark ground is
+        what is wanted, buy option 04 and get the whole idea instead of a wedge
+        of it — 05c is 14 B dearer than 04 and says less.</li>
+  </ul>
+</div>
+
+<div class="card" id="f">
+  <div class="hd"><span class="num">06</span><h2>THE GEM ROSETTE</h2>
+    <span class="cost">+65 B <small>measured</small></span></div>
+  <p class="sub">One <code>conic-gradient</code> with six hard stops: wedges
+  that all meet at a single point above centre, which is a cut crystal seen
+  from above. <b>Chosen.</b> No <code>conic-gradient</code> appears anywhere in
+  <code>src/</code> today — this would be the first, and that novelty is most of
+  what the 17 B over option 05 buys.</p>
+  <div class="row" id="f-sizes"></div>
+  <div class="strip" id="f-strip"></div>
+
+  <p class="stage"><b>06b ADDS A CULET</b> — one small <code>radial-gradient</code>
+  highlight where the wedges converge, for <b>+70 B</b>, 5 B more. It sharpens
+  the hero at 110px and is invisible at 32px, which is the wrong way round for a
+  tile mostly seen small. Shown so the 5 B can be judged rather than assumed.</p>
+
+  <div class="stage-hd">06b &nbsp;<span>WITH THE CULET HIGHLIGHT</span>
+    <span class="cost">+70 B</span></div>
+  <div class="row" id="f2-sizes"></div>
+  <div class="strip" id="f2-strip"></div>
+
+  <ul class="notes">
+    <li class="y"><b>It is the only swatch in the table whose structure has a
+        centre.</b> Every other one is a ramp, a band or a scatter — directional
+        or random. Wedges converging on a point is a shape nothing else here can
+        accidentally look like.</li>
+    <li class="y">Survives to 32px better than the linear planes do: the wedge
+        boundaries are radial, so shrinking the square shrinks them evenly
+        instead of flattening them into one stripe.</li>
+    <li class="y">Says <em>crystal</em> outright, which is the one word neither
+        Yellow, Gold, Sand nor Rust can claim — and it does it without spending
+        Rust's two-materials idea.</li>
+    <li class="n">+65 B — 13.5% of the remaining headroom for one tile, and
+        17 B of that is paid purely for a string the packer has never seen.
+        That premium disappears if a second element ever wants a conic, and
+        never otherwise.</li>
+    <li class="n">First <code>conic-gradient</code> in the codebase. Support is
+        universal on anything current (Chrome 69+, Safari 12.1+, Firefox 83+),
+        but it is one more construct the page depends on.</li>
+    <li class="i">If the 17 B is not there, <b>05b is the fallback that keeps
+        most of the idea</b> — it is the same design, drawn with the tools the
+        table already pays for.</li>
+  </ul>
+</div>
+
+<div class="card" id="g">
+  <div class="hd"><span class="num">07</span><h2>THE CRYSTAL CLUSTER</h2>
+    <span class="cost">+84 B <small>measured</small></span></div>
+  <p class="sub">Inline SVG on the 0 0 32 32 viewBox, the <code>matter</code> and
+  <code>prism</code> route: three drawn crystals leaning against each other. The
+  most literal, and by a distance the most expensive thing on this page.</p>
+  <div class="row" id="g-sizes"></div>
+  <div class="strip" id="g-strip"></div>
+  <ul class="notes">
+    <li class="y">Unmistakable at 110px — a mineral specimen, not a colour.</li>
+    <li class="y">Only option that reads as an <em>object</em> rather than a
+        surface, which suits a thing players pick up and combine.</li>
+    <li class="n">+84 B — 18% of the remaining headroom, and only 19 B more than
+        option 06, which is the closest this page comes to a real argument for
+        it.</li>
+    <li class="n">At 32px the three crystals fuse into one outlined blob and it
+        becomes a worse option 06 at a third again the price. Same verdict the
+        SVG got in both earlier experiments, for the same reason.</li>
+    <li class="n">The cluster does not fill a rounded square, so it looks smaller
+        than every swatch beside it.</li>
+  </ul>
+</div>
+
+<div class="card verdict">
+  <div class="hd"><h2>WHERE THIS COMES OUT</h2></div>
+  <p class="sub"><b>Recipe: Volcano + Yellow, plus Mountain + Yellow.</b> The
+  first is guessable from thirteen precedents and true to where the mineral
+  forms; the second costs one measured byte and turns a total leaf into a
+  parent. Volcano + Salt is a fine third if the <em>tria prima</em> joke is
+  worth six more.<br><br>
+  <b>Artwork: option 06, the gem rosette, at +65 B.</b> The reasoning is the
+  Rust reasoning run one step further. Rust won by being the only swatch where
+  two materials are visible at once — so Sulfur cannot win that way without
+  taking it back, which is precisely what option 04 does, and 04 is the better
+  <em>picture</em> of the two only because Rust already proved the trick works.
+  What is still unclaimed is <b>habit</b>: the table has speckle, streak, band,
+  bloom and crust, all of them directional or random, and no structure with a
+  centre at all. A conic gradient is the cheapest way to draw one, and a cut
+  crystal is exactly what Sulfur is.<br><br>
+  <b>The 17 B over option 05 is the honest question.</b> It buys the string
+  <code>conic-gradient</code>, which the packer has never seen, and it is worth
+  it because the linear version does not read as a crystal — two planes and a
+  bright seam is what Metal and Glass look like, and hue is then the only thing
+  keeping Sulfur out of their family. Buy the shape, not just the colour.<br><br>
+  <b>Fallbacks, in order.</b> <b>05b</b> at +48 B is the same design drawn with
+  tools the table already pays for — take it if the 17 B is not there, and take
+  05b over 05a because that 7 B is the difference between "a shaded Yellow" and
+  "a different substance". <b>Option 03</b> at +38 B keeps a texture, loses the
+  meaning, and lands next to Sand. <b>Option 02</b> is honest and forgettable.
+  <b>Option 04</b> is the strongest picture on the page and still the wrong
+  answer, because it is the second one. <b>Option 07</b> loses at the size the
+  tile is mostly seen, the same verdict the SVG got in both earlier experiments.
+  <b>Option 01</b> is the one to resist hardest — it is the historically correct
+  answer, it would ship as tofu on some machines, and it glows on none of
+  them.</p>
+  <table>
+    <tr><th>option</th><th>cost</th><th>glows</th><th>reads at 32px</th><th>says "sulfur"</th><th>structure is free</th></tr>
+    <tr><td>01 alchemical sign</td><td>+15 B</td><td class="no">no</td><td class="no">font roulette</td><td>yes, if it renders</td><td>n/a</td></tr>
+    <tr><td>02 flat fill</td><td>+11 B</td><td>yes</td><td>yes</td><td class="no">colour only</td><td class="no">no — Yellow, Gold</td></tr>
+    <tr><td>03 powder</td><td>+38 B</td><td>yes</td><td class="no">vs. Sand, poorly</td><td class="no">texture only</td><td class="no">no — Sand</td></tr>
+    <tr><td>04 crust on basalt</td><td>+52 B</td><td>yes</td><td>yes</td><td>yes</td><td class="no">no — Rust</td></tr>
+    <tr><td>05b linear facets</td><td>+48 B</td><td>yes</td><td>yes</td><td class="no">reads as a slab</td><td class="no">near — Metal, Glass</td></tr>
+    <tr class="win"><td>06 gem rosette</td><td>+65 B</td><td>yes</td><td>yes</td><td>yes</td><td>yes — nothing is radial</td></tr>
+    <tr><td>07 SVG cluster</td><td>+84 B</td><td>yes</td><td class="no">poorly</td><td>yes</td><td>yes</td></tr>
+  </table>
+</div>
+</div>
+
+<script>
+// The six candidates, written exactly as they would appear in src/elements.ts.
+const OPT = {
+  a: { id: "sulfur", n: "Sulfur", e: "\u{1F70D}" },
+  b: { id: "sulfur", n: "Sulfur", c: "#d8d81c" },
+  c: { id: "sulfur", n: "Sulfur", c: "#e0d21e",
+       bg: "radial-gradient(circle at 30% 30%, #fff89aaa 0 3%, transparent 6%)," +
+           "radial-gradient(circle at 70% 45%, #b8a11288 0 3%, transparent 6%)," +
+           "radial-gradient(circle at 45% 70%, #fff89a99 0 2.5%, transparent 5%)," +
+           "linear-gradient(115deg, #ecdc5a 0 54%, #c9b41a 54% 100%)" },
+  d: { id: "sulfur", n: "Sulfur", c: "#e3d423",
+       bg: "radial-gradient(circle at 26% 30%, #f2e34af2 0 34%, transparent 52%)," +
+           "radial-gradient(circle at 72% 64%, #c9b41ae6 0 30%, transparent 50%)," +
+           "radial-gradient(circle at 56% 16%, #fff6a0d9 0 20%, transparent 36%)," +
+           "linear-gradient(120deg, #33333a 0 22%, #d8c81e 22% 100%)" },
+  // 05a — lemon: warm facets, the cheapest of the three
+  e1: { id: "sulfur", n: "Sulfur", c: "#ffe94d",
+        bg: "linear-gradient(24deg, transparent 0 46%, #fffde0cc 46% 50%, transparent 50%)," +
+            "linear-gradient(120deg, #fff6a8 0 34%, transparent 34%)," +
+            "linear-gradient(300deg, #a8930f 0 30%, transparent 30%)," +
+            "linear-gradient(160deg, #f4e24a 0%, #cdb418 100%)" },
+  // 05b — brimstone: the same planes, moved toward green
+  e2: { id: "sulfur", n: "Sulfur", c: "#e8e017",
+        bg: "linear-gradient(24deg, transparent 0 46%, #ffffe0cc 46% 50%, transparent 50%)," +
+            "linear-gradient(120deg, #fbf35c 0 34%, transparent 34%)," +
+            "linear-gradient(300deg, #8f8a08 0 30%, transparent 30%)," +
+            "linear-gradient(160deg, #e0d813 0%, #a89f0a 100%)" },
+  // 05c — in matrix: the facets bedded in a dark rock wedge
+  e3: { id: "sulfur", n: "Sulfur", c: "#e8e017",
+        bg: "linear-gradient(24deg, transparent 0 40%, #ffffe0cc 40% 44%, transparent 44%)," +
+            "linear-gradient(120deg, #fbf35c 0 30%, transparent 30%)," +
+            "linear-gradient(300deg, #8f8a08 0 26%, transparent 26%)," +
+            "linear-gradient(160deg, #2a2a2e 0 24%, #e0d813 24% 74%, #a89f0a 74%)" },
+  // 06 — the gem rosette: one conic gradient, six wedges meeting above centre
+  f: { id: "sulfur", n: "Sulfur", c: "#e8e017",
+       bg: "conic-gradient(from 200deg at 50% 44%, #fbf35c 0 16%, #cfc70f 16% 33%," +
+           " #f2ea3d 33% 50%, #a89f0a 50% 68%, #e0d813 68% 85%, #bdb50c 85%)" },
+  // 06b — the same, with a culet highlight where the wedges converge
+  f2: { id: "sulfur", n: "Sulfur", c: "#e8e017",
+        bg: "radial-gradient(circle at 50% 44%, #fffbb0 0 7%, transparent 9%)," +
+            "conic-gradient(from 200deg at 50% 44%, #fbf35c 0 16%, #cfc70f 16% 33%," +
+            " #f2ea3d 33% 50%, #a89f0a 50% 68%, #e0d813 68% 85%, #bdb50c 85%)" },
+  g: { id: "sulfur", n: "Sulfur", c: "#e8e017",
+       s: "<g stroke='#6f6605' stroke-width='1.2' stroke-linejoin='round'>" +
+          "<path d='M13 29 6 17l5-10 6 3 1 11z' fill='#e8e017'/>" +
+          "<path d='M13 29 18 20l8 2-3 7z' fill='#fbf35c'/>" +
+          "<path d='M17 10l5 4 4 8-8-2z' fill='#c9bf10'/></g>" },
+};
+
+// The yellow end of the table plus the parents, read verbatim out of
+// src/elements.ts.
+const NEIGH = [
+  { id: "yellow", n: "Yellow", c: "#ffdc32" },
+  { id: "gold", n: "Gold", c: "#f7c948" },
+  { id: "sand", n: "Sand", c: "#e0c078",
+    bg: "radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%)," +
+        "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
+        "radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%)," +
+        "linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)" },
+  { id: "ash", n: "Ash", c: "#b9b3ad",
+    bg: "radial-gradient(circle at 28% 30%, #efece8cc 0 6%, transparent 12%)," +
+        "radial-gradient(circle at 70% 64%, #ff6a2aaa 0 3%, transparent 8%)," +
+        "linear-gradient(140deg, #b3aca4 0%, #8a827b 46%, #625b55 100%)" },
+  { id: "charcoal", n: "Charcoal", c: "#8a3a14",
+    bg: "radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%)," +
+        "radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%)," +
+        "linear-gradient(125deg, #2c2c2f 0 28%, #171719 28% 44%, #333338 44% 60%," +
+        "#1b1b1e 60% 78%, #27272b 78% 100%)" },
+  { id: "rust", n: "Rust", c: "#c1571f",
+    bg: "radial-gradient(circle at 30% 32%, #d2691ee6 0 26%, transparent 44%)," +
+        "radial-gradient(circle at 70% 62%, #a33f0bdd 0 24%, transparent 42%)," +
+        "radial-gradient(circle at 52% 18%, #e08b3fcc 0 16%, transparent 30%)," +
+        "radial-gradient(circle at 18% 78%, #8a2f08cc 0 14%, transparent 28%)," +
+        "linear-gradient(120deg, #8f9aa6 0 46%, #6f7b88 46% 100%)" },
+  { id: "lava", n: "Lava", c: "#ff5a1f",
+    bg: "radial-gradient(circle at 27% 32%, #ffe08a 0 3.5%, transparent 7%)," +
+        "radial-gradient(circle at 72% 62%, #ffc04dcc 0 4%, transparent 8%)," +
+        "linear-gradient(108deg, #2b0e07 0 14%, transparent 14% 27%, #1f0905 27% 35%," +
+        "transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%)," +
+        "linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)" },
+  { id: "volcano", n: "Volcano", e: "\u{1F30B}" },
+  { id: "mountain", n: "Mountain", e: "\u{26F0}\u{FE0F}" },
+  { id: "salt", n: "Salt", e: "\u{1F9C2}" },
+  { id: "stone", n: "Stone", e: "\u{1FAA8}" },
+  { id: "fire", n: "Fire", e: "\u{1F525}" },
+  { id: "water", n: "Water", e: "\u{1F4A7}" },
+];
+const byId = id => NEIGH.find(e => e.id === id);
+
+// iconHtml(), mirrored branch for branch from src/game.ts.
+function iconHtml(el) {
+  if (el.s) {
+    return '<svg class="s" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' +
+           el.s + "</svg>";
+  }
+  if (el.c || el.bg) {
+    return '<div class="s" style="background:' + (el.bg || el.c) +
+           ";--g:" + (el.c || "#8a5cf0") + '55"></div>';
+  }
+  return el.e || "";
+}
+const tile = (el, cls) =>
+  '<div class="t ' + (cls || "") + '"><div class="o">' + iconHtml(el) +
+  '</div><div class="n">' + el.n + "</div></div>";
+
+// The three sizes .s is rendered at, side by side, then the finished tile.
+function sizes(el) {
+  const at = (wrap, cap) =>
+    '<div class="cell"><div class="' + wrap + '">' + iconHtml(el) +
+    '</div><div class="cap">' + cap + "</div></div>";
+  return at("", "32px · board tile") +
+         at("g62", "62px · card row") +
+         at("r110", "110px · card hero") +
+         '<div class="cell">' + tile(el, "me") + '<div class="cap">in situ</div></div>';
+}
+
+// The recipe candidates, laid out the way the cauldron lays a pair out. The
+// result tile is option 06 throughout — the artwork is argued further down.
+const PAIRS = [
+  ["volcano", "yellow", "CHOSEN — the yellow crust on a vent, and the table's own \"yellow version of X\" idiom"],
+  ["mountain", "yellow", "alternate — one measured byte, and it gives a total leaf its first consumer"],
+  ["volcano", "salt", "third — the tria prima nod; Salt's second job after Rust, but the hardest to guess"],
+  ["stone", "yellow", "rejected — Stone is one of the two most overloaded ingredients in the table"],
+  ["fire", "yellow", "rejected — says \"hot yellow thing\", not \"sulfur\""],
+  ["volcano", "water", "TAKEN — this already makes Mountain"],
+];
+document.getElementById("pairs").innerHTML = PAIRS.map(([a, b, why]) =>
+  '<div class="pair">' + tile(byId(a)) + '<span class="op">+</span>' + tile(byId(b)) +
+  '<span class="op">=</span>' +
+  tile(why.indexOf("TAKEN") === 0 ? byId("mountain") : OPT.f, "me") +
+  '<span class="cap">' + why + "</span></div>").join("");
+
+document.getElementById("refstrip").innerHTML =
+  NEIGH.slice(0, 10).map(e => tile(e)).join("");
+for (const k of ["a", "b", "c", "d", "e1", "e2", "e3", "f", "f2", "g"]) {
+  document.getElementById(k + "-sizes").innerHTML = sizes(OPT[k]);
+  // the candidate among the swatches it must not echo, its parent on the end
+  document.getElementById(k + "-strip").innerHTML =
+    tile(OPT[k], "me") + tile(byId("yellow")) + tile(byId("gold")) +
+    tile(byId("sand")) + tile(byId("rust")) + tile(byId("charcoal")) +
+    tile(byId("lava")) + tile(byId("volcano"));
+}
+
+addEventListener("keydown", ev => {
+  if (ev.key === "c" || ev.key === "C") { document.body.classList.toggle("hide"); return; }
+  const n = "1234567".indexOf(ev.key);
+  if (n >= 0) {
+    const card = document.getElementById("abcdefg"[n]);
+    document.querySelectorAll(".card").forEach(c => c.classList.remove("on"));
+    card.classList.add("on");
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+</script>
+</body>
+</html>
