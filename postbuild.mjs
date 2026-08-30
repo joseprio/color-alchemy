@@ -7,7 +7,7 @@
 // fixed DOS-epoch timestamp keeps the archive byte-deterministic for the same
 // reason theirs pins it (a rebuild must not change build.zip unless
 // bundle.html changed).
-import { readFileSync, writeFileSync, statSync } from "fs";
+import { readFileSync, writeFileSync, statSync, existsSync, readdirSync } from "fs";
 import { deflateRawSync } from "zlib";
 import { execFileSync, execSync } from "child_process";
 import { resolve } from "path";
@@ -85,16 +85,7 @@ if (!/<body[\s>]/.test(html)) html = html.replace("<script>", "<body><script>");
 
 writeFileSync(BUNDLE_FILE, html);
 
-// --- the director's cut ends here -----------------------------------------
-// Everything below weighs the page against the 13KB budget, and a director
-// build is the one that does not have one. It leaves rather than skipping past
-// in an `else`, so the measurement chain below stays one straight read.
-if (DIRECTOR) {
-  console.log(`director.html: ${statSync(BUNDLE_FILE).size} bytes (unpacked, no budget)`);
-  process.exit(0);
-}
-
-// --- deterministic single-entry zip ---------------------------------------
+// --- the crc the zip container needs, whichever kind we are writing --------
 const crcTable = new Int32Array(256).map((_, n) => {
   let c = n;
   for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
@@ -106,11 +97,68 @@ const crc32 = (buf) => {
   return (c ^ -1) >>> 0;
 };
 
+const dosDate = (1 << 5) | 1; // 1980-01-01, the DOS epoch — earliest representable
+
+// --- a zip of N entries, for the cut --------------------------------------
+// The shipping build's container below is hand-rolled for exactly one file and
+// stays that way — it is on the critical path of a 13312-byte budget and every
+// field in it is accounted for. This is the same format with a loop around it,
+// for an artifact that is measured in megabytes and does not care.
+function writeZip(path, entries) {
+  const locals = [], central = [];
+  let offset = 0;
+  for (const [entryName, body] of entries) {
+    const nm = Buffer.from(entryName), comp = deflateRawSync(body, { level: 9 }), crc = crc32(body);
+    const lh = Buffer.alloc(30);
+    lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt16LE(8, 8);
+    lh.writeUInt16LE(dosDate, 12); lh.writeUInt32LE(crc, 14);
+    lh.writeUInt32LE(comp.length, 18); lh.writeUInt32LE(body.length, 22); lh.writeUInt16LE(nm.length, 26);
+    locals.push(lh, nm, comp);
+
+    const ch = Buffer.alloc(46);
+    ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6);
+    ch.writeUInt16LE(8, 10); ch.writeUInt16LE(dosDate, 14); ch.writeUInt32LE(crc, 16);
+    ch.writeUInt32LE(comp.length, 20); ch.writeUInt32LE(body.length, 24);
+    ch.writeUInt16LE(nm.length, 28); ch.writeUInt32LE(offset, 42);   // where its local header starts
+    central.push(ch, nm);
+    offset += 30 + nm.length + comp.length;
+  }
+  const dir = Buffer.concat(central);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(entries.length, 8); end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(dir.length, 12); end.writeUInt32LE(offset, 16);
+  writeFileSync(path, Buffer.concat([...locals, dir, end]));
+  return statSync(path).size;
+}
+
+// --- the director's cut ends here -----------------------------------------
+// Everything below weighs the page against the 13KB budget, and a director
+// build is the one that does not have one. What it gets instead of a
+// measurement is a PACKAGE: the page, plus the fonts it pins — Noto Color
+// Emoji so the cut wears the same element artwork on every machine, and the
+// IM Fell English subset that sets ALCHEMY on the title. They travel as
+// fonts/, which is the href the stylesheet already carries, so the zip and
+// the loose dist/director.html both resolve them without a second build.
+if (DIRECTOR) {
+  const page = readFileSync(BUNDLE_FILE);
+  const entries = [["index.html", page]];
+  const fontDir = "./dist/fonts";
+  const fonts = existsSync(fontDir) ? readdirSync(fontDir).filter(f => f.endsWith(".woff2")).sort() : [];
+  for (const f of fonts) entries.push([`fonts/${f}`, readFileSync(`${fontDir}/${f}`)]);
+  if (!fonts.length) {
+    throw new Error("postbuild: the cut has no font chunks in dist/fonts — did the emoji-font plugin run?");
+  }
+  const zipped = writeZip("./dist/director.zip", entries);
+  console.log(`director.html: ${page.length} bytes (unpacked, no budget)`);
+  console.log(`director.zip:  ${zipped} bytes — the page and ${fonts.length} bundled font files`);
+  process.exit(0);
+}
+
 const data = readFileSync(BUNDLE_FILE);
 const comp = deflateRawSync(data, { level: 9 });
 const name = Buffer.from("index.html");
 const crc = crc32(data);
-const dosDate = (1 << 5) | 1; // 1980-01-01, the DOS epoch — earliest representable
 
 const local = Buffer.alloc(30);
 local.writeUInt32LE(0x04034b50, 0);

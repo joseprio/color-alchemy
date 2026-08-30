@@ -19,6 +19,7 @@ import closureCompiler from "@ampproject/rollup-plugin-closure-compiler";
 // cannot go unnoticed.
 import { Packer } from "roadroller";
 import { reorderFunctions } from "./tools/fn-order.mjs";
+import { emojiFontCss, titleFontCss, resetFontDir } from "./tools/fonts.mjs";
 import { ESLint } from "eslint";
 import { createRequire } from "module";
 import { createHash } from "crypto";
@@ -35,6 +36,38 @@ import { minify as minifyHtml } from "html-minifier-next";
 // NOT pick up edits to style.css, so restart the watcher after touching it.
 // The minified text is built below, once DIRECTOR is known.
 
+/* ------------------------------------------------- the cut's emoji font */
+// DIRECTOR ONLY. The shipping build renders emoji in whatever set the player's
+// OS provides, which is the right call for it — native artwork, zero bytes. The
+// cut pins Noto Color Emoji instead so it looks identical everywhere, and pays
+// 1.3 MB for it out of a budget it does not have. tools/emoji-font.mjs explains
+// the chunking and the cache; this only has to run it and hand the rules to
+// injectCss, which appends them AFTER cssnano so nothing can rewrite a
+// unicode-range or a src url on the way through.
+//
+// buildStart, not config load: the fetch is async and a rollup config cannot
+// await. It still finishes before any transform hook, so injectCss always sees
+// the finished rules.
+let fontCss = "";
+const emojiFont = {
+  name: "emoji-font",
+  async buildStart() {
+    const log = (m) => console.log(m);
+    resetFontDir(FONT_DIR);
+    const shared = { outDir: FONT_DIR, publicPath: FONT_HREF, log };
+    fontCss =
+      (await emojiFontCss({ elementsTs: "src/elements.ts", ...shared })) +
+      (await titleFontCss({ family: "IM Fell English", indexHtml: "src/index.html", ...shared })) +
+      // ALCHEMY only. #tl above it keeps the rainbow-gradient sans, so the
+      // two halves of the title read as two things rather than one word set
+      // twice. The weight goes back to 400 with it: style.css asks for 700,
+      // IM Fell English ships one weight, and a browser answering that with
+      // synthetic bold smears a face whose whole character is its thin
+      // strokes.
+      `#tb{font-family:"IM Fell English",Georgia,serif;font-weight:400}`;
+  },
+};
+
 // Substitutes the CSS text for the __MARKUP__ token in src/css.ts. Listed
 // before typescript() so it sees the raw source; galaxy-raid does the same job
 // with @rollup/plugin-replace, which would be a dependency for one token here.
@@ -45,7 +78,9 @@ const injectCss = {
     if (!code.includes("__MARKUP__ = ") && !code.includes("__MARKUP__;")) {
       throw new Error("inject-css: src/css.ts no longer mentions __MARKUP__");
     }
-    return { code: code.replace(/__MARKUP__/g, () => JSON.stringify(minCss)), map: null };
+    // fontCss is empty unless this is a director build
+    const sheet = minCss + fontCss;
+    return { code: code.replace(/__MARKUP__/g, () => JSON.stringify(sheet)), map: null };
   },
 };
 
@@ -71,6 +106,11 @@ const DIRECTOR = process.env.npm_lifecycle_event === "build-director";
 // It builds into dist/director/ and postbuild writes dist/director.html, so a
 // director build can never overwrite the committed at-budget artifacts.
 const OUT_DIR = DIRECTOR ? "dist/director" : "dist";
+// The cut's font chunks sit beside the page postbuild.mjs writes, so the same
+// relative href works whether the file is opened from dist/ or unpacked from
+// the zip, where they travel as fonts/.
+const FONT_DIR = "dist/fonts";
+const FONT_HREF = "fonts/";
 // Every pass in the size-golf tail is gated on this one flag rather than on
 // `production` alone, so "what a director build skips" is one grep.
 const golf = production && !DIRECTOR;
@@ -456,6 +496,7 @@ export default {
     generatedCode: "es2015",
   },
   plugins: [
+    DIRECTOR && emojiFont,
     injectCss,
     injectBody,
     encodeRecipes,

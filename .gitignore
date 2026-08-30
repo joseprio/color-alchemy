@@ -5,3 +5,6 @@ node_modules/
 .fn-order-bundle-backup.js
 dist/director/
 dist/director.html
+dist/fonts/
+dist/director.zip
+.fonts/
