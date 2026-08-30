@@ -24,6 +24,7 @@ import { createRequire } from "module";
 import { createHash } from "crypto";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { execSync } from "child_process";
+import { minify as minifyHtml } from "html-minifier-next";
 
 // The page CSS ships inside the JS bundle: src/css.ts assigns it to the empty
 // <style id=sty> in the template (galaxy-raid OPTIMIZATIONS.md #18/#71 — the
@@ -76,6 +77,7 @@ const OUT_DIR = DIRECTOR ? "dist/director" : "dist";
 // Every pass in the size-golf tail is gated on this one flag rather than on
 // `production` alone, so "what a director build skips" is one grep.
 const golf = production && !DIRECTOR;
+
 const defines = {
   name: "defines",
   transform(code, id) {
@@ -85,6 +87,147 @@ const defines = {
       code: code.replace(/__DEV__/g, String(DEV)).replace(/__DIRECTOR__/g, String(DIRECTOR)),
       map: null,
     };
+  },
+};
+
+/* -------------------------------------------------------- body markup */
+// The page's body is AUTHORED in src/index.html and SHIPPED inside the packed
+// payload: this lifts it out, minifies it with the same html-minifier pass
+// postbuild.mjs runs on the page, and hands it to src/css.ts as __BODY__.
+// emit-html then writes the template with an empty body.
+//
+// Same trade as the stylesheet (galaxy-raid #18), and the same reason: markup
+// left in the page is compressed by the zip's deflate stream at about 0.44
+// bytes per character — the worst ratio anywhere in this build — while
+// roadroller models it at roughly a third of that. Measured worth 48 B.
+//
+// Comments are stripped BEFORE the body is located: the template's header
+// comment talks about these tags, and a match inside it would take the wrong
+// span. postbuild.mjs strips them first for the same reason.
+const BODY_MIN_OPTS = {
+  collapseWhitespace: true,
+  collapseInlineTagWhitespace: true,
+  decodeEntities: true,
+  sortAttributes: true,
+  collapseBooleanAttributes: true,
+  removeEmptyAttributes: true,
+  removeAttributeQuotes: true,
+  removeComments: true,
+  removeRedundantAttributes: true,
+  removeTagWhitespace: true,
+};
+const bodyOf = (html) => {
+  const m = html.replace(/<!--[\s\S]*?-->/g, "").match(/<body>([\s\S]*)<\/body>/);
+  if (!m) throw new Error("template: no <body> … </body> to lift the markup out of");
+  return m[1];
+};
+const injectBody = {
+  name: "inject-body",
+  async transform(code, id) {
+    if (!id.endsWith("css.ts")) return null;
+    if (!code.includes("__BODY__")) {
+      throw new Error("inject-body: src/css.ts no longer mentions __BODY__");
+    }
+    const body = (await minifyHtml(bodyOf(readFileSync("src/index.html", "utf8")), BODY_MIN_OPTS)).trim();
+    if (body.includes("</script")) {
+      throw new Error("inject-body: the template body contains '</script' — cannot ride in an inline script");
+    }
+    console.log(`inject-body: ${body.length} chars of markup moved into the payload`);
+    return { code: code.replace(/__BODY__/g, () => JSON.stringify(body)), map: null };
+  },
+};
+
+/* ---------------------------------------------------- recipe id encoding */
+// The recipe pairs in src/elements.ts are AUTHORED as words — ["king","house"]
+// — and SHIPPED as two-character codes indexing the table — ["A%","Bf"]. The
+// table keeps its comments, its types and its deliberate ordering; only the
+// emitted strings change. Measured worth 161 B packed.
+//
+// Three things about the encoding were measured rather than assumed, and each
+// went the opposite way to the obvious guess:
+//
+//  1. TABLE-INDEX ORDER, NOT FREQUENCY ORDER. Giving the most-referenced ids
+//     the lowest codes measured 7 B WORSE. The table is deliberately ordered so
+//     a recipe's ingredient is defined a line or two above it, so index order
+//     puts related codes next to each other and roadroller's sparse models
+//     predict that; frequency order scrambles exactly that locality.
+//  2. UNIFORM TWO CHARACTERS, NEVER ONE. A variable-length scheme (one char for
+//     the first 88 ids, two for the rest) removes 500 MORE characters and costs
+//     65 B MORE. Fixed alignment is what the context models want.
+//  3. THE PAIRS STAY NESTED. Running the codes together into one string per
+//     element — r:"A%Bf" — removes twice as many characters as this and saves
+//     half as much, which is the same finding the table's own header records
+//     for flattening, reproduced with a different alphabet.
+//
+// Base 92, alphabet from '#' (35) up. Code 92 is a backslash and two of the
+// ids land on one; JSON.stringify escapes it and the decoder reads the real
+// character value, so no skip arithmetic is needed on either side.
+//
+// Listed BEFORE typescript() so it sees raw source, exactly as injectCss is.
+// __DECODE__ is declared in src/dom.d.ts, not in elements.ts, because the
+// replacement below is a blunt string swap that would rewrite a declaration
+// sitting in the same file.
+const RECIPE_BASE = 92;
+const encodeRecipes = {
+  name: "encode-recipes",
+  transform(code, id) {
+    if (!id.endsWith("elements.ts")) return null;
+    if (!code.includes("__DECODE__")) {
+      throw new Error("encode-recipes: src/elements.ts no longer mentions __DECODE__");
+    }
+
+    // The ids in source order ARE the alphabet, so this list and the table are
+    // the same fact twice; a duplicate would silently alias two elements.
+    const ids = [...code.matchAll(/\bid:\s*"([^"]+)"/g)].map(m => m[1]);
+    if (!ids.length) throw new Error("encode-recipes: no id: fields found in elements.ts");
+    const dupes = [...new Set(ids.filter((v, i) => ids.indexOf(v) !== i))];
+    if (dupes.length) throw new Error(`encode-recipes: duplicate element ids: ${dupes.join(", ")}`);
+    if (ids.length > RECIPE_BASE * RECIPE_BASE) {
+      throw new Error(`encode-recipes: ${ids.length} elements outgrew the two-character alphabet`);
+    }
+    const enc = (n) =>
+      String.fromCharCode(35 + ((n / RECIPE_BASE) | 0)) + String.fromCharCode(35 + (n % RECIPE_BASE));
+
+    // Rewrite the string literals inside each r:[...] span. The span is found
+    // by MATCHING BRACKETS rather than by a lazy regex: the pairs are nested,
+    // so `r:\[[\s\S]*?\]` would stop at the first inner "]" and leave the rest
+    // of a multi-recipe entry as words.
+    let out = "", at = 0, refs = 0;
+    for (const m of code.matchAll(/\br:\s*\[/g)) {
+      let depth = 1, k = m.index + m[0].length;
+      while (k < code.length && depth) {
+        if (code[k] === "[") depth++;
+        else if (code[k] === "]") depth--;
+        k++;
+      }
+      if (depth) throw new Error("encode-recipes: unterminated r:[ ... ] span");
+      out += code.slice(at, m.index) + code.slice(m.index, k).replace(/"([^"]*)"/g, (_, word) => {
+        const i = ids.indexOf(word);
+        // The check this buys: a mistyped ingredient is currently a SILENTLY
+        // dead recipe, findable only by playing for it. Now it fails the build.
+        if (i < 0) throw new Error(`encode-recipes: recipe ingredient "${word}" is not an element id`);
+        refs++;
+        return JSON.stringify(enc(i));
+      });
+      at = k;
+    }
+    out += code.slice(at);
+
+    // The decode. One extra pass over the table, placed where __DECODE__ sits —
+    // after ELEMENTS exists and before BY_ID and RECIPE are built from it.
+    // A non-golfed build encoded nothing, so it decodes nothing.
+    const decode = golf
+      ? `((D)=>ELEMENTS.map(e=>e.r&&e.r.map(p=>(p[0]=D(p[0]),p[1]=D(p[1])))))` +
+        `((s)=>ELEMENTS[${RECIPE_BASE}*(s.charCodeAt(0)-35)+s.charCodeAt(1)-35].id)`
+      : "0";
+    console.log(
+      golf
+        ? `encode-recipes: ${refs} recipe ids -> 2-char codes over ${ids.length} elements`
+        : `encode-recipes: ${refs} recipe ids validated, left as words (not a golfed build)`
+    );
+    // Not golfing? Undo the encode as well as the decode, so the two builds run
+    // the same table rather than the same code over different data.
+    return { code: (golf ? out : code).replace(/__DECODE__/g, () => decode), map: null };
   },
 };
 
@@ -98,15 +241,17 @@ const emitHtml = {
   name: "emit-html",
   writeBundle() {
     mkdirSync(OUT_DIR, { recursive: true });
-    // Anchored to the document end: a bare "</body>" also appears in the
-    // template's header comment, and a first-match replace injected the
-    // script tag into that comment once (postbuild then stripped it away).
-    const html = readFileSync("src/index.html", "utf8").replace(
-      /<\/body>\s*<\/html>\s*$/,
-      '<script src="bundle.js"></script>\n</body>\n</html>\n'
-    );
-    if (!html.includes('<script src="bundle.js">')) {
-      throw new Error("emit-html: template is missing its </body></html> tail");
+    // The body is EMPTIED here: inject-body has moved that markup into the
+    // payload, and src/css.ts writes it back at boot. Comments are stripped
+    // first so the header comment's own mention of these tags cannot be
+    // matched instead — the same hazard postbuild.mjs strips them for.
+    // The <body> tag itself stays: the script is parsed where it sits, and in
+    // head context document.body is null and the assignment throws.
+    const html = readFileSync("src/index.html", "utf8")
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<body>[\s\S]*<\/body>/, '<body>\n<script src="bundle.js"></script>\n</body>');
+    if (!html.includes('<script src="bundle.js">') || !html.includes("<body>")) {
+      throw new Error("emit-html: template is missing its <body> … </body> span");
     }
     writeFileSync(`${OUT_DIR}/index.html`, html);
   },
@@ -277,6 +422,8 @@ export default {
   },
   plugins: [
     injectCss,
+    injectBody,
+    encodeRecipes,
     defines,
     typescript(),
     emitHtml,

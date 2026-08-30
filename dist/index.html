@@ -1,22 +1,5 @@
 <!doctype html>
-<!-- COLOR ALCHEMY — template. Markup only; the game lives in the src/*.ts
-     modules and the build injects the bundle before </body> (dev: a script
-     src reference in dist/index.html; production: inlined into the
-     single-file dist/bundle.html by postbuild.mjs).
-     The <style id=st> is EMPTY on purpose and must stay in the document:
-     src/css.ts fills it with src/style.css, minified, so the stylesheet
-     travels inside the packed payload rather than in this file.
-     Every id here is TWO letters, and the game reads them as bare globals:
-     an element with id=gl is `gl` in the code (named access on window), so
-     there is no getElementById anywhere. One letter would not do — roadroller's
-     decoder leaks single-letter globals that would shadow it in the packed
-     build only. The names (gl/hd/mv/ct/bq/ht/sn/mn/gd/to/ds/dk/cd/ca/cb/cr/cq/
-     ov/fw/oc/ti/tw/tl/tb/mu/st, plus ob from openOverlay and mh/ml/mb from
-     openPanel) are the contract between this template, src/dom.d.ts,
-     closure-externs.js, the game code and check.mjs — rename in all of them
-     or not at all.
-     The classes are single letters for the same reason; what each one means is
-     in the legend at the top of src/style.css. -->
+
 <html>
 <head>
 <meta charset="utf-8">
@@ -24,48 +7,6 @@
 <style id="st"></style>
 </head>
 <body>
-<div id="hd">
-  <span>Moves: <b id="mv">0</b></span>
-  <span>Elements: <b id="ct"></b></span>
-  <span id="bq"></span>
-  <button id="ht">Hint<i>H / &#9422;</i></button>
-  <button id="sn">Mute<i>M / &#9421;</i></button>
-  <button id="mn">Menu<i>Esc / &#9399;</i></button>
-</div>
-<!-- The cauldron. #ca holds the picked element, and wears the gold ring and
-     its X only once that pick is LOCKED — a second tap on the tile. A locked
-     element stays through every combine, so trying Fire against ten things is
-     ten taps, not twenty; a loose pick is spent by the first mix it makes.
-     #cb and #cr clear themselves a beat after each attempt; a pair that makes
-     nothing shakes the cauldron rather than the two tiles. -->
-<div id="dk">
-<div id="cd">
-  <div class="l" id="ca"></div>
-  <span class="q">+</span>
-  <div class="l" id="cb"></div>
-  <span class="q">=</span>
-  <div class="W" id="cr"></div>
-</div>
-<div id="cq"></div>
-</div>
-<div id="gd"></div>
-<f><div id="gl"></div></f>
-<div id="ti" class="C">
-  <!-- #tw is shrink-to-fit, so COLOR sets the measure and #tb spreads
-       its letters across exactly that width. One span per letter is what makes
-       the spread possible; AlchemY keeps an initial and a terminal capital so
-       small-caps leaves A and Y full height. -->
-  <div id="tw">
-    <div id="tl">COLOR</div>
-    <div id="tb"><span>A</span><span>l</span><span>c</span><span>h</span><span>e</span><span>m</span><span>Y</span></div>
-  </div>
-  <!-- The button column AND the Highscore/Encyclopedia subscreen: whichever
-       is up, openPanel and paintMenu write it here. -->
-  <div id="mu"></div>
-</div>
-<div id="ds"></div>
-<div id="to"></div>
-<div id="ov" class="v"><canvas id="fw"></canvas><div class="A" id="oc"></div></div>
 <script src="bundle.js"></script>
 </body>
 </html>

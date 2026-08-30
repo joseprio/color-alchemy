@@ -75,6 +75,14 @@ if (!html.includes("<style id=st>") && !html.includes('<style id="st">')) {
   throw new Error("postbuild: the empty <style id=st> src/css.ts fills is gone from the page");
 }
 
+// removeOptionalTags drops <body>, and this page cannot spare it. The markup
+// now travels in the packed payload and src/css.ts writes it with
+// document.body.innerHTML — but a <script> is processed in the insertion mode
+// it is PARSED in, and with the body empty there is nothing to move the parser
+// out of head, where document.body is still null. Six bytes, and they are
+// already inside the 48 the move measured.
+if (!/<body[\s>]/.test(html)) html = html.replace("<script>", "<body><script>");
+
 writeFileSync(BUNDLE_FILE, html);
 
 // --- the director's cut ends here -----------------------------------------

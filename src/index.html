@@ -6,6 +6,16 @@
      The <style id=st> is EMPTY on purpose and must stay in the document:
      src/css.ts fills it with src/style.css, minified, so the stylesheet
      travels inside the packed payload rather than in this file.
+     THE BODY BELOW IS NOT SERVED AS MARKUP. The inject-body plugin in
+     rollup.config.mjs lifts everything between the body tags out of this
+     file, minifies it, and hands it to src/css.ts as __BODY__, which writes it
+     with document.body.innerHTML; emit-html then ships this page with an EMPTY
+     body. Same trade as the stylesheet above: markup left here is deflated by
+     the zip at about 0.44 bytes per character, and modelled by roadroller at
+     roughly a third of that — measured, 48 B. It is authored here anyway
+     because this is where markup belongs and where the ids are documented.
+     The <body> tag itself has to survive into the shipped page: the script is
+     parsed where it sits, and in head context document.body is null.
      Every id here is TWO letters, and the game reads them as bare globals:
      an element with id=gl is `gl` in the code (named access on window), so
      there is no getElementById anywhere. One letter would not do — roadroller's

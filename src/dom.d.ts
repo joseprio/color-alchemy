@@ -29,6 +29,17 @@ declare const fw: HTMLCanvasElement;
 // Same substitution, same closure treatment: content behind it is deleted from
 // a shipping build, so putting a scene here costs the bundle nothing.
 declare const __DIRECTOR__: boolean;
+// The recipe decoder, substituted by the `encode-recipes` plugin. In a golfed
+// build it expands to the pass that turns the two-character recipe codes back
+// into element ids; everywhere else it is 0, because nothing was encoded.
+// Declared HERE rather than in src/elements.ts on purpose: the plugin rewrites
+// every occurrence of the name in that file, and a declaration living there
+// would be rewritten too. See the plugin's comment in rollup.config.mjs.
+declare const __DECODE__: unknown;
+// The page's body markup, lifted out of src/index.html by the `inject-body`
+// plugin. Declared here for the same reason __DECODE__ is: the plugin replaces
+// every occurrence of the name in src/css.ts.
+declare const __BODY__: string;
 declare const sn: HTMLElement;   // Music button
 declare const mn: HTMLElement;   // Menu button
 declare const dk: HTMLElement;   // docked cauldron strip

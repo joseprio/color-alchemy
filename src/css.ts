@@ -18,6 +18,13 @@ declare const __MARKUP__: string;
 
 st.innerHTML = __MARKUP__;
 
+// The page's body, lifted out of src/index.html by the inject-body plugin and
+// written here instead of being served as markup — the same trade the
+// stylesheet above makes, and worth 48 B measured. The stylesheet goes in
+// FIRST so the rules are in place before these elements exist, and everything
+// below this line, gl.after() included, depends on them being here.
+document.body.innerHTML = __BODY__;
+
 // The director's cut appends the rules for its quote containers — in the same
 // synchronous run, so they are in place before the first paint as well.
 // __DIRECTOR__ is a literal, so a shipping build has `if (false)` here and

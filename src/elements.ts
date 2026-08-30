@@ -911,6 +911,17 @@ export const ELEMENTS = ([
     r:[["blossom","red"],["plant","red"]] },
 ] as RawDef[]).map(e => (e.n = e.id.replace(/(^| )./g, (c) => c.toUpperCase()), e)) as ElementDef[];
 
+// THE RECIPE IDS ABOVE ARE WORDS IN THIS FILE AND TWO CHARACTERS IN THE BUNDLE.
+// The `encode-recipes` plugin in rollup.config.mjs rewrites every id inside an
+// r:[...] to a two-character code indexing this table, and expands __DECODE__
+// into the pass that turns them back into words right here — before BY_ID and
+// RECIPE are built, so everything downstream, the "a+b" keys in localStorage
+// included, sees exactly the strings it always did. Worth 161 B packed,
+// measured; the reasons for the exact encoding are in the plugin's comment.
+// Only a golfed build encodes: for `npm start` and the director's cut this is
+// 0 and the ids above are already the words they look like.
+__DECODE__;
+
 export const STARTERS = ["red", "green", "blue"];
 
 export const BY_ID: Record<string, ElementDef> = {};
