@@ -864,8 +864,14 @@ check("full: the completion screen cancels the discovery card here too",
 // The fireworks: sized means fireworks() ran, and it is the only thing that
 // sizes this canvas. The width going back to 0 on close is the CLEAR — a canvas
 // left at full size is one still holding its last frame behind the next screen.
+//
+// NOT `> 0`, which is what this said until it was caught being useless: an
+// untouched <canvas> reports a default width of 300, so `> 0` holds whether or
+// not the effect ever ran. It passed against a build whose fireworks had been
+// switched off entirely, and only failed once the element itself was removed.
+const fwWidth = await evalJs(`document.getElementById('fw').width`);
 check("full: the fireworks canvas is live behind the card",
-  (await evalJs(`document.getElementById('fw').width`)) > 0);
+  fwWidth > 0 && fwWidth !== 300);
 await shot("complete");
 
 // --- new game keeps bests, hides the hidden one ---------------------------
