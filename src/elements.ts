@@ -61,6 +61,64 @@ export const ELEMENTS = ([
     r:[["red","blue"]] },
   { id:"cyan", c:"#33e9e9",
     r:[["green","blue"]] },
+  // ONE ROUTE, which is the colour run's own idiom rather than an omission:
+  // every colour but the White has exactly one, and this is the same sentence
+  // the Orange, the Violet, the Indigo and the Brown already say — a primary
+  // plus the secondary NEXT TO IT on the wheel. Turquoise is what sits between
+  // the Cyan and the Green, so that is the pair. Cyan + White would be a pale
+  // cyan, which is what Red + White does for the Pink, and Blue + Cyan reads as
+  // a bluer cyan; neither says turquoise without the player guessing.
+  // Against the Cyan because "cyan" is in three recipes and "green" in
+  // thirteen, and the entry keeps this run's { id, c, r } shape exactly.
+  { id:"turquoise", c:"#2ec4a6",
+    r:[["cyan","green"]] },
+  // The wheel's other clean gap, and the same one-route sentence: the Yellow
+  // with the Green beside it. The pair reads ["green","yellow"] so the Green
+  // closes the Turquoise's pair and opens this one — the pairs are unordered,
+  // so this is only ever a packing choice, and it is NOT measured, unlike most
+  // of the orders in this file.
+  // The two that are left stay out: Blue + Cyan is an Azure the SKY already
+  // owns at #7ec8ff, and Red + Magenta is a Rose the Pink owns at #ffa8c5.
+  // Both would put a near-duplicate swatch on the board. Four of six is where
+  // this run ends.
+  // LIME IS NOT THIS COLOUR'S NAME, deliberately: Fruit + Yellow is a Banana
+  // and Fruit + Orange is a Pumpkin, so the word was worth more as a fruit than
+  // as a colour. It went to Fruit + CHARTREUSE rather than Fruit + Green, which
+  // is the better half of the bargain — a lime is that yellow-green exactly,
+  // and it leaves this colour with a consumer instead of a dead end.
+  { id:"chartreuse", c:"#a8dc32",
+    r:[["green","yellow"]] },
+  // THREE ROUTES, where every colour but the White has one — deliberate, and
+  // the reason is that the three are not one sentence said three times. Red +
+  // Magenta is the wheel, the same primary-plus-adjacent-secondary the Orange
+  // and the Violet say. Red + Black is the DARKENING, which no colour here had
+  // said before. Red + Blood is what the word actually means, and it gives the
+  // Blood a fifth consumer and the Black a ninth.
+  // The name is what makes this gap safe: the wheel's last free slot is a Rose
+  // otherwise, and a rose sits on top of the Pink at #ffa8c5. Crimson is deep
+  // where the Pink is pale, so the two read apart on a board of swatches.
+  // "red" leads all three so the entry is one prefix repeated.
+  { id:"crimson", c:"#b3123c",
+    r:[["red","magenta"],["red","black"],["red","blood"]] },
+  // The DARKENING again, one entry after the Crimson invented it, which is what
+  // makes it an idiom rather than a one-off: a teal is a dark cyan the way a
+  // crimson is a dark red. Kept against the Crimson for that reading and for
+  // the tail — both pairs end `,"black"]`, an exact repeat.
+  // Three blue-greens on one board is the tightest neighbourhood in the table,
+  // so this swatch is dark on purpose: the Cyan at #33e9e9, the Turquoise at
+  // #2ec4a6 and this separate by BRIGHTNESS, not by hue.
+  { id:"teal", c:"#0f6b6b",
+    r:[["cyan","black"]] },
+  // The LIGHTENING, which balances the two darkenings above it: the Pink is
+  // Red + White and had been saying that alone, and this is the same sentence
+  // for the Brown. Placed here so the pale one sits with the dark ones and the
+  // three read as the one idea.
+  // The swatch is the whole difficulty, not the recipe — the Sand at #e0c078
+  // is ALREADY this table's pale tan, with the Ash at #b9b3ad and the Clay at
+  // #c1663c beside it. So this one separates on saturation rather than hue:
+  // the Sand is golden, this is drained and paler, and the Ash is greyer still.
+  { id:"beige", c:"#e8ddc4",
+    r:[["brown","white"]] },
   { id:"white", c:"#ffffff",
     r:[["blue","yellow"],["red","cyan"],["green","magenta"]] },
   { id:"orange", c:"#ff9430",
@@ -136,8 +194,13 @@ export const ELEMENTS = ([
   // tree, so every route to a Wine is open the moment the Water is.
   { id:"wine", e:"\u{1F377}",
     r:[["pink","water"],["magenta","water"],["violet","water"]] },
+  // The Crimson is the second way in, and the pair with it is CYCLIC — Red +
+  // Blood is a Crimson, Crimson + Water is a Blood. Safe for the reason the
+  // Magic and the Crystal Ball are: both ends keep a way in that misses the
+  // other, the Blood through Red + Water and the Crimson through Red + Magenta
+  // and Red + Black. "water" trails both pairs so the repeat is exact.
   { id:"blood", e:"\u{1FA78}",
-    r:[["red","water"]] },
+    r:[["red","water"],["crimson","water"]] },
   { id:"coffee", e:"\u{2615}",
     r:[["black","water"],["brown","milk"],["black","milk"]] },
   { id:"lava", c:"#ff5a1f",
@@ -189,7 +252,9 @@ export const ELEMENTS = ([
        "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
        "radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%)," +
        "linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)",
-    r:[["earth","air"],["stone","air"],["earth","yellow"]] },
+    // Earth + Beige is Earth + Yellow said in the paler colour, and it is the
+    // BEIGE'S ONLY CONSUMER — the colour was a dead end until this line.
+    r:[["earth","air"],["stone","air"],["earth","yellow"],["earth","beige"]] },
   { id:"glass", c:"#bfe6f2",
     bg:"linear-gradient(135deg, transparent 0 28%, #ffffff99 28% 37%, transparent 37% 54%, #ffffff55 54% 60%, transparent 60% 100%)," +
        "linear-gradient(180deg, #d8f1f8 0%, #a8d8ea 60%, #8ec4dc 100%)",
@@ -243,8 +308,10 @@ export const ELEMENTS = ([
     r:[["alien","sky"]] },
   { id:"jellyfish", e:"\u{1FABC}",
     r:[["water","life"]] },
+  // Sea + Life is what a coral IS, Sea + Pink is what it looks like — two
+  // directions, and "sea" leads both so the repeat is exact.
   { id:"coral", e:"\u{1FAB8}",
-    r:[["sea","life"]] },
+    r:[["sea","life"],["sea","pink"]] },
   { id:"egg", e:"\u{1F95A}",
     r:[["stone","life"]] },
   { id:"cooking", e:"\u{1F373}",
@@ -276,6 +343,27 @@ export const ELEMENTS = ([
   // nine, so the rare string is the one worth hugging.
   { id:"snake", e:"\u{1F40D}",
     r:[["desert","lizard"],["tree","lizard"]] },
+  // A lizard's bones at that scale are only one thing, which is what makes the
+  // single route safe here where a plain colour would have been ambiguous. It
+  // also spends the BONE, the most lopsided node in the table: eleven routes
+  // into it and, before this, two out — the Dog and the Ash.
+  // Kept in the Lizard's run because "lizard" is the string on both sides of
+  // this entry, and it trails the pair the way the Snake's two do.
+  // The bones of a bird, and the extinct bird is the dodo — no other reading is
+  // open here. It sits IN FRONT of the Dinosaur so the two `["bone", …]`
+  // entries touch and the prefix repeats; it is also what turns that entry's
+  // one clever pair into a rule a player can predict once they have found it.
+  // A fourth thing off the Bone, which had eleven routes in and three out.
+  { id:"dodo", e:"\u{1F9A4}",
+    r:[["bone","bird"]] },
+  { id:"dinosaur", e:"\u{1F996}",
+    r:[["bone","lizard"]] },
+  // What the Dinosaur is FOR — it was a leaf the moment it landed, and this is
+  // its first consumer. Plant + beast is also the diet, the same move the
+  // Gorilla makes with the Banana: what it eats is what it became.
+  // "dinosaur" leads the pair so it lands against the id one line up.
+  { id:"sauropod", e:"\u{1F995}",
+    r:[["dinosaur","plant"]] },
   { id:"frog", e:"\u{1F438}",
     r:[["lizard","water"]] },
   // THE CAMEL GAVE ANIMAL + SAND TO THE CRAB and kept Desert + Animal, which
@@ -288,6 +376,14 @@ export const ELEMENTS = ([
     r:[["desert","animal"]] },
   { id:"crab", e:"\u{1F980}",
     r:[["animal","sand"]] },
+  // The Crab is the shore, the Sea is the deep — same creature, further out.
+  // Against the Crab because "crab" is a single occurrence before this line
+  // and "sea" is in six recipes, and it gives the Crab its first consumer.
+  // The Shrimp is deliberately NOT here: it wants this same pair, and a crab,
+  // a lobster and a shrimp are one silhouette at three sizes in a table with
+  // no size to tell them apart.
+  { id:"lobster", e:"\u{1F99E}",
+    r:[["crab","sea"]] },
   { id:"horse", e:"\u{1F434}",
     r:[["animal","field"]] },
   { id:"donkey", e:"\u{1FACF}",
@@ -431,8 +527,12 @@ export const ELEMENTS = ([
   // is the second direction: brown is what it looks like, the ice age is what
   // it is. Pressed against the Elephant, which was a leaf until now and whose
   // id is a single occurrence in the file against brown's six.
+  // Bone + Elephant is the same sentence the Dinosaur and the Dodo say: the
+  // bones of a living lineage give you the extinct member of it. Third instance
+  // of it, which is what makes it an idiom rather than a trick.
+  // "elephant" trails the first two pairs so they repeat exactly.
   { id:"mammoth", e:"\u{1F9A3}",
-    r:[["brown","elephant"],["elephant","snow"]] },
+    r:[["brown","elephant"],["bone","elephant"],["elephant","snow"]] },
   { id:"mermaid", e:"\u{1F9DC}\u{200D}\u{2640}\u{FE0F}",
     r:[["human","fish"]] },
   // HUMAN + SNOW IS THE SNOWMAN'S ONLY ROUTE, and it is load-bearing: two of
@@ -465,7 +565,9 @@ export const ELEMENTS = ([
   { id:"bird", e:"\u{1F426}",
     r:[["air","animal"],["air","penguin"]] },
   { id:"chick", e:"\u{1F425}",
-    r:[["egg","bird"],["duck","egg"],["egg","flamingo"],["egg","swan"]] },
+    // Four ways through an Egg, and then the plain one: a yellow bird is a
+    // chick, the same sentence the Flamingo and the Swan say in their colours.
+    r:[["egg","bird"],["duck","egg"],["egg","flamingo"],["egg","swan"],["bird","yellow"]] },
   { id:"penguin", e:"\u{1F427}",
     r:[["bird","ice"],["bird","black"]] },
   { id:"duck", e:"\u{1F986}",
@@ -473,7 +575,10 @@ export const ELEMENTS = ([
   { id:"fish", e:"\u{1F41F}",
     r:[["animal","water"],["animal","blue"]] },
   { id:"sea", e:"\u{1F30A}",
-    r:[["island","water"],["fish","water"],["mermaid","house"]] },
+    // Teal + Water is the TEAL'S ONLY CONSUMER, and it is the colour this
+    // element already claims — "the ocean keeps its deepest secrets in shades
+    // of teal" is the quote one screen away. "water" trails, like the two above.
+    r:[["island","water"],["fish","water"],["mermaid","house"],["teal","water"]] },
   { id:"octopus", e:"\u{1F419}",
     r:[["animal","sea"],["animal","coral"]] },
   { id:"salt", e:"\u{1F9C2}",
@@ -492,8 +597,21 @@ export const ELEMENTS = ([
   // because "pink" is in three recipes and "animal" is in thirty-one — the
   // rare string is the one to hug, and both of pink's animals now sit
   // together.
+  // Boar + Pink is the Boar's own move run backwards — the Brown made it wild,
+  // the Pink brings it home — and the two are CYCLIC because of it. It holds
+  // for the usual reason: the Pig keeps Animal + Pink, which misses the Boar
+  // entirely, and the Boar has nothing that misses the Pig. So the Pig is the
+  // load-bearing half here; take Animal + Pink away and BOTH go unreachable.
+  // "pink" trails both pairs.
   { id:"pig", e:"\u{1F416}",
-    r:[["animal","pink"]] },
+    r:[["animal","pink"],["boar","pink"]] },
+  // Two directions off the Pig: the Brown is what a boar IS against the Pig's
+  // pink, and the Park is where it went — the tame one turned loose. It gives
+  // the Park a consumer it did not have.
+  // "pig" trails both pairs, and the Bacon below trails it twice more, so four
+  // recipes in a row end the same way.
+  { id:"boar", e:"\u{1F417}",
+    r:[["brown","pig"],["park","pig"]] },
   // What the Pig is for: the first thing it makes, and the bridge from the
   // beasts into the food run the Burger and the Pizza already hold. Two
   // directions rather than one said twice — Cooking is the process, the Chef
@@ -504,8 +622,26 @@ export const ELEMENTS = ([
     r:[["cooking","pig"],["chef","pig"]] },
   { id:"swan", e:"\u{1F9A2}",
     r:[["white","duck"],["white","bird"]] },
+  // Bird + colour, the Flamingo's and the Swan's sentence, and this is the
+  // TURQUOISE'S ONLY CONSUMER — the colour was a leaf until here. It is also
+  // the one colour with a single answer against a bird: turquoise IS the
+  // peacock. "bird" leads both pairs.
   { id:"peacock", e:"\u{1F99A}",
-    r:[["bird","rainbow"]] },
+    r:[["bird","rainbow"],["bird","turquoise"]] },
+  // AN ABSTRACTION, not a bird, and the pair is why: the branch and the bird
+  // compose into the idea, which is how every abstraction here is built — the
+  // Party out of beer and pizza, the Wedding and the School and the Circus out
+  // of things that are not themselves ideas. Naming it Dove instead would fit
+  // the icon and break the recipe: a dove is not made of a plant, and the white
+  // bird is the Swan already. The emoji is the peace symbol doing its usual
+  // job, and the quote says "branch" out loud so the discovery lands.
+  // Kept in the bird run, "bird" leading, like the two pairs one line up.
+  // Bird + Olive is the same picture with the branch NAMED, which is the route
+  // that needs no story told for it; Bird + Plant stays because it is the
+  // shallow way in — the Olive is four steps further out, so without it the
+  // Peace would be a late discovery rather than a reachable one.
+  { id:"peace", e:"\u{1F54A}",
+    r:[["bird","plant"],["bird","olive"]] },
   { id:"phoenix", e:"\u{1F426}\u{200D}\u{1F525}",
     r:[["bird","fire"],["ash","fire"]] },
   { id:"bee", e:"\u{1F41D}",
@@ -616,18 +752,62 @@ export const ELEMENTS = ([
     r:[["tree","sun"]] },
   { id:"banana", e:"\u{1F34C}",
     r:[["fruit","yellow"]] },
+  // Fruit + colour, the sentence the Banana above and the Pumpkin below both
+  // say, and this one spends the Chartreuse — the colour a lime actually is.
+  // "fruit" leads the pair so all three read `["fruit", …]` exactly.
+  //
+  // The second route is the Lemon, and the two of them are MUTUALLY CYCLIC the
+  // way Magic and the Crystal Ball are: Lemon + Green is a Lime, Lime + Yellow
+  // is a Lemon. It resolves for the same reason that one does — both ends keep
+  // a way in that does not run through the other, the Lime through Fruit +
+  // Chartreuse and the Lemon through Fruit + Acid. MEASURED, the way that pair
+  // was: drop either one and everything still resolves — the survivor carries
+  // the other through the cycle — but drop BOTH and the Lime and the Lemon go
+  // unreachable together. One independent way in, somewhere in the pair, is
+  // the invariant here too.
+  // "lemon" trails the pair so it lands against the entry below it.
+  { id:"lime", e:"\u{1F34B}\u{200D}\u{1F7E9}",
+    r:[["fruit","chartreuse"],["green","lemon"]] },
+  // The sour half, and the two directions are the chemistry and the colour:
+  // Acid is what a lemon IS, the Lime plus the Yellow is what it looks like.
+  // "fruit" leads again, so the Banana, the Lime and this all share a prefix.
+  { id:"lemon", e:"\u{1F34B}",
+    r:[["fruit","acid"],["lime","yellow"]] },
+  // Fruit + colour again, and it is here to be an INGREDIENT: the Peace was
+  // Bird + Plant, a generic branch doing the work of a specific one, and this
+  // is the branch the story actually names.
+  { id:"olive", e:"\u{1FAD2}",
+    r:[["fruit","green"]] },
   // Monkey + Banana is the pair everyone tries the moment they hold both, and
   // Grey + Monkey is the same colour-plus-category move that makes the
   // Orangutan two entries up — the diet and the colour, coming at it from
   // different directions rather than saying one thing twice.
   { id:"gorilla", e:"\u{1F98D}",
     r:[["monkey","banana"],["grey","monkey"]] },
+  // Fruit + colour once more — the Banana is yellow, the Pumpkin orange, the
+  // Lime chartreuse, and a brown one is this. "fruit" trails both pairs here
+  // because the Palm route already put it there.
   { id:"coconut", e:"\u{1F965}",
-    r:[["palm","fruit"]] },
+    r:[["palm","fruit"],["brown","fruit"]] },
   { id:"pumpkin", e:"\u{1F383}",
     r:[["fruit","orange"]] },
   { id:"wood", e:"\u{1FAB5}",
     r:[["tree","tool"],["brown","tree"]] },
+  // Two directions, and the grass/tree confusion is the point of them: Plant +
+  // Wood is what bamboo IS — a grass with a trunk — and Green + Tree is what
+  // it looks like from across a garden. Kept against the Wood because "wood"
+  // is the rarer of its two strings here, and "tree" closes the second pair
+  // the way the Wood's own two do.
+  { id:"bamboo", e:"\u{1F38D}",
+    r:[["plant","wood"],["green","tree"]] },
+  // Beside its food rather than up with the beasts, the way the Bacon sits
+  // beside the Pig: "bamboo" is a single occurrence before this entry and this
+  // entry spends it twice, where "animal" is in forty recipes and "bear" in
+  // eight. Both pairs trail it, so it lands against the id one line up.
+  // Two directions in the ordinary sense too — the Animal is any creature that
+  // lives on the stuff, the Bear is which creature it turned out to be.
+  { id:"panda", e:"\u{1F43C}",
+    r:[["animal","bamboo"],["bear","bamboo"]] },
   // Animal + habitat once more, but the noun is what the beast is FOR rather
   // than where it lives — Wood is the thing a beaver fells and builds with.
   // Placed against the Wood above, not up with the beasts, because "wood" is
@@ -706,6 +886,11 @@ export const ELEMENTS = ([
     r:[["human","ring"]] },
   { id:"baby", e:"\u{1F476}",
     r:[["human","life"],["wedding","life"]] },
+  // The Baby's second consumer after the Teddy Bear, and the Sky's sixth.
+  // Figure + place, which is the Mermaid's move and the Astronaut's: what it
+  // is, and where it is. "baby" leads so it repeats the id one line up.
+  { id:"angel", e:"\u{1F47C}",
+    r:[["baby","sky"]] },
   { id:"blossom", e:"\u{1F33C}",
     r:[["plant","pink"],["life","plant"]] },
   { id:"cherry blossom", e:"\u{1F338}",

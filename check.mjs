@@ -259,9 +259,12 @@ await release();
 
 // --- failed and duplicate combos both count as moves ----------------------
 // the failed pair is made with a LOOSE pick, the rediscovery after it with a
-// LOCKED one — the two halves of the rule, on the two mixes already here
+// LOCKED one — the two halves of the rule, on the two mixes already here.
+// Green + White is the dead pair BECAUSE IT IS DEAD: Green + Yellow used to be
+// it and the Chartreuse took it, so if this check starts failing, look first
+// for a new element that ate the pair rather than for a bug in the rule.
 await click("green");
-await click("yellow");
+await click("white");
 s = await state();
 check("fail: no recipe still costs a move", s.moves === 3 && s.found.length === 5 && s.phase === "play");
 check("fail: the cauldron says nothing happens",
@@ -274,7 +277,7 @@ check("fail: the cauldron shakes and the tiles do not",
 // tile, so it only appears once there is a pair to be spent.
 await click("green");
 check("tried: picking one half of a failed pair marks the other",
-  await evalJs(`document.querySelector('[data-id=yellow]').classList.contains('x')`) &&
+  await evalJs(`document.querySelector('[data-id=white]').classList.contains('x')`) &&
   // ...and an element is never tried against itself, so the pick never marks
   !(await evalJs(`document.querySelector('[data-id=green]').classList.contains('x')`)));
 // A SUCCESS MARKS TOO, which is the whole point of tracking tried pairs rather
@@ -290,7 +293,7 @@ check("tried: letting the pick go clears every mark",
 // success only counts as spent while its result is still on the board.
 const triedSave = ((await cellGet(SLOT.run)) || {}).t || {};
 check("tried: the memory rides with the run, failures and successes alike",
-  !!triedSave["green+yellow"] && !!triedSave["green+red"] &&
+  !!triedSave["green+white"] && !!triedSave["green+red"] &&
   // ...and the codex no longer carries the old all-time dead-end list
   !((await cellGet(SLOT.codex)) || {}).d);
 check("pick: a loose pick is spent by its mix — nothing stays picked",
