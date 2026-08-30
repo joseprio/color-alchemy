@@ -954,13 +954,14 @@ check("alt: the intuitive pairs resolve too",
 check("alt: a Volcano has the same Diamond in it as the Lava it pours",
   RECIPE['charcoal+lava'] === "diamond" &&
   RECIPE['charcoal+volcano'] === "diamond");
-// Glass takes an edge from a Diamond, from a Tool, or from plain White light.
-// The Tool used to be the shortcut here — 14 against the Diamond's 18 — but
-// White is now the cheap way in at 10, which is the colour rule the rest of
-// the table follows too. All three still resolve.
-check("alt: a Diamond, a Tool or White light cuts Glass into a Prism",
+// Glass takes an edge from a Diamond, from a Tool, from a Scientist, or from
+// plain White light. The Tool used to be the shortcut here — 14 against the
+// Diamond's 18 — but White is now the cheap way in at 10, which is the colour
+// rule the rest of the table follows too. All four still resolve.
+check("alt: a Diamond, a Tool, a Scientist or White light cuts Glass into a Prism",
   RECIPE['diamond+glass'] === "prism" &&
   RECIPE['glass+tool'] === "prism" &&
+  RECIPE['glass+scientist'] === "prism" &&
   RECIPE['glass+white'] === "prism");
 // Sand fuses three ways, and the two new ones are fulgurite: a strike, or the
 // current behind it, does what the fire does. Both land far later than Sand +
@@ -979,16 +980,19 @@ check("alt: Lava sets into Stone against Water, Rain or Air",
 check("alt: Lava + Stone melts back into Lava, a cyclic pair that costs a move",
   RECIPE['lava+stone'] === "lava");
 // The Tool is the other half of four recipes and, since the colours arrived,
-// the cheap way to only one of them: the Wood is 12 through Brown against the
-// Tool's 17, the Black 14 through Earth against 18, the Prism 10 through White
-// against 14. It carves the Statue too, but Clay + Life gave the Human a
-// shallow route and a Human now carves the same Stone for less, so the Tool
-// is flavour there as well. The Artist is the third and dearest route.
-// It no longer grinds Stone into Sand: that pair carves now, and the Sand
-// keeps Earth + Air, Stone + Air and the Yellow shortcut without it.
-check("alt: a Tool cuts Wood, carves Stone into a Statue, and works Charcoal into Black",
-  RECIPE['tool+tree'] === "wood" &&
-  RECIPE['stone+tool'] === "statue" &&
+// the cheap way to none of them: the Black is 14 through Earth against 18 and
+// the Prism 10 through White against 14, while the Wood is 12 through Brown
+// against a Tool route that now costs a further link, since the Tool makes the
+// Axe that fells the Tree rather than felling it itself. The Statue is the
+// same shape: the Tool strikes the Pick out of the Stone and the Pick carves
+// the Statue, but Clay + Life gave the Human a shallow route and a Human
+// carves the same Stone for less. The Artist is the third and dearest route.
+// It no longer grinds Stone into Sand: that pair strikes a Pick now, and the
+// Sand keeps Earth + Air, Stone + Air and the Yellow shortcut without it.
+check("alt: a Tool shapes an Axe and a Pick, and works Charcoal into Black",
+  RECIPE['tool+tree'] === "axe" &&
+  RECIPE['stone+tool'] === "pick" &&
+  RECIPE['pick+stone'] === "statue" &&
   RECIPE['human+stone'] === "statue" &&
   RECIPE['charcoal+tool'] === "black" &&
   RECIPE['charcoal+stone'] === "black");
@@ -1079,9 +1083,15 @@ check("alt: the Sky is blue Air, and the Sun is lit from it or painted on it",
 check("alt: Fire needs Air to catch, and Orange no longer lights it",
   RECIPE['air+red'] === "fire" &&
   RECIPE['orange+red'] === undefined);
-check("alt: the tool chain - Fire + Metal is a Tool, and a Tool is what cuts Wood",
+// The chain runs one link longer than it used to: the Tool no longer touches
+// the Tree itself, it makes the Axe that fells it, and the felled Wood back
+// against the Tool is the Saw — which fells a Tree the same way the Axe does.
+check("alt: the tool chain - Fire + Metal is a Tool, the Tool is an Axe, and the Axe is what cuts Wood",
   RECIPE['fire+metal'] === "tool" &&
-  RECIPE['tool+tree'] === "wood" &&
+  RECIPE['tool+tree'] === "axe" &&
+  RECIPE['axe+tree'] === "wood" &&
+  RECIPE['tool+wood'] === "saw" &&
+  RECIPE['saw+tree'] === "wood" &&
   RECIPE['metal+wood'] === undefined);
 check("alt: a whole Tree burns to Charcoal, no Wood in between",
   RECIPE['fire+tree'] === "charcoal" &&

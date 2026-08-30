@@ -155,8 +155,31 @@ export const ELEMENTS = ([
        "radial-gradient(circle at 68% 30%, #ffdc3244 0 22%, transparent 30%)," +
        "linear-gradient(180deg, #a8dbff 0%, #7ec8ff 55%, #4f9fe8 100%)",
     r:[["air","blue"],["air","cyan"]] },
+  // THE SAME SHINE THE METAL WEARS, said in gold: a diagonal highlight band
+  // over a vertical tone ramp, the two stacked in that order so the band
+  // reads as light ON the surface rather than a stripe painted into it. The
+  // stack is deliberately the Metal's own, gradient for gradient and stop for
+  // stop — a near-repeat of a run roadroller has already modelled costs a
+  // fraction of a fresh one, and the two materials wanting to look like
+  // members of the same set is the whole point anyway.
   { id:"gold", c:"#f7c948",
+    bg:"linear-gradient(120deg, transparent 0 30%, #fff8d0aa 30% 38%, transparent 38% 62%," +
+       "#fff8d055 62% 68%, transparent 68%)," +
+       "linear-gradient(180deg, #ffeaa0 0%, #f7c948 38%, #a9741a 62%, #ffdd7a 100%)",
     r:[["yellow","orange"],["metal","yellow"]] },
+  { id:"copper", c:"#b87333",
+    bg:"linear-gradient(120deg, transparent 0 30%, #ffe0c0aa 30% 38%, transparent 38% 62%," +
+       "#ffe0c055 62% 68%, transparent 68%)," +
+       "linear-gradient(180deg, #e8b184 0%, #b87333 38%, #6e3a12 62%, #dda36b 100%)",
+    r:[["brown","metal"]] },
+  // THE THIRD OF THE SHINE, and the stack is the Metal's again — same bands,
+  // same four stops, only the ramp said in a brighter, cooler set of greys so
+  // it reads as polished rather than as the Metal's raw steel.
+  { id:"silver", c:"#dfe6ec",
+    bg:"linear-gradient(120deg, transparent 0 30%, #ffffffcc 30% 38%, transparent 38% 62%," +
+       "#ffffff77 62% 68%, transparent 68%)," +
+       "linear-gradient(180deg, #ffffff 0%, #dfe6ec 38%, #98a3ae 62%, #f2f6f9 100%)",
+    r:[["grey","white"]] },
   { id:"water", e:"\u{1F4A7}",
     r:[["blue","matter"],["fire","ice"],["ice","sun"],["snowman","sun"],["fire","snowman"]] },
   { id:"fire", e:"\u{1F525}",
@@ -186,6 +209,8 @@ export const ELEMENTS = ([
     r:[["glass","house"]] },
   { id:"hospital", e:"\u{1F3E5}",
     r:[["doctor","house"]] },
+  { id:"hut", e:"\u{1F6D6}",
+    r:[["house","wood"],["human","wood"]] },
   { id:"beer", e:"\u{1F37A}",
     r:[["gold","water"]] },
   // Blood TAKES Red + Water, the pair the Wine used to own. The Wine is not
@@ -200,7 +225,7 @@ export const ELEMENTS = ([
   // other, the Blood through Red + Water and the Crimson through Red + Magenta
   // and Red + Black. "water" trails both pairs so the repeat is exact.
   { id:"blood", e:"\u{1FA78}",
-    r:[["red","water"],["crimson","water"]] },
+    r:[["red","water"],["crimson","water"],["human","syringe"]] },
   { id:"coffee", e:"\u{2615}",
     r:[["black","water"],["brown","milk"],["black","milk"]] },
   { id:"lava", c:"#ff5a1f",
@@ -221,11 +246,24 @@ export const ELEMENTS = ([
   { id:"goat", e:"\u{1F410}",
     r:[["animal","mountain"]] },
   { id:"stone", e:"\u{1FAA8}",
-    r:[["lava","water"],["lava","rain"],["lava","air"],["grey","matter"]] },
-  { id:"metal", c:"#c3ced9",
-    bg:"linear-gradient(120deg, transparent 0 30%, #ffffffaa 30% 38%, transparent 38% 62%," +
-       "#ffffff55 62% 68%, transparent 68%)," +
-       "linear-gradient(180deg, #e6edf3 0%, #aab6c2 38%, #6e7a86 62%, #cdd7e0 100%)",
+    r:[["lava","water"],["lava","rain"],["lava","air"],["grey","matter"],
+       ["sun","troll"]] },
+  // THE SEVENTH CYCLIC PAIR, and the only one the folklore wrote first: the
+  // Night makes a Troll out of the Stone and the Sun turns him straight back
+  // into it. Safe the way the others are — the Stone keeps three routes out of
+  // the Lava and the Grey, none of them through the Troll, so the pair costs a
+  // move and gives a laugh rather than stranding anything.
+  { id:"troll", e:"\u{1F9CC}",
+    r:[["night","stone"]] },
+  // A TOUCH DARKER THAN IT WAS, and the Silver is the reason: the two share a
+  // stack, so the only thing telling them apart on a crowded board is where
+  // the ramp sits. The Silver has nowhere to go above white, so the Metal
+  // moved instead — every stop down one step, the bands down with them, which
+  // reads as raw steel against the Silver's polish.
+  { id:"metal", c:"#a9b5c1",
+    bg:"linear-gradient(120deg, transparent 0 30%, #ffffff99 30% 38%, transparent 38% 62%," +
+       "#ffffff44 62% 68%, transparent 68%)," +
+       "linear-gradient(180deg, #ccd6df 0%, #93a0ad 38%, #59636e 62%, #b0bcc7 100%)",
     r:[["fire","stone"],["rust","acid"]] },
   // RUST EATS METAL AND ACID GIVES IT BACK. metal + air/water/salt corrodes;
   // rust + acid strips it back to bare metal, the one REVERSAL in the table.
@@ -237,6 +275,8 @@ export const ELEMENTS = ([
   // steel ramp so both materials show at once. Nothing else in the table has
   // two materials in one swatch, which is what keeps it clear of Brown,
   // Orange and Sand at the warm end. See experiments/rust-tile.html.
+  { id:"anchor", e:"\u{2693}",
+    r:[["boat","metal"],["metal","sea"]] },
   { id:"rust", c:"#c1571f",
     bg:"radial-gradient(circle at 30% 32%, #d2691ee6 0 26%, transparent 44%)," +
        "radial-gradient(circle at 70% 62%, #a33f0bdd 0 24%, transparent 42%)," +
@@ -247,6 +287,12 @@ export const ELEMENTS = ([
        ["red","metal"],["orange","metal"]] },
   { id:"tool", e:"\u{1F6E0}\u{FE0F}",
     r:[["fire","metal"]] },
+  { id:"pick", e:"\u{26CF}\u{FE0F}",
+    r:[["stone","tool"]] },
+  { id:"scale", e:"\u{2696}\u{FE0F}",
+    r:[["gold","tool"]] },
+  { id:"shovel", e:"\u{1FA8F}",
+    r:[["sand","tool"],["earth","tool"]] },
   { id:"sand", c:"#e0c078",
     bg:"radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%)," +
        "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
@@ -295,6 +341,8 @@ export const ELEMENTS = ([
     r:[["lightning","rain"],["electricity","rain"]] },
   { id:"umbrella", e:"\u{2602}\u{FE0F}",
     r:[["rain","tool"],["storm","tool"],["human","rain"],["human","storm"]] },
+  { id:"parachute", e:"\u{1FA82}",
+    r:[["human","sky"]] },
   { id:"tornado", e:"\u{1F32A}️",
     r:[["air","storm"]] },
   { id:"life", e:"\u{1F9EC}",
@@ -437,6 +485,8 @@ export const ELEMENTS = ([
     r:[["monkey","tool"],["monkey","fire"],["clay","life"],["statue","life"]] },
   { id:"chef", e:"\u{1F468}\u{200D}\u{1F373}",
     r:[["cooking","human"]] },
+  { id:"knife", e:"\u{1F52A}",
+    r:[["chef","tool"]] },
   { id:"burger", e:"\u{1F354}",
     r:[["chef","cow"],["cooking","cow"]] },
   { id:"sushi", e:"\u{1F363}",
@@ -462,12 +512,18 @@ export const ELEMENTS = ([
   { id:"ratatouille", e:"\u{1F372}",
     r:[["chef","rat"]] },
   { id:"eyeglasses", e:"\u{1F453}",
-    r:[["human","glass"]] },
+    r:[["human","glass"],["book","tool"]] },
+  { id:"sunglasses", e:"\u{1F576}\u{FE0F}",
+    r:[["black","eyeglasses"]] },
+  { id:"goggles", e:"\u{1F97D}",
+    r:[["eyeglasses","scientist"],["acid","eyeglasses"]] },
   // with the Eyeglasses, the table's other person-plus-material wearable. The
   // ground the shoe is for is EARTH: there is no separate ground element, and
   // Human + Stone is already the Statue.
   { id:"shoe", e:"\u{1F45F}",
     r:[["human","earth"],["human","sand"]] },
+  { id:"boot", e:"\u{1F97E}",
+    r:[["human","mountain"],["mountain","shoe"]] },
   { id:"ninja", e:"\u{1F977}",
     r:[["human","black"]] },
   { id:"wizard", e:"\u{1F9D9}",
@@ -485,7 +541,7 @@ export const ELEMENTS = ([
   { id:"vampire", e:"\u{1F9DB}",
     r:[["human","bat"],["blood","human"]] },
   { id:"statue", e:"\u{1F5FF}",
-    r:[["human","stone"],["stone","tool"],["artist","stone"]] },
+    r:[["human","stone"],["stone","pick"],["artist","stone"]] },
   { id:"farmer", e:"\u{1F9D1}\u{200D}\u{1F33E}",
     r:[["human","field"]] },
   // BETWEEN THE FARMER AND THE ARTIST, and it is the EMOJI that chose the
@@ -543,7 +599,15 @@ export const ELEMENTS = ([
   { id:"snowman", e:"\u{26C4}",
     r:[["human","snow"]] },
   { id:"santa", e:"\u{1F385}",
-    r:[["wizard","snow"]] },
+    r:[["wizard","snow"],["christmas","human"]] },
+  // MUTUALLY CYCLIC WITH THE SANTA, the way Magic and the Crystal Ball are: he
+  // trims the Tree and the Tree is where he comes from. Both ends keep a route
+  // out of the pair — the Christmas from Rainbow + Tree, the Santa from
+  // Wizard + Snow — so neither goes unreachable if the other is never tried.
+  { id:"christmas", e:"\u{1F384}",
+    r:[["rainbow","tree"],["santa","tree"]] },
+  { id:"gift", e:"\u{1F381}",
+    r:[["christmas","night"],["christmas","santa"]] },
   { id:"robot", e:"\u{1F916}",
     r:[["human","metal"]] },
   { id:"astronaut", e:"\u{1F9D1}\u{200D}\u{1F680}",
@@ -560,8 +624,14 @@ export const ELEMENTS = ([
   // here because "school" appeared exactly once in the file until now.
   { id:"student", e:"\u{1F9D1}\u{200D}\u{1F393}",
     r:[["human","teacher"],["human","school"]] },
+  { id:"scientist", e:"\u{1F9D1}\u{200D}\u{1F52C}",
+    r:[["acid","human"]] },
   { id:"doctor", e:"\u{1F9D1}\u{200D}\u{2695}\u{FE0F}",
     r:[["medicine","human"]] },
+  { id:"judge", e:"\u{1F9D1}\u{200D}\u{2696}\u{FE0F}",
+    r:[["human","scale"],["scale","student"]] },
+  { id:"syringe", e:"\u{1F489}",
+    r:[["doctor","tool"]] },
   { id:"bird", e:"\u{1F426}",
     r:[["air","animal"],["air","penguin"]] },
   { id:"chick", e:"\u{1F425}",
@@ -579,6 +649,8 @@ export const ELEMENTS = ([
     // element already claims — "the ocean keeps its deepest secrets in shades
     // of teal" is the quote one screen away. "water" trails, like the two above.
     r:[["island","water"],["fish","water"],["mermaid","house"],["teal","water"]] },
+  { id:"boat", e:"\u{26F5}",
+    r:[["sea","wood"],["island","wood"]] },
   { id:"octopus", e:"\u{1F419}",
     r:[["animal","sea"],["animal","coral"]] },
   { id:"salt", e:"\u{1F9C2}",
@@ -690,7 +762,8 @@ export const ELEMENTS = ([
       '<path d="M22 15 32 13" stroke="#ffdc32"/><path d="M22 15 32 16" stroke="#34d158"/>' +
       '<path d="M22 15 32 19" stroke="#33e9e9"/><path d="M22 15 32 22" stroke="#2f6bff"/>' +
       '<path d="M22 15 32 25" stroke="#9a4dff"/></g>',
-    r:[["diamond","glass"],["glass","tool"],["glass","white"]] },
+    r:[["diamond","glass"],["glass","tool"],["glass","scientist"],
+       ["glass","white"]] },
   { id:"rainbow", e:"\u{1F308}",
     r:[["white","prism"],["sun","rain"],["prism","sun"],
        ["light bulb","prism"]] },
@@ -725,6 +798,17 @@ export const ELEMENTS = ([
   // the rarest in the file but the one the entry itself repeats.
   { id:"eggplant", e:"\u{1F346}",
     r:[["egg","plant"],["violet","plant"]] },
+  // THE SAME ARGUMENT AS THE EGGPLANT, one line up: this entry spends "plant"
+  // twice too, so it sits with the vegetables rather than beside the Farmer,
+  // who is the rarer string. Measured a tie at 12766 either side of the
+  // Carrot, and the repeat is what breaks it. Plant + Yellow is the colour
+  // idiom the Carrot and the Eggplant already speak; Farmer + Plant is the
+  // second thing said differently, and it hands the FARMER A SECOND CONSUMER
+  // — the Potato's field was the only one.
+  { id:"corn", e:"\u{1F33D}",
+    r:[["plant","yellow"],["farmer","plant"]] },
+  { id:"popcorn", e:"\u{1F37F}",
+    r:[["corn","fire"],["cooking","corn"]] },
   { id:"rabbit", e:"\u{1F407}",
     r:[["animal","carrot"]] },
   { id:"cactus", e:"\u{1F335}",
@@ -748,8 +832,14 @@ export const ELEMENTS = ([
     r:[["sand","tree"]] },
   { id:"island", e:"\u{1F3DD}\u{FE0F}",
     r:[["sand","palm"]] },
+  { id:"world", e:"\u{1F30D}",
+    r:[["earth","sea"]] },
+  { id:"map", e:"\u{1F5FA}\u{FE0F}",
+    r:[["paper","world"]] },
   { id:"fruit", e:"\u{1F34E}",
     r:[["tree","sun"]] },
+  { id:"juice", e:"\u{1F9C3}",
+    r:[["fruit","water"]] },
   { id:"banana", e:"\u{1F34C}",
     r:[["fruit","yellow"]] },
   // Fruit + colour, the sentence the Banana above and the Pumpkin below both
@@ -791,8 +881,12 @@ export const ELEMENTS = ([
     r:[["palm","fruit"],["brown","fruit"]] },
   { id:"pumpkin", e:"\u{1F383}",
     r:[["fruit","orange"]] },
+  { id:"axe", e:"\u{1FA93}",
+    r:[["tree","tool"]] },
   { id:"wood", e:"\u{1FAB5}",
-    r:[["tree","tool"],["brown","tree"]] },
+    r:[["tree","axe"],["tree","saw"],["brown","tree"]] },
+  { id:"saw", e:"\u{1FA9A}",
+    r:[["wood","tool"]] },
   // Two directions, and the grass/tree confusion is the point of them: Plant +
   // Wood is what bamboo IS — a grass with a trunk — and Green + Tree is what
   // it looks like from across a garden. Kept against the Wood because "wood"
@@ -830,16 +924,28 @@ export const ELEMENTS = ([
        ["book","fire"],["fire","painting"],["sun","vampire"]] },
   { id:"mushroom", e:"\u{1F344}",
     r:[["rain","wood"]] },
+  // TWO MORE MUTUAL CYCLES, and they hold the same way Magic and the Crystal
+  // Ball do: the Tool works a Student into a Pencil and a Teacher into a Book,
+  // while the Student comes from the Teacher and the Teacher from the Book.
+  // Both ends keep a route that does not run through the other — the Pencil
+  // from Wood + Charcoal, the Student from Human + School, the Book from
+  // Paper + Pencil, the Teacher from Eyeglasses + Human — so the school
+  // resolves from either side. Flavour for a pair players try, never the
+  // cheaper way in: a Teacher already costs a Book, and a Student a Teacher.
   { id:"pencil", e:"\u{270F}\u{FE0F}",
-    r:[["wood","charcoal"]] },
+    r:[["wood","charcoal"],["student","tool"]] },
   { id:"paper", e:"\u{1F4C4}",
     r:[["stone","tree"],["white","wood"]] },
   { id:"book", e:"\u{1F4D6}",
-    r:[["paper","pencil"]] },
+    r:[["paper","pencil"],["teacher","tool"]] },
   { id:"palette", e:"\u{1F3A8}",
     r:[["paper","rainbow"]] },
   { id:"kite", e:"\u{1FA81}",
     r:[["air","paper"]] },
+  { id:"scissors", e:"\u{2702}\u{FE0F}",
+    r:[["paper","tool"]] },
+  { id:"bookmark", e:"\u{1F516}",
+    r:[["book","paper"]] },
   // The one color no amount of mixing light can reach, so it arrives through
   // the materials instead. A plain black square would vanish into the tile, so
   // the swatch keeps a soft top-left sheen and lends a grey — not black — glow.
