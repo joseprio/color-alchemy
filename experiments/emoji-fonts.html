@@ -1,0 +1,516 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — the table's 183 emoji, in every emoji set worth looking at.
+     Open it in a browser; nothing to build.
+
+     THIS IS THE ONE EXPERIMENT IN THIS FOLDER THAT NEEDS THE NETWORK. Every
+     other file here is self-contained on purpose. This one cannot be: the whole
+     question is what OTHER vendors' artwork looks like, and Twemoji, OpenMoji
+     and Blobmoji are megabytes of SVG that would swamp the folder. Fonts come
+     from Google Fonts, artwork from jsDelivr. Offline, the image columns go
+     grey and say so, and the system column still works.
+
+     WHY THIS MATTERS FOR THE GAME. The shipped build picks NO emoji font: the
+     tiles render whatever the player's OS provides, so the same element is
+     Apple's artwork on an iPhone, Segoe's on Windows and Noto's on Android.
+     Three separate things fall out of that, and the columns here are arranged
+     to answer them:
+
+       1. COVERAGE. A set that has no glyph for an element draws tofu, and the
+          tile is then blank. The newest codepoints are the exposure — the
+          Lime (U+1F34B U+200D U+1F7E9, Emoji 15.1) and the Phoenix (U+1F426
+          U+200D U+1F525, Emoji 15.0) are recent enough that older sets and
+          older phones simply do not have them. Every column carries a MISSING
+          count in its head, and the "only rows with a gap" filter (G) puts the
+          casualties together.
+
+       2. LEGIBILITY ON A DARK TILE. src/style.css puts these on #0c1122, and
+          iconHtml() gives an emoji NO glow — the glow is for c/bg swatches
+          only, which is why the Oil, Rust and Oasis experiments in this folder
+          exist. A dark emoji on a dark tile is the game's worst case, and it
+          is vendor-specific: the Black Cat is a black silhouette in some sets
+          and a grey-outlined cat in others. The ground toggle (B) switches
+          between the tile, the page and white.
+
+       3. SIZE. One artwork has to work at three sizes — 32px on a board tile,
+          62px in the discovery card's ingredient row, 110px as the discovery
+          hero — and detail that reads at 110 can turn to mud at 32. The size
+          buttons (1/2/3) are those three exact sizes, not round numbers.
+
+     THE SEQUENCES ARE THE INTERESTING ROWS. 13 of the 183 are ZWJ sequences
+     and 19 more carry a VARIATION SELECTOR-16. Both are where sets disagree
+     most, and both are where filename conventions disagree too:
+
+       Twemoji    lowercase, hyphens, FE0F STRIPPED unless the sequence has a
+                  ZWJ in it (26f0.svg, but 1f43b-200d-2744-fe0f.svg)
+       OpenMoji   UPPERCASE, hyphens, same FE0F rule (26F2.svg, but
+                  1F43B-200D-2744-FE0F.svg)
+       Noto/Blob  lowercase, UNDERSCORES, emoji_u prefix, FE0F ALWAYS stripped
+                  (emoji_u26f0.svg, emoji_u1f43b_200d_2744.svg)
+
+     Those three rules were checked against the CDNs rather than assumed, and
+     each cell still tries its alternates before it gives up, so a convention
+     changing under us shows as a slower load and not a wrong answer.
+
+     THE FONT COLUMNS CANNOT BE TRUSTED TO REPORT A GAP. A browser silently
+     substitutes another font for a glyph the requested one lacks, so a font
+     cell that looks fine may be showing the system set. The count in those
+     heads comes from a canvas comparison — the glyph is drawn in the target
+     font and again in a font known to lack it, and identical pixels mean no
+     coverage — which is a good heuristic and not proof. THE IMAGE COLUMNS ARE
+     THE AUTHORITATIVE COVERAGE ANSWER: a 404 is a 404.
+
+     AND A FONT CELL FAILS TWO DIFFERENT WAYS. Noto Emoji, the monochrome one,
+     reported exactly 19 missing on the first run — the same 19 the table has
+     VS16 on, which is the tell. U+2600 alone IS in that font; U+2600 U+FE0F is
+     not, because the variation selector asks for COLOUR presentation and a
+     monochrome font declines, so the browser leaves for the system set. The
+     glyph was there the whole time. Those now count separately, in blue, and
+     the distinction is the useful one: pinning that font would leave 19 tiles
+     rendering in a different set from the other 164, which is worse than a
+     missing glyph because it looks deliberate.
+
+     WHAT THE SETS ACTUALLY DO, measured here: Twemoji and the Noto SVG source
+     cover all 183. OpenMoji misses two, both of them Emoji 15 ZWJ sequences —
+     the Phoenix and the Lime. Blobmoji misses 27, being a fork that stopped
+     early. The system column cannot be measured, because it IS the fallback
+     every other font column falls back TO.
+
+     KEYS  1/2/3 size · B ground · G only rows with a gap · Z only sequences
+           L load every image (the counts need it)
+           C hide these notes · / focus the filter -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — emoji sets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Emoji:wght@300..700&display=swap">
+<style>
+  :root {
+    --ink: #cfe3ff;
+    --dim: #8fb4d8;
+    --faint: #55708e;
+    --rule: #223052;
+    --panel: #0c1122;
+    --gap: #ff6b6b;
+    --ground: #0c1122;   /* the tile ground, switched by B */
+    --cell: 62px;        /* the discovery card's ingredient row, switched by 1/2/3 */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: var(--ink);
+    font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace;
+    padding: 0 0 60px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 5; background: #05060fee;
+    border-bottom: 1px solid var(--rule); padding: 10px 14px;
+    backdrop-filter: blur(6px);
+  }
+  h1 { font-size: 14px; margin: 0 0 8px; font-weight: 700; letter-spacing: .04em; }
+  h1 small { color: var(--faint); font-weight: 400; margin-left: 8px; letter-spacing: 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button, input {
+    background: #101528; color: var(--dim); border: 1px solid #2a3555;
+    font: inherit; padding: 3px 10px; border-radius: 6px; cursor: pointer;
+  }
+  button:hover { border-color: #3d5584; }
+  button[aria-pressed="true"] { color: #ffd75e; border-color: #ffd75e; background: #14120a; }
+  input { cursor: text; min-width: 160px; }
+  .note { color: var(--faint); }
+
+  /* NOT a scroll container. `overflow-x: auto` here would make this div one in
+     BOTH axes — CSS forces overflow-y to auto when either axis is not visible —
+     and the sticky thead would then resolve against IT rather than the viewport,
+     landing --head-h down from the table's own top, on the first row. The wide
+     table scrolls the page sideways instead, which both stickies understand. */
+  .wrap { }
+  table { border-collapse: collapse; margin: 0; }
+  th, td { border-bottom: 1px solid var(--rule); padding: 4px 8px; text-align: center; }
+  thead th {
+    position: sticky; top: var(--head-h, 92px); z-index: 4; background: #070a14;
+    border-bottom: 1px solid var(--rule); padding: 6px 8px; vertical-align: bottom;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  thead th .sub { display: block; font-weight: 400; color: var(--faint); font-size: 10px; }
+  thead th .miss { display: block; font-weight: 400; font-size: 10px; color: var(--faint); }
+  thead th .miss.bad { color: var(--gap); }
+  thead th .miss.warn { color: #7ec8ff; }
+  /* the id column stays put while the sets scroll */
+  th.id, td.id {
+    position: sticky; left: 0; z-index: 3; background: #070a14;
+    text-align: left; white-space: nowrap; font-size: 12px; color: var(--dim);
+  }
+  thead th.id { z-index: 6; }
+  td.id b { color: #fff; font-weight: 400; }
+  td.id i { font-style: normal; color: var(--faint); font-size: 10px; display: block; }
+  .tag { color: #ffd75e; font-size: 9px; letter-spacing: .06em; }
+  .tag.vs { color: #7ec8ff; }
+
+  td.cell { background: var(--ground); }
+  .glyph {
+    width: var(--cell); height: var(--cell); display: flex;
+    align-items: center; justify-content: center;
+    font-size: calc(var(--cell) * .82); line-height: 1;
+  }
+  .glyph img { width: 82%; height: 82%; display: block; }
+  .glyph.gone { color: var(--gap); font-size: 12px; font-family: inherit; }
+  .f-sys  { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif; }
+  .f-noto { font-family: "Noto Color Emoji", sans-serif; }
+  .f-mono { font-family: "Noto Emoji", sans-serif; }
+  tbody tr:hover td.id { background: #101a30; }
+  tfoot td { color: var(--faint); padding-top: 10px; }
+  #notes {
+    padding: 12px 14px; color: var(--dim); border-bottom: 1px solid var(--rule);
+    background: #070a14; font-size: 12px;
+  }
+  #notes b { color: #ffd75e; font-weight: 400; }
+  #notes.off { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>COLOR ALCHEMY — emoji sets<small id="count"></small></h1>
+  <div class="bar">
+    <button id="s1" data-size="32">32 tile</button>
+    <button id="s2" data-size="62" aria-pressed="true">62 card</button>
+    <button id="s3" data-size="110">110 hero</button>
+    <span class="note">|</span>
+    <button id="bg">ground: tile</button>
+    <button id="gapOnly" aria-pressed="false">only gaps</button>
+    <button id="seqOnly" aria-pressed="false">only sequences</button>
+    <span class="note">|</span>
+    <input id="filter" placeholder="filter by id…" spellcheck="false">
+    <button id="loadAll">load all</button>
+    <button id="notesBtn">hide notes</button>
+  </div>
+</header>
+
+<div id="notes">
+  The shipped game picks <b>no</b> emoji font — every tile is whatever the player's OS draws, so
+  the <b>system</b> column is what your own machine ships and the rest are what everyone else sees.
+  Image columns are authoritative on coverage (a 404 is a gap); font columns only estimate it,
+  because a browser substitutes silently. Sequences — <span class="tag">ZWJ</span> and
+  <span class="tag vs">VS16</span> — are where the sets disagree most.
+</div>
+
+<div class="wrap"><table>
+  <thead><tr id="head"></tr></thead>
+  <tbody id="body"></tbody>
+</table></div>
+
+<script>
+// The table's emoji, in src/elements.ts order: [id, character].
+const DATA = [
+  ["air","💨"], ["water","💧"], ["fire","🔥"], ["pottery","🏺"],
+  ["brick","🧱"], ["house","🏠"], ["window","🪟"], ["hospital","🏥"],
+  ["beer","🍺"], ["wine","🍷"], ["blood","🩸"], ["coffee","☕"],
+  ["volcano","🌋"], ["mountain","⛰️"], ["goat","🐐"], ["stone","🪨"],
+  ["tool","🛠️"], ["mirror","🪞"], ["hourglass","⌛"], ["sun","☀️"],
+  ["star","⭐"], ["moon","🌙"], ["telescope","🔭"], ["ghost","👻"],
+  ["cloud","☁️"], ["rain","🌧️"], ["lightning","🌩️"], ["storm","⛈️"],
+  ["umbrella","☂️"], ["tornado","🌪️"], ["life","🧬"], ["alien","👽"],
+  ["uFO","🛸"], ["jellyfish","🪼"], ["coral","🪸"], ["egg","🥚"],
+  ["cooking","🍳"], ["animal","🐾"], ["rat","🐀"], ["lizard","🦎"],
+  ["turtle","🐢"], ["snake","🐍"], ["dodo","🦤"], ["dinosaur","🦖"],
+  ["sauropod","🦕"], ["frog","🐸"], ["camel","🐪"], ["crab","🦀"],
+  ["lobster","🦞"], ["horse","🐴"], ["donkey","🫏"], ["sheep","🐑"],
+  ["yarn","🧶"], ["scarf","🧣"], ["teddy bear","🧸"], ["hippo","🦛"],
+  ["wolf","🐺"], ["fox","🦊"], ["bone","🦴"], ["dog","🐕"],
+  ["cow","🐄"], ["milk","🥛"], ["cat","🐈"], ["black cat","🐈‍⬛"],
+  ["cheese","🧀"], ["squirrel","🐿️"], ["monkey","🐒"], ["orangutan","🦧"],
+  ["human","🧍"], ["chef","👨‍🍳"], ["burger","🍔"], ["sushi","🍣"],
+  ["french fries","🍟"], ["pizza","🍕"], ["party","🎉"], ["fireworks","🎆"],
+  ["ice cream","🍨"], ["salad","🥗"], ["ratatouille","🍲"], ["eyeglasses","👓"],
+  ["shoe","👟"], ["ninja","🥷"], ["wizard","🧙"], ["vampire","🧛"],
+  ["statue","🗿"], ["farmer","🧑‍🌾"], ["firefighter","🧑‍🚒"], ["artist","🧑‍🎨"],
+  ["painting","🖼️"], ["clown","🤡"], ["circus","🎪"], ["elephant","🐘"],
+  ["mammoth","🦣"], ["mermaid","🧜‍♀️"], ["snowman","⛄"], ["santa","🎅"],
+  ["robot","🤖"], ["astronaut","🧑‍🚀"], ["zombie","🧟"], ["teacher","🧑‍🏫"],
+  ["school","🏫"], ["student","🧑‍🎓"], ["doctor","🧑‍⚕️"], ["bird","🐦"],
+  ["chick","🐥"], ["penguin","🐧"], ["duck","🦆"], ["fish","🐟"],
+  ["sea","🌊"], ["octopus","🐙"], ["salt","🧂"], ["shark","🦈"],
+  ["owl","🦉"], ["bat","🦇"], ["flamingo","🦩"], ["pig","🐖"],
+  ["boar","🐗"], ["bacon","🥓"], ["swan","🦢"], ["peacock","🦚"],
+  ["peace","🕊"], ["phoenix","🐦‍🔥"], ["bee","🐝"], ["mosquito","🦟"],
+  ["butterfly","🦋"], ["honey","🍯"], ["bear","🐻"], ["polar bear","🐻‍❄️"],
+  ["acid","🧪"], ["electricity","⚡"], ["light bulb","💡"], ["ice","🧊"],
+  ["snow","🌨️"], ["rainbow","🌈"], ["magic","🪄"], ["crystal ball","🔮"],
+  ["unicorn","🦄"], ["plant","🌿"], ["medicine","💊"], ["potato","🥔"],
+  ["carrot","🥕"], ["eggplant","🍆"], ["rabbit","🐇"], ["cactus","🌵"],
+  ["desert","🏜️"], ["park","🏞️"], ["tree","🌳"], ["palm","🌴"],
+  ["island","🏝️"], ["fruit","🍎"], ["banana","🍌"], ["lime","🍋‍🟩"],
+  ["lemon","🍋"], ["olive","🫒"], ["gorilla","🦍"], ["coconut","🥥"],
+  ["pumpkin","🎃"], ["wood","🪵"], ["bamboo","🎍"], ["panda","🐼"],
+  ["beaver","🦫"], ["mushroom","🍄"], ["pencil","✏️"], ["paper","📄"],
+  ["book","📖"], ["palette","🎨"], ["kite","🪁"], ["diamond","💎"],
+  ["ring","💍"], ["crown","👑"], ["king","🫅"], ["castle","🏰"],
+  ["lion","🦁"], ["tiger","🐅"], ["wedding","💒"], ["baby","👶"],
+  ["angel","👼"], ["blossom","🌼"], ["cherry blossom","🌸"], ["nut","🌰"],
+  ["peanut","🥜"], ["sunflower","🌻"], ["rose","🌹"]
+];
+
+// ---------------------------------------------------------------- the sets
+// cp(ch, opts) builds the filename stem each vendor uses. The three rules were
+// checked against the CDNs (see the header comment); `alt` is the fallback the
+// cell tries before it declares a gap, so a convention change degrades into a
+// slow load rather than a wrong "missing".
+const cps = (ch) => [...ch].map(c => c.codePointAt(0).toString(16));
+const hasZwj = (ch) => ch.includes("\u200d");        // ZERO WIDTH JOINER
+// Twemoji and OpenMoji: FE0F survives only inside a ZWJ sequence.
+const trimVs = (ch) => hasZwj(ch) ? cps(ch) : cps(ch).filter(c => c !== "fe0f");
+// Noto and Blobmoji: FE0F never appears.
+const noVs = (ch) => cps(ch).filter(c => c !== "fe0f");
+
+const SETS = [
+  { key: "sys",  name: "system",           sub: "your OS",           font: "f-sys"  },
+  { key: "noto", name: "Noto Color Emoji", sub: "Google, webfont",   font: "f-noto" },
+  { key: "mono", name: "Noto Emoji",       sub: "monochrome",        font: "f-mono" },
+  { key: "twe",  name: "Twemoji",          sub: "Twitter / jdecked",
+    url: (ch) => `https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/${trimVs(ch).join("-")}.svg`,
+    alt: (ch) => `https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/${noVs(ch).join("-")}.svg` },
+  { key: "omc",  name: "OpenMoji",         sub: "colour",
+    url: (ch) => `https://cdn.jsdelivr.net/npm/openmoji@15.0.0/color/svg/${trimVs(ch).join("-").toUpperCase()}.svg`,
+    alt: (ch) => `https://cdn.jsdelivr.net/npm/openmoji@15.0.0/color/svg/${cps(ch).join("-").toUpperCase()}.svg` },
+  { key: "omb",  name: "OpenMoji",         sub: "black",
+    url: (ch) => `https://cdn.jsdelivr.net/npm/openmoji@15.0.0/black/svg/${trimVs(ch).join("-").toUpperCase()}.svg`,
+    alt: (ch) => `https://cdn.jsdelivr.net/npm/openmoji@15.0.0/black/svg/${cps(ch).join("-").toUpperCase()}.svg` },
+  { key: "noto2", name: "Noto Emoji",      sub: "SVG source",
+    url: (ch) => `https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/svg/emoji_u${noVs(ch).join("_")}.svg`,
+    alt: (ch) => `https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/svg/emoji_u${cps(ch).join("_")}.svg` },
+  { key: "blob", name: "Blobmoji",         sub: "the old Android blobs",
+    url: (ch) => `https://cdn.jsdelivr.net/gh/C1710/blobmoji@main/svg/emoji_u${noVs(ch).join("_")}.svg`,
+    alt: (ch) => `https://cdn.jsdelivr.net/gh/C1710/blobmoji@main/svg/emoji_u${cps(ch).join("_")}.svg` },
+];
+
+// --------------------------------------------------- font coverage, roughly
+// A browser substitutes a missing glyph silently, so "it looked fine" proves
+// nothing about the font column. Draw the character in the requested font with
+// a LAST-RESORT fallback that has no emoji at all, then draw it in that
+// fallback alone: identical pixels mean the requested font never got a look in.
+// Good enough to count with, not proof — hence the "~" in the head.
+const probe = document.createElement("canvas");
+probe.width = probe.height = 48;
+const pctx = probe.getContext("2d", { willReadFrequently: true });
+function paint(ch, family) {
+  pctx.clearRect(0, 0, 48, 48);
+  pctx.font = `32px ${family}`;
+  pctx.textBaseline = "top";
+  pctx.fillStyle = "#fff";
+  pctx.fillText(ch, 2, 6);
+  return pctx.getImageData(0, 0, 48, 48).data.join(",");
+}
+const covered = (ch, family) => paint(ch, `"${family}", "__none__"`) !== paint(ch, `"__none__"`);
+
+// A font cell that does not render can fail two DIFFERENT ways, and calling
+// both "missing" is wrong. Noto Emoji (monochrome) is the case that proves it:
+// U+2600 alone IS covered, U+2600 U+FE0F is not. The glyph is present — VARIATION
+// SELECTOR-16 requests COLOUR presentation, a monochrome font declines, and the
+// browser quietly falls back to the system set. All 19 of the table's VS16
+// elements do this, which is why that column reported exactly 19 "missing"
+// before this told the two apart. It matters: pinning that font would leave 19
+// tiles rendering in a different set from the other 164.
+const VS = "️";
+function fontState(ch, family) {
+  if (covered(ch, family)) return "ok";
+  if (ch.includes(VS) && covered(ch.split(VS).join(""), family)) return "vs";
+  return "gone";
+}
+
+// ------------------------------------------------------------------- build
+// Declared before the build loop that fills it: the font probes cannot run
+// until the webfonts have loaded, so each font cell parks its work here.
+const fontChecks = [];
+const head = document.getElementById("head");
+const body = document.getElementById("body");
+const missing = Object.fromEntries(SETS.map(s => [s.key, 0]));
+// Images outstanding per set. A head reads "—" until its last one settles,
+// because "0 missing" and "nothing has loaded yet" must not look the same —
+// with lazy loading the second is what you see for most of the first minute.
+const pending = Object.fromEntries(SETS.map(s => [s.key, 0]));
+// glyph present, but VS16 sends the browser to another font anyway
+const vsFallback = Object.fromEntries(SETS.map(s => [s.key, 0]));
+const heads = {};
+
+head.innerHTML = `<th class="id">element</th>`;
+for (const s of SETS) {
+  const th = document.createElement("th");
+  th.innerHTML = `${s.name}<span class="sub">${s.sub}</span><span class="miss" data-k="${s.key}">—</span>`;
+  head.appendChild(th);
+  heads[s.key] = th.querySelector(".miss");
+}
+
+const rows = [];
+for (const [id, ch] of DATA) {
+  const tr = document.createElement("tr");
+  const seq = hasZwj(ch), vs = ch.includes("\ufe0f");  // VARIATION SELECTOR-16
+  tr.dataset.id = id;
+  tr.dataset.seq = seq || vs ? "1" : "";
+  const codes = cps(ch).map(c => "U+" + c.toUpperCase()).join(" ");
+  tr.innerHTML = `<td class="id"><b>${id}</b><i>${codes}` +
+    (seq ? ` <span class="tag">ZWJ</span>` : "") +
+    (vs ? ` <span class="tag vs">VS16</span>` : "") + `</i></td>`;
+
+  for (const s of SETS) {
+    const td = document.createElement("td");
+    td.className = "cell";
+    const box = document.createElement("div");
+    box.className = "glyph " + (s.font || "");
+    if (s.url) {
+      const img = document.createElement("img");
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.alt = "";
+      img.src = s.url(ch);
+      pending[s.key]++;
+      img.onload = () => settle(s.key);
+      img.onerror = () => {
+        const second = s.alt(ch);
+        if (img.src !== second && !img.dataset.tried) { img.dataset.tried = "1"; img.src = second; return; }
+        box.classList.add("gone");
+        box.textContent = "missing";
+        img.remove();
+        bump(s.key, tr);
+        settle(s.key);
+      };
+      box.appendChild(img);
+    } else {
+      box.textContent = ch;
+      // the system column IS the fallback, so it can never report a gap
+      if (s.key !== "sys") fontChecks.push([s, ch, tr]);
+    }
+    td.appendChild(box);
+    tr.appendChild(td);
+  }
+  rows.push(tr);
+  body.appendChild(tr);
+}
+
+function bump(key, tr) {
+  missing[key]++;
+  tr.dataset.gap = "1";
+  const el = heads[key];
+  el.textContent = `${missing[key]} missing`;
+  el.classList.add("bad");
+  apply();
+}
+
+// One image of an image set has finished, one way or the other. Only once the
+// LAST one has can a head say "complete" — until then a set with no failures
+// yet is indistinguishable from one that has not started.
+function settle(key) {
+  if (--pending[key]) return;
+  if (!missing[key]) heads[key].textContent = "complete";
+}
+
+// Font probes run after the webfonts land, or they all report "missing".
+document.fonts.ready.then(() => {
+  // one more frame: Chrome resolves the FontFaceSet slightly before it will
+  // actually paint the new faces into a canvas
+  requestAnimationFrame(() => {
+    for (const [s, ch, tr] of fontChecks) {
+      const family = s.key === "noto" ? "Noto Color Emoji" : "Noto Emoji";
+      const state = fontState(ch, family);
+      if (state === "gone") bump(s.key, tr);
+      else if (state === "vs") vsFallback[s.key]++;
+    }
+    // "~" throughout: this column is a canvas heuristic, not a 404
+    for (const s of SETS) {
+      if (!s.font || s.key === "sys") continue;
+      const bits = [];
+      if (missing[s.key]) bits.push(`~${missing[s.key]} missing`);
+      if (vsFallback[s.key]) bits.push(`~${vsFallback[s.key]} VS16 fall back`);
+      heads[s.key].textContent = bits.join(" · ") || "~complete";
+      heads[s.key].classList.toggle("warn", !missing[s.key] && vsFallback[s.key] > 0);
+    }
+    heads.sys.textContent = "not measurable";
+  });
+});
+
+// ----------------------------------------------------------------- controls
+let gapOnly = false, seqOnly = false, term = "";
+function apply() {
+  let shown = 0;
+  for (const tr of rows) {
+    const ok = (!gapOnly || tr.dataset.gap) &&
+               (!seqOnly || tr.dataset.seq) &&
+               (!term || tr.dataset.id.includes(term));
+    tr.hidden = !ok;
+    if (ok) shown++;
+  }
+  document.getElementById("count").textContent =
+    `  ${shown} of ${DATA.length} elements × ${SETS.length} sets`;
+}
+
+const sizeBtns = [...document.querySelectorAll("[data-size]")];
+function setSize(px) {
+  document.documentElement.style.setProperty("--cell", px + "px");
+  sizeBtns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.size === String(px))));
+}
+sizeBtns.forEach(b => (b.onclick = () => setSize(+b.dataset.size)));
+
+const GROUNDS = [["tile", "#0c1122"], ["page", "#05060f"], ["white", "#ffffff"], ["mid grey", "#808080"]];
+let gi = 0;
+const bgBtn = document.getElementById("bg");
+bgBtn.onclick = () => {
+  gi = (gi + 1) % GROUNDS.length;
+  document.documentElement.style.setProperty("--ground", GROUNDS[gi][1]);
+  bgBtn.textContent = "ground: " + GROUNDS[gi][0];
+};
+
+const gapBtn = document.getElementById("gapOnly");
+gapBtn.onclick = () => { gapOnly = !gapOnly; gapBtn.setAttribute("aria-pressed", String(gapOnly)); apply(); };
+const seqBtn = document.getElementById("seqOnly");
+seqBtn.onclick = () => { seqOnly = !seqOnly; seqBtn.setAttribute("aria-pressed", String(seqOnly)); apply(); };
+const filter = document.getElementById("filter");
+filter.oninput = () => { term = filter.value.trim().toLowerCase(); apply(); };
+// Images are lazy so the page opens fast and the CDN is not hit with 900
+// requests at once — but a head cannot say "complete" until its last image has
+// settled, and a lazy image below the fold never does. This is the opt-in.
+const loadAll = document.getElementById("loadAll");
+loadAll.onclick = () => {
+  loadAll.disabled = true;
+  loadAll.textContent = "loading…";
+  const imgs = [...document.querySelectorAll("td.cell img")];
+  imgs.forEach(i => (i.loading = "eager"));
+  const done = () => {
+    if (imgs.some(i => !i.complete)) return;
+    loadAll.textContent = "all loaded";
+  };
+  imgs.forEach(i => { i.addEventListener("load", done); i.addEventListener("error", done); });
+  done();
+};
+const notes = document.getElementById("notes"), notesBtn = document.getElementById("notesBtn");
+notesBtn.onclick = () => {
+  notes.classList.toggle("off");
+  notesBtn.textContent = notes.classList.contains("off") ? "show notes" : "hide notes";
+};
+
+addEventListener("keydown", ev => {
+  if (ev.target === filter) { if (ev.key === "Escape") { filter.value = ""; term = ""; apply(); filter.blur(); } return; }
+  const k = ev.key.toLowerCase();
+  if (k === "1") setSize(32);
+  else if (k === "2") setSize(62);
+  else if (k === "3") setSize(110);
+  else if (k === "b") bgBtn.click();
+  else if (k === "g") gapBtn.click();
+  else if (k === "z") seqBtn.click();
+  else if (k === "l") loadAll.click();
+  else if (k === "c") notesBtn.click();
+  else if (k === "/") { ev.preventDefault(); filter.focus(); }
+});
+
+// The thead sticks below the page header, whose height changes when the notes
+// are hidden and when the button bar wraps — so measure it rather than guess.
+const headerEl = document.querySelector("header");
+const syncHead = () =>
+  document.documentElement.style.setProperty("--head-h", headerEl.offsetHeight + "px");
+new ResizeObserver(syncHead).observe(headerEl);
+syncHead();
+
+apply();
+</script>
+</body>
+</html>
