@@ -948,9 +948,9 @@ check(`alt: Sun+Rain forges the Rainbow in ${RAINBOW_ONLY.length}, no Prism invo
   s.found.includes("rainbow") && !s.found.includes("prism") &&
   s.moves === RAINBOW_ONLY.length);
 check("alt: the intuitive pairs resolve too",
-  JSON.stringify(['air+water', 'air+stone', 'fire+ice', 'air+penguin',
+  JSON.stringify(['air+water', 'air+stone', 'fire+ice',
     'dog+wolf', 'charcoal+fire', 'air+fire', 'grey+sky'].map((k) => RECIPE[k])) ===
-  '["cloud","sand","water","bird","dog","ash","fire","cloud"]');
+  '["cloud","sand","water","dog","ash","fire","cloud"]');
 check("alt: a Volcano has the same Diamond in it as the Lava it pours",
   RECIPE['charcoal+lava'] === "diamond" &&
   RECIPE['charcoal+volcano'] === "diamond");
@@ -1075,10 +1075,13 @@ check("alt: Glass + Electricity lights a Light Bulb, the only route to one",
 check("alt: Rain + Electricity is a Storm too, skipping the Lightning",
   RECIPE['electricity+rain'] === "storm" &&
   RECIPE['lightning+rain'] === "storm");
-check("alt: the Sky is blue Air, and the Sun is lit from it or painted on it",
+// The third route comes at the Sun from the other end of the sky: not lit or
+// painted onto our own, but picked out as the Star the World happens to orbit.
+check("alt: the Sky is blue Air, and the Sun is lit from it, painted on it, or a Star with a World at it",
   RECIPE['air+blue'] === "sky" &&
   RECIPE['fire+sky'] === "sun" &&
   RECIPE['sky+yellow'] === "sun" &&
+  RECIPE['star+world'] === "sun" &&
   RECIPE['air+sun'] === undefined);
 check("alt: Fire needs Air to catch, and Orange no longer lights it",
   RECIPE['air+red'] === "fire" &&

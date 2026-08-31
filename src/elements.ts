@@ -310,7 +310,7 @@ export const ELEMENTS = ([
   { id:"hourglass", e:"⌛",
     r:[["glass","sand"]] },
   { id:"sun", e:"☀️",
-    r:[["fire","sky"],["yellow","sky"]] },
+    r:[["fire","sky"],["yellow","sky"],["star","world"]] },
   // Violet + Sky or Black + Sky, and the gradient is exactly that: the violet
   // at the top edge, falling to the Black the other route mixed in. Stars
   // unchanged.
@@ -563,8 +563,10 @@ export const ELEMENTS = ([
     r:[["fire","human"],["human","red"]] },
   { id:"artist", e:"\u{1F9D1}\u{200D}\u{1F3A8}",
     r:[["human","palette"]] },
+  { id:"brush", e:"\u{1F58C}\u{FE0F}",
+    r:[["artist","tool"]] },
   { id:"painting", e:"\u{1F5BC}\u{FE0F}",
-    r:[["artist","palette"],["palette","paper"],["artist","paper"]] },
+    r:[["artist","brush"],["brush","palette"],["artist","paper"]] },
   // with the Artist and the Painting because it is the third colour-carrying
   // person, and because "human" is the string every entry in this stretch uses
   { id:"clown", e:"\u{1F921}",
@@ -614,6 +616,10 @@ export const ELEMENTS = ([
     r:[["human","moon"],["human","star"]] },
   { id:"zombie", e:"\u{1F9DF}",
     r:[["human","green"],["ghost","human"]] },
+  { id:"skull", e:"\u{1F480}",
+    r:[["bone","human"]] },
+  { id:"x-ray", e:"\u{1FA7B}",
+    r:[["bone","doctor"]] },
   { id:"teacher", e:"\u{1F9D1}\u{200D}\u{1F3EB}",
     r:[["book","human"],["eyeglasses","human"]] },
   { id:"school", e:"\u{1F3EB}",
@@ -633,7 +639,7 @@ export const ELEMENTS = ([
   { id:"syringe", e:"\u{1F489}",
     r:[["doctor","tool"]] },
   { id:"bird", e:"\u{1F426}",
-    r:[["air","animal"],["air","penguin"]] },
+    r:[["air","animal"]] },
   { id:"chick", e:"\u{1F425}",
     // Four ways through an Egg, and then the plain one: a yellow bird is a
     // chick, the same sentence the Flamingo and the Swan say in their colours.
@@ -700,6 +706,8 @@ export const ELEMENTS = ([
   // peacock. "bird" leads both pairs.
   { id:"peacock", e:"\u{1F99A}",
     r:[["bird","rainbow"],["bird","turquoise"]] },
+  { id:"eagle", e:"\u{1F985}",
+    r:[["bird","crown"]] },
   // AN ABSTRACTION, not a bird, and the pair is why: the branch and the bird
   // compose into the idea, which is how every abstraction here is built — the
   // Party out of beer and pizza, the Wedding and the School and the Circus out
@@ -749,6 +757,8 @@ export const ELEMENTS = ([
     r:[["acid","metal"],["kite","lightning"]] },
   { id:"light bulb", e:"\u{1F4A1}",
     r:[["electricity","glass"]] },
+  { id:"plug", e:"\u{1F50C}",
+    r:[["copper","electricity"]] },
   { id:"ice", e:"\u{1F9CA}",
     r:[["cyan","water"],["water","night"]] },
   { id:"snow", e:"\u{1F328}️",
@@ -939,7 +949,7 @@ export const ELEMENTS = ([
   { id:"book", e:"\u{1F4D6}",
     r:[["paper","pencil"],["teacher","tool"]] },
   { id:"palette", e:"\u{1F3A8}",
-    r:[["paper","rainbow"]] },
+    r:[["rainbow","wood"]] },
   { id:"kite", e:"\u{1FA81}",
     r:[["air","paper"]] },
   { id:"scissors", e:"\u{2702}\u{FE0F}",
