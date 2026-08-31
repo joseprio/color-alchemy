@@ -1,0 +1,406 @@
+<!doctype html>
+<!-- COLOR ALCHEMY — what the Wheat should be drawn with. Open it in a browser;
+     nothing to build. Press 1-6 to jump to an option, C to hide the notes.
+
+     THE COMPLAINT IS CORRECT, AND UNICODE IS THE REASON. The Wheat currently
+     ships U+1F33E, whose name is SHEAF OF RICE — not wheat. Every major vendor
+     draws it as rice: green-to-gold stalks with grains that DROOP away from a
+     bent stem, because that is what a rice panicle does. Wheat is the opposite
+     silhouette — a stiff upright ear with grains pressed tight against the
+     stalk and awns (the long bristles) spraying past the tip. At 32px the
+     droop is the only thing you can read, so U+1F33E says "rice" or, worse,
+     just "grass" at tile size.
+
+     There is no wheat emoji. U+1F33E is the whole of Unicode's answer, and the
+     near neighbours are worse: U+1F33F HERB and U+1F331 SEEDLING are both
+     green nursery plants with no grain at all. So this is the same situation
+     as the Oasis, the Rust and the Sulfur — an element the emoji set cannot
+     say — and the table already has the mechanism for it: the `s:` field, an
+     inline SVG body on a 0 0 32 32 viewBox. Exactly one element uses it today
+     (Matter), so this would be the second.
+
+     WHY U+1F33E IS STILL FINE ON THE FARMER. It is worth being clear that the
+     glyph is not being called a mistake everywhere it appears: the Farmer is
+     \u{1F9D1}\u{200D}\u{1F33E}, where the grain is a PROP held by a person and
+     only has to read as "crop". Standing alone as the crop itself, at 32px,
+     with Corn and Popcorn two rows away, it has to do much more work than that.
+
+     THE RENDERER CONSTRAINTS, read out of iconHtml() in src/game.ts:
+
+       if (el.s)            -> <svg class="s" viewBox="0 0 32 32"
+                                    style="--g:(el.c || #8a5cf0)55"> + el.s
+       else if (el.c||el.bg)-> <div class="s" style="background:...">
+       else                 -> el.e
+
+     Two things follow. (1) AN EMOJI CANNOT HAVE A GLOW: the swatch branches
+     come first, so option 01 ships unlit while every SVG option carries the
+     box-shadow every other swatch has. (2) ONE ARTWORK MUST WORK at all three
+     sizes the game renders `.s` at — 32px on a board tile, 62px in the
+     discovery card's ingredient row, 110px as the discovery hero. Every option
+     below is shown at all three, and the 32px column is the one that decides.
+
+     COSTS, AND THE ESTIMATE THAT WAS WRONG BY THREE TIMES. Two options were
+     measured with real `npm run build` runs against the 13191 B baseline the
+     tree stands at with the Wheat and the Bread in it — 278 elements, 993
+     recipe ids, 121 B of headroom:
+
+       03  the plain ear   +104 B   13295, fits with 17 B left
+       04  the awned ear   +146 B   13337, OVER BUDGET by 25 B
+
+     Both were first estimated from the raw character count at the table's own
+     average of 1.86 bits per character, which gave ~55 B and ~75 B. That
+     estimate is worthless here and the reason is worth keeping: the table
+     averages 1.86 bits/char because it is overwhelmingly REPEATED text — the
+     same ids, the same recipe brackets, the same emoji escape prefixes. An
+     SVG is none of that. It is novel structured markup, and it packs at about
+     2.7 bits/char, nearer the synth's 3.76 than the table's 1.86. Matter's
+     SVG is the only precedent in the file and it was paid for long ago.
+
+     SO: DO NOT ESTIMATE SVG FROM THE TABLE RATE. Budget ~2.7 bits/char, which
+     is one byte for every three raw characters, and then measure it anyway.
+     The 05 and 06 estimates below are still estimates and are marked as such;
+     scale them by the same correction and neither is affordable today.
+
+     THE defs/use ARGUMENT still holds, it just does not rescue anything.
+     Options 05 and 06 are two and three ears, and drawing them out twice over
+     would cost twice over, so the ear goes into a defs once and comes back as
+     a use element — which makes the second and third ear cost about forty
+     characters each instead of two hundred. A real saving, and still not
+     enough: the FIRST ear is the expensive one, and 05 and 06 both pay for it
+     before they start. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy — the Wheat icon</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #2a2408 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #16220a 0%, transparent 60%);
+    background-attachment: fixed;
+    padding: 28px 20px 60px;
+  }
+  h1 { font-size: 18px; letter-spacing: .18em; margin: 0 0 6px; color: #fff; font-weight: 700; }
+  h2 { font-size: 14px; letter-spacing: .12em; margin: 0; color: #fff; font-weight: 700; }
+  .lede { color: #8fb4d8; max-width: 90ch; margin: 0 0 8px; }
+  .lede b { color: #cfe3ff; }
+  .keys { color: #55708e; margin: 10px 0 22px; }
+  kbd { background: #101528; border: 1px solid #2a3555; border-radius: 4px;
+        padding: 1px 6px; color: #8fb4d8; }
+  .wrap { max-width: 1100px; }
+
+  /* ---- the game's own tile rules, copied out of src/style.css verbatim ---- */
+  .t {
+    width: 92px; padding: 10px 4px 8px; text-align: center;
+    background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+    user-select: none;
+  }
+  .o { height: 42px; display: flex; align-items: center; justify-content: center;
+       font-size: 32px; line-height: 1; }
+  .s { width: 32px; height: 32px; border-radius: 6px;
+       box-shadow: 0 0 10px 1px var(--g, transparent); }
+  .n { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
+  .g62 .s { width: 62px; height: 62px; border-radius: 12px; }
+  .g62 { font-size: 62px; line-height: 1; }
+  .r110 .s { width: 110px; height: 110px; border-radius: 22px; }
+  .r110 { font-size: 110px; line-height: 1; }
+
+  /* ---- experiment chrome ---- */
+  .card { border: 1px solid #223052; border-radius: 12px; background: #080c1acc;
+          padding: 16px 18px; margin: 0 0 20px; scroll-margin-top: 20px; }
+  .card.on { border-color: #3d5584; box-shadow: 0 0 0 1px #3d558444; }
+  .hd { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .num { color: #55708e; }
+  .cost { margin-left: auto; color: #ffd75e; font-size: 13px; }
+  .cost small { color: #55708e; }
+  .cost.est { color: #8fb4d8; }
+  .sub { color: #8fb4d8; margin: 2px 0 14px; max-width: 88ch; }
+  .row { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; margin: 0 0 14px; }
+  .cell { text-align: center; }
+  .cap { color: #55708e; font-size: 11px; margin-top: 6px; }
+  .strip { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;
+           padding: 12px; border: 1px dashed #1b2540; border-radius: 10px;
+           background: #05070fcc; }
+  .strip .t { width: 76px; }
+  .me { border-color: #ffd75e88 !important; background: #14120acc !important; }
+  .notes { margin: 14px 0 0; padding: 0; list-style: none; }
+  .notes li { margin: 4px 0; padding-left: 18px; text-indent: -18px; color: #a8c4e4; }
+  .notes li.y::before { content: "+ "; color: #5fd08a; }
+  .notes li.n::before { content: "- "; color: #ff7b72; }
+  .notes li.i::before { content: "? "; color: #8fb4d8; }
+  .hide .notes { display: none; }
+  code { color: #ffd75e; background: #101528; border-radius: 4px; padding: 1px 5px;
+         word-break: break-all; }
+  pre { margin: 12px 0 0; padding: 10px 12px; background: #05070f; border: 1px solid #1b2540;
+        border-radius: 8px; overflow-x: auto; color: #a8c4e4; font-size: 12px; }
+  pre b { color: #ffd75e; font-weight: 400; }
+  .stage { color: #a8c4e4; background: #101528; border: 1px solid #2a3555;
+           border-radius: 8px; padding: 10px 12px; margin: 0 0 16px; max-width: 88ch; }
+  .stage b { color: #ffd75e; }
+  .verdict { border: 1px solid #3d5584; background: #0a1428cc; }
+  .verdict h2 { color: #ffd75e; }
+  .problem { border: 1px solid #4a4416; background: #12110acc; }
+  .problem h2 { color: #ffd75e; }
+  table { border-collapse: collapse; margin: 10px 0 0; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 18px 4px 0; vertical-align: top; }
+  th { color: #55708e; font-weight: 400; }
+  .win td { color: #ffd75e; }
+  td.no { color: #ff7b72; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>THE WHEAT ICON</h1>
+<p class="lede">U+1F33E is <b>SHEAF OF RICE</b>, and it is drawn like one. Six
+ways to fix that, four of them <code>s:</code> SVGs in the flat Noto manner —
+solid fills, no outline, no gradient, one readable silhouette. Each is shown at
+the three sizes the game renders <code>.s</code> at, then dropped in beside the
+crops it has to stay distinct from.</p>
+<p class="keys"><kbd>1</kbd>-<kbd>6</kbd> jump to an option &nbsp;·&nbsp;
+<kbd>C</kbd> toggle notes</p>
+
+<div class="card problem">
+  <div class="hd"><h2>WHAT IS ACTUALLY WRONG</h2></div>
+  <p class="sub">Rice droops, wheat stands. A rice panicle bends away from the
+  stem and the grains hang off it; a wheat ear is stiff and upright with the
+  grains pressed flat against the stalk and awns spraying past the tip. At
+  32&nbsp;px the bend is the only thing that survives, so U+1F33E reads
+  <em>rice</em> to anyone who knows the difference and <em>grass</em> to
+  everyone else.</p>
+  <p class="stage"><b>THE FARMER KEEPS IT, AND SHOULD.</b> The Farmer is
+  <code>\u{1F9D1}\u{200D}\u{1F33E}</code> — there the grain is a prop in a
+  person's hand and only has to read as "crop". This is only about the glyph
+  standing alone as the crop itself.</p>
+  <p class="stage"><b>THE SECOND SVG IN THE TABLE.</b> Matter is the first and
+  currently the only <code>s:</code> element. Everything an SVG option costs
+  here is the artwork alone — the <code>&lt;svg class="s" viewBox="0 0 32 32"&gt;</code>
+  wrapper is already in <code>iconHtml()</code> and is paid for.</p>
+</div>
+
+<div id="cards"></div>
+
+<div class="card verdict" id="v">
+  <div class="hd"><h2>VERDICT</h2>
+    <span class="cost">03 SHIPPED &mdash; 04 when there is room</span></div>
+  <p class="stage"><b>WHAT ACTUALLY SHIPPED: option 03</b>, the plain ear, at
+  13295 B with 17 B of headroom. The Wheat is the second <code>s:</code>
+  element in the table after Matter. The awns of option 04 are still the better
+  drawing and are still 25 B out of reach; the entry's comment in
+  <code>src/elements.ts</code> says so, so whoever frees those bytes knows what
+  to spend them on.</p>
+  <p class="sub"><b>Option 04 is the right artwork and it does not fit.</b> The
+  awns are not decoration — they are the single feature that separates wheat
+  from rice at 32&nbsp;px, and they cost three straight strokes. They also cost
+  <b>+146&nbsp;B</b>, which takes the page to 13337 and <b>25&nbsp;B over the
+  13312 budget</b>. Measured, not estimated.</p>
+  <p class="stage"><b>03 FITS, AND BARELY.</b> The same ear without the awns is
+  <b>+104&nbsp;B</b> &mdash; 13295, seventeen bytes of headroom left for
+  everything that comes after it. It is affordable in the arithmetic sense and
+  reckless in every other one, and what it buys is a generic grain: upright and
+  gold, which is a real improvement on rice, but not specifically wheat.</p>
+  <p class="stage"><b>THE ACTUAL RECOMMENDATION IS TO RE-FIT FIRST.</b>
+  <code>fn-order.json</code> and <code>rr-config.json</code> are both stale
+  right now and the reorder pass is switched off entirely, so every number on
+  this page was measured against a build that is leaving bytes on the floor.
+  The reorder alone has been worth <b>&minus;49&nbsp;B</b> historically. Run
+  <code>npm run fn-order-optimize</code> and
+  <code>npm run roadroller-optimize</code>, then re-measure 04: it needs 25 B
+  and the re-fit plausibly returns twice that. That is the order to do this in,
+  and it costs no artwork at all.</p>
+  <p class="stage"><b>05 AND 06 LOSE ON THEIR OWN MERITS</b>, budget aside. Two
+  ears and three ears are lovely at 110&nbsp;px and mush at 32&nbsp;px, which is
+  the size that decides. Keep them in mind for a Sheaf or a Harvest element
+  &mdash; the ear will already be drawn, and the
+  <code>&lt;defs&gt;/&lt;use&gt;</code> construction makes each extra copy cost
+  about forty characters.</p>
+  <p class="stage"><b>AND IF NOTHING FITS</b>, the honest fallback is not 02 —
+  it is to leave the Wheat on U+1F33E <em>knowingly</em> and write the reason
+  down, the way the table records every other trade it takes. "The glyph is
+  named for the wrong grain and we could not afford 104 B to say so" is a
+  perfectly good comment, and it is the one this experiment exists to let
+  someone write.</p>
+</div>
+
+</div>
+<script>
+// The palette: Noto's grain golds, plus the darker stalk tone. Kept in one
+// place so every option is arguing about SHAPE rather than about colour.
+const GOLD = "#e9a53f", LIT = "#f6cd76", STALK = "#b9782a";
+
+// The ear, as a reusable body. Grains are ellipses rotated off a centre stalk:
+// four in opposed pairs, one upright at the tip.
+const ear = (x, y, rot) =>
+  "<g transform='translate(" + x + " " + y + ")rotate(" + rot + ")'>" +
+  "<rect x='-1.2' y='-1' width='2.4' height='16' rx='1.2' fill='" + STALK + "'/>" +
+  "<g fill='" + GOLD + "'>" +
+  "<ellipse cx='-3.7' cy='4' rx='2.5' ry='3.9' transform='rotate(-30 -3.7 4)'/>" +
+  "<ellipse cx='3.7' cy='4' rx='2.5' ry='3.9' transform='rotate(30 3.7 4)'/>" +
+  "<ellipse cx='-3.4' cy='-2' rx='2.5' ry='3.9' transform='rotate(-30 -3.4 -2)'/>" +
+  "<ellipse cx='3.4' cy='-2' rx='2.5' ry='3.9' transform='rotate(30 3.4 -2)'/>" +
+  "<ellipse cx='0' cy='-7.5' rx='2.5' ry='4.2'/></g></g>";
+
+// The awns: three strokes past the tip, the feature that says wheat not rice.
+const awns =
+  "<g stroke='" + LIT + "' stroke-width='1.1' stroke-linecap='round' fill='none'>" +
+  "<path d='M16 5V1M12.6 6.4 10.4 2.8M19.4 6.4 21.6 2.8'/></g>";
+
+// --- the options ----------------------------------------------------------
+const OPTS = [
+  {
+    t: "U+1F33E, AS IT SHIPS TODAY", k: "emoji", v: "\u{1F33E}",
+    cost: "baseline", est: false,
+    sub: "SHEAF OF RICE. Whatever your OS draws for it — on most vendors a " +
+         "bent, drooping, half-green panicle. This is the incumbent, shown so " +
+         "the rest have something to beat.",
+    notes: [
+      ["y", "Zero bytes, and it is already in the file inside the Farmer's ZWJ sequence."],
+      ["n", "It is rice. The name says rice and the artwork draws rice."],
+      ["n", "No glow: iconHtml reaches el.e only after both swatch branches, so an emoji tile ships unlit while every neighbour is lit."],
+      ["n", "Green at tile size on most vendors, which puts it with Plant and Field rather than with Corn."],
+    ],
+  },
+  {
+    t: "U+1F331 SEEDLING", k: "emoji", v: "\u{1F331}",
+    cost: "baseline", est: false,
+    sub: "The nearest alternative Unicode offers, shown to close the question " +
+         "rather than because it is a candidate.",
+    notes: [
+      ["n", "A two-leaf sprout. No grain, no ear, no gold — it is a younger plant, not a crop."],
+      ["n", "Collides with Plant, which is the thing Wheat is supposed to be one rank above."],
+      ["i", "U+1F33F HERB has the same problem and is not worth its own card."],
+    ],
+  },
+  {
+    t: "SVG &mdash; THE PLAIN EAR", k: "svg", v: ear(16, 14, 0),
+    cost: "+104 B", est: false,
+    sub: "One upright ear: a stalk with four grains in opposed pairs and one " +
+         "at the tip. Flat fills, no outline, no gradient — the Noto manner, " +
+         "and the same construction Matter uses.",
+    notes: [
+      ["y", "Upright and gold, which is the whole complaint answered."],
+      ["y", "Reads at 32px: five bold shapes and nothing thinner than 2.4px."],
+      ["y", "Carries a glow like every other swatch, unlike either emoji."],
+      ["n", "Without awns it is a generic grain — closer to barley or to rice standing up straight."],
+    ],
+  },
+  {
+    t: "SVG &mdash; THE AWNED EAR", k: "svg", v: awns + ear(16, 14, 0),
+    cost: "+146 B &mdash; OVER", est: false, me: true,
+    sub: "The same ear with three awns past the tip. The awns are the one " +
+         "feature that separates wheat from every other grain at a glance, " +
+         "and they cost three straight strokes.",
+    notes: [
+      ["y", "Says WHEAT rather than GRAIN, which is the difference the whole page is about."],
+      ["y", "The strokes read at 32px because they break the silhouette against the tile's dark ground."],
+      ["y", "Still one silhouette at 110px rather than a busy one."],
+      ["i", "The awns sit BEHIND the grains in paint order, so they read as coming out of the ear rather than lying on it."],
+    ],
+  },
+  {
+    t: "SVG &mdash; THE CROSSED PAIR", k: "svg",
+    v: "<defs><g id='e'>" + ear(0, 0, 0) + "</g></defs>" +
+       "<use href='#e' transform='translate(11 15)rotate(-18)'/>" +
+       "<use href='#e' transform='translate(21 15)rotate(18)'/>",
+    cost: "est ~140 B", est: true,
+    sub: "Two ears crossed, the agricultural glyph. Drawn once into a " +
+         "&lt;defs&gt; and stamped twice with &lt;use&gt;, so the second ear " +
+         "costs about forty characters rather than two hundred.",
+    notes: [
+      ["y", "The <defs>/<use> construction is the real finding here: a second copy of a shape is nearly free."],
+      ["y", "Unmistakably a crop at 110px."],
+      ["n", "At 32px the two ears overlap into one gold mass and the crossing disappears."],
+      ["n", "Reads as a harvest or a farm BADGE rather than as the plant itself."],
+    ],
+  },
+  {
+    t: "SVG &mdash; THE SHEAF", k: "svg",
+    v: "<defs><g id='e2'>" + ear(0, 0, 0) + "</g></defs>" +
+       "<use href='#e2' transform='translate(16 13)'/>" +
+       "<use href='#e2' transform='translate(9 16)rotate(-22)'/>" +
+       "<use href='#e2' transform='translate(23 16)rotate(22)'/>" +
+       "<rect x='11' y='24' width='10' height='3.4' rx='1.7' fill='" + STALK + "'/>",
+    cost: "est ~180 B", est: true,
+    sub: "Three ears and a binding band — what U+1F33E is actually named " +
+         "after, drawn as wheat instead of as rice.",
+    notes: [
+      ["y", "The most literal answer to the glyph's own name."],
+      ["n", "Three ears at 32px is a gold blob with a stripe under it."],
+      ["n", "The dearest of the six, and the extra bytes buy detail only the 110px hero can show."],
+      ["i", "Worth remembering if a Harvest or Sheaf element is ever wanted — the ear is already drawn."],
+    ],
+  },
+];
+
+// --- the crops it has to stay distinct from -------------------------------
+// Field's bg is copied verbatim out of src/elements.ts.
+const FIELD_BG =
+  "linear-gradient(180deg, #a8dbff 0%, #7ec8ff 46%, #5fb54a 46%, #3f8c36 100%)";
+const NEIGHBOURS = [
+  { n: "Corn", e: "\u{1F33D}" },
+  { n: "Popcorn", e: "\u{1F37F}" },
+  { n: "Bread", e: "\u{1F35E}" },
+  { n: "Field", bg: FIELD_BG, c: "#5fb54a" },
+  { n: "Plant", e: "\u{1F33F}" },
+];
+
+const svgWrap = (body, size) =>
+  "<svg class='s' viewBox='0 0 32 32' style='--g:" + GOLD + "55" +
+  (size ? ";width:" + size + "px;height:" + size + "px" : "") + "'>" + body + "</svg>";
+
+// iconHtml()'s own branch order, reproduced so the preview cannot drift from
+// the game: s first, then c/bg, then e.
+const icon = (o) =>
+  o.k === "svg" ? svgWrap(o.v, 0)
+  : o.bg ? "<div class='s' style='background:" + o.bg + ";--g:" + o.c + "55'></div>"
+  : o.e || o.v;
+
+const tile = (o, name) =>
+  "<div class='t" + (o.me ? " me" : "") + "'><div class='o'>" + icon(o) +
+  "</div><div class='n'>" + (name || "Wheat") + "</div></div>";
+
+const cells = (o) => {
+  const at = (cls, cap) =>
+    "<div class='cell'><div class='" + cls + "'>" + icon(o) + "</div>" +
+    "<div class='cap'>" + cap + "</div></div>";
+  return "<div class='row'>" +
+    "<div class='cell'>" + tile(o) + "<div class='cap'>32px &mdash; board tile</div></div>" +
+    at("g62", "62px &mdash; card row") +
+    at("r110", "110px &mdash; discovery hero") +
+    "</div>";
+};
+
+document.getElementById("cards").innerHTML = OPTS.map((o, i) => {
+  const num = String(i + 1).padStart(2, "0");
+  const strip = "<div class='strip'>" + tile(o) +
+    NEIGHBOURS.map((n) => tile(n, n.n)).join("") + "</div>";
+  const paste = o.k === "svg"
+    ? "<pre>{ id:\"wheat\", <b>c:\"" + GOLD + "\"</b>,\n    <b>s:</b>\"" +
+      o.v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "\\&quot;") +
+      "\",\n    r:[[\"field\",\"yellow\"],[\"field\",\"sun\"]] },</pre>"
+    : "<pre>{ id:\"wheat\", <b>e:</b>\"\\u{" +
+      o.v.codePointAt(0).toString(16).toUpperCase() +
+      "}\",\n    r:[[\"field\",\"yellow\"],[\"field\",\"sun\"]] },</pre>";
+  return "<div class='card' id='o" + (i + 1) + "'>" +
+    "<div class='hd'><span class='num'>" + num + "</span><h2>" + o.t + "</h2>" +
+    "<span class='cost" + (o.est ? " est" : "") + "'>" + o.cost + "</span></div>" +
+    "<p class='sub'>" + o.sub + "</p>" + cells(o) + strip +
+    "<ul class='notes'>" + o.notes.map(([k, s]) => "<li class='" + k + "'>" + s + "</li>").join("") + "</ul>" +
+    paste + "</div>";
+}).join("");
+
+addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "c") { document.body.classList.toggle("hide"); return; }
+  const n = +e.key;
+  if (n >= 1 && n <= OPTS.length) {
+    document.querySelectorAll(".card.on").forEach((c) => c.classList.remove("on"));
+    const el = document.getElementById("o" + n);
+    el.classList.add("on");
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+</script>
+</body>
+</html>

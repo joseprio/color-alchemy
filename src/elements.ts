@@ -1,8 +1,8 @@
 // The element tree. THERE IS NO n FIELD ANY MORE: the display name is DERIVED
 // from the id, one capital per word, and the id carries whatever spacing or
 // casing that takes — "teddy bear" -> "Teddy Bear", and "uFO" -> "UFO", which
-// is the one acronym and the reason the derivation only ever touches a word's
-// first letter. That is the whole trick: a written-out name is a NEAR-MISS
+// is one of the two acronyms ("iD" -> "ID" is the other) and the reason the
+// derivation only ever touches a word's first letter. That is the whole trick: a written-out name is a NEAR-MISS
 // repeat of a string roadroller has already seen, and a near miss costs real
 // bits where an exact repeat costs almost none. Dropping the derivable ones was
 // worth ~380 B packed; dropping the last nine, by spacing their ids, was worth
@@ -211,6 +211,17 @@ export const ELEMENTS = ([
     r:[["doctor","house"]] },
   { id:"hut", e:"\u{1F6D6}",
     r:[["house","wood"],["human","wood"]] },
+  // THE RARE-STRING RULE LOSES THIS ONE, measured rather than assumed. "gold"
+  // is four occurrences against "house"'s thirteen, so the Window's comment
+  // above says to file this with the Gold — and doing that costs 15 B, 13136
+  // against 13151. The rule is about what a recipe's ingredients cost to
+  // predict, and it is outweighed here by where the ENTRY sits: up beside the
+  // Gold this lands between the metals and the water run, splitting two runs
+  // to join one string, and every element after it takes a shifted two-char
+  // code for the trouble. Down here it is the fourth building off the House,
+  // behind the Window, the Hospital and the Hut, and it costs nothing at all.
+  { id:"bank", e:"\u{1F3E6}",
+    r:[["gold","house"]] },
   { id:"beer", e:"\u{1F37A}",
     r:[["gold","water"]] },
   // Blood TAKES Red + Water, the pair the Wine used to own. The Wine is not
@@ -349,9 +360,10 @@ export const ELEMENTS = ([
     r:[["lightning","water"],["sun","water"]] },
   { id:"alien", e:"\u{1F47D}",
     r:[["life","star"]] },
-  // The one acronym, and the id spells it: the derivation only ever uppercases
-  // a WORD'S FIRST LETTER, so "uFO" comes back out as "UFO" and the last n
-  // field in the table went with it.
+  // The first of the two acronyms, and the id spells it: the derivation only
+  // ever uppercases a WORD'S FIRST LETTER, so "uFO" comes back out as "UFO"
+  // and the last n field in the table went with it. The iD, down in the paper
+  // run, is spelled the same way.
   { id:"uFO", e:"\u{1F6F8}",
     r:[["alien","sky"]] },
   { id:"jellyfish", e:"\u{1FABC}",
@@ -499,12 +511,47 @@ export const ELEMENTS = ([
     r:[["chef","fish"]] },
   { id:"french fries", e:"\u{1F35F}",
     r:[["potato","chef"],["potato","cooking"]] },
+  // Bread + Cheese is what a pizza IS, where Cheese + Cooking is only how it
+  // is made — and it gives the Pizza back a second route after the Fondue
+  // took Chef + Cheese below. The Bread is defined far down the table, past
+  // the Wheat it comes from; the reference reaches it because encode-recipes
+  // indexes the whole table before any of it is read.
   { id:"pizza", e:"\u{1F355}",
-    r:[["cheese","cooking"],["cheese","chef"]] },
+    r:[["cheese","cooking"],["bread","cheese"]] },
+  // THE PIZZA GAVE UP Chef + Cheese, the Eggplant's story exactly. RECIPE is
+  // last-write-wins over a sorted "a+b" key, so the pair could not be shared:
+  // whichever of the two sits LATER in the table takes it and the other's
+  // route dies silently, findable only by playing for it. That is also why
+  // this cannot go where the rare-string rule wants it — "cheese" is five
+  // occurrences against "chef"'s twelve, so the rule says file it up beside
+  // the Cheese at the top of the food run, and up there the Pizza would sit
+  // later and quietly take the pair back. The placement is FORCED, and it is
+  // the one line in this entry that is not a preference.
+  // Safe for the reason the Eggplant's was: the Pizza keeps Cheese + Cooking,
+  // and the Cooking is nowhere downstream of the Chef, so the route it keeps
+  // is a real one and not a branch of the one it lost.
+  // Beside the Champagne measured 1 B cheaper, 13173 against 13174. Not taken:
+  // a byte is inside the noise these placements swing by, and the entry that
+  // takes a pair off another one belongs where the reader can see it happen.
+  { id:"fondue", e:"\u{1FAD5}",
+    r:[["cheese","fire"],["cheese","chef"]] },
   { id:"party", e:"\u{1F389}",
     r:[["beer","pizza"],["beer","sushi"],["cheese","wine"],["burger","french fries"]] },
   { id:"fireworks", e:"\u{1F386}",
     r:[["party","sky"],["party","night"]] },
+  // THE SECOND PLACEMENT THE RARE-STRING RULE LOSES, and it lost the same way
+  // the Bank's did. "wine" is ONE occurrence in the file against "party"'s
+  // two, so the rule says file this up in the drinks run beside the Wine —
+  // and that costs 16 B, 13162 against 13146 down here beside the Fireworks,
+  // the Party's other consumer.
+  // The LATER of the two placements won here and on the Bank, and it looked
+  // like a rule — an entry inserted early shifts every following element's
+  // two-character code, one inserted late disturbs almost nothing. The
+  // Playground killed it: measured both ends, the EARLY placement won by 3 B.
+  // So there is no rule, only the A/B. Take it, keep the number, and see the
+  // Playground's comment for the third measurement.
+  { id:"champagne", e:"\u{1F37E}",
+    r:[["party","wine"]] },
   { id:"ice cream", e:"\u{1F368}",
     r:[["ice","milk"],["chef","ice"]] },
   { id:"salad", e:"\u{1F957}",
@@ -523,6 +570,13 @@ export const ELEMENTS = ([
     r:[["black","eyeglasses"]] },
   { id:"goggles", e:"\u{1F97D}",
     r:[["eyeglasses","scientist"],["acid","eyeglasses"]] },
+  // THE GOGGLES' FIRST CONSUMER: they had two routes in and nothing out, the
+  // same dead end the School sat in until the Student. Wearable + place, which
+  // is the Mermaid's move and the Astronaut's — what it is, and where it is
+  // worn. Placed against the Goggles because "goggles" appears once in the
+  // whole file and "sea" fourteen times.
+  { id:"diving mask", e:"\u{1F93F}",
+    r:[["goggles","sea"]] },
   // with the Eyeglasses, the table's other person-plus-material wearable. The
   // ground the shoe is for is EARTH: there is no separate ground element, and
   // Human + Stone is already the Statue.
@@ -530,12 +584,28 @@ export const ELEMENTS = ([
     r:[["human","earth"],["human","sand"]] },
   { id:"boot", e:"\u{1F97E}",
     r:[["mountain","shoe"],["field","shoe"],["park","shoe"]] },
+  // THE SCARF'S MOVE with the Shoe where the Human stands: Human + Yarn is
+  // what you wear it on, Shoe + Yarn is what you wear it in. Filed at the end
+  // of the shoe run rather than beside the Yarn because "shoe" is three
+  // occurrences against the Yarn's five — and it leaves the Boot's three
+  // "shoe" recipes hard against the Shoe that defines them.
+  { id:"socks", e:"\u{1F9E6}",
+    r:[["shoe","yarn"]] },
   { id:"climbing", e:"\u{1F9D7}",
     r:[["human","mountain"]] },
   { id:"racing", e:"\u{1F3C7}",
     r:[["horse","human"]] },
   { id:"skiing", e:"\u{26F7}\u{FE0F}",
     r:[["mountain","snow"]] },
+  // AGAINST THE SKIING FOR THE EMOJI, not for the ingredients: U+26F8 is the
+  // codepoint immediately after the Skiing's U+26F7 and wears the same VS16,
+  // so the whole escape is a near-exact repeat of the line above it. The Shoe
+  // it is built from is a dozen lines up either way — the shoe run and the
+  // sports run are neighbours — so there was nothing to lose by taking it.
+  // Both of these need the variation selector: the U+26Fx sports default to
+  // TEXT presentation, and without it a browser is free to draw the outline.
+  { id:"ice skate", e:"\u{26F8}\u{FE0F}",
+    r:[["ice","shoe"]] },
   { id:"ninja", e:"\u{1F977}",
     r:[["human","black"]] },
   { id:"wizard", e:"\u{1F9D9}",
@@ -573,6 +643,15 @@ export const ELEMENTS = ([
   // the same height rather than a shortcut past one.
   { id:"firefighter", e:"\u{1F9D1}\u{200D}\u{1F692}",
     r:[["fire","human"],["human","red"]] },
+  // THE FIREFIGHTER'S FIRST CONSUMER — two routes in and nothing out, the
+  // third of those this commit closes after the Goggles and the Scissors.
+  // No placement to weigh here, unlike the Bank and the Champagne above:
+  // "firefighter" is one occurrence against "tool"'s twenty-one, and the Tool
+  // is in recipes the whole table over rather than in a run there is any
+  // sense in joining. What the Tool makes of a person is what that person
+  // carries, which is the sentence the Pencil and the Book already say.
+  { id:"extinguisher", e:"\u{1F9EF}",
+    r:[["firefighter","tool"]] },
   { id:"artist", e:"\u{1F9D1}\u{200D}\u{1F3A8}",
     r:[["human","palette"]] },
   { id:"brush", e:"\u{1F58C}\u{FE0F}",
@@ -654,10 +733,15 @@ export const ELEMENTS = ([
     r:[["doctor","tool"]] },
   { id:"bird", e:"\u{1F426}",
     r:[["air","animal"],["animal","worm"]] },
+  { id:"nest", e:"\u{1FAB9}",
+    r:[["bird","tree"],["bird","house"],["eagle","mountain"],["eagle","house"]] },
   { id:"chick", e:"\u{1F425}",
-    // Four ways through an Egg, and then the plain one: a yellow bird is a
+    // Five ways through an Egg, and then the plain one: a yellow bird is a
     // chick, the same sentence the Flamingo and the Swan say in their colours.
-    r:[["egg","bird"],["duck","egg"],["egg","flamingo"],["egg","swan"],["bird","yellow"]] },
+    // The Nest is the fifth and the odd one — every other Egg route names the
+    // parent, and this one names the place instead.
+    r:[["egg","bird"],["duck","egg"],["egg","flamingo"],["egg","swan"],["bird","yellow"],
+       ["egg","nest"]] },
   { id:"penguin", e:"\u{1F427}",
     r:[["bird","ice"]] },
   { id:"duck", e:"\u{1F986}",
@@ -712,6 +796,15 @@ export const ELEMENTS = ([
   // for "cooking" and ten for "chef"), and this entry spends it twice.
   { id:"bacon", e:"\u{1F953}",
     r:[["cooking","pig"],["chef","pig"]] },
+  // THE BACON'S FIRST CONSUMER — one more leaf closed, after the Goggles, the
+  // Scissors and the Firefighter. Up here rather than down beside the Bread
+  // because "bacon" appeared exactly once in the file against the Bread's
+  // twice, and MEASURED: against the Bacon it costs 0 B and lands on 13312
+  // exactly, against the Croissant it costs 8 B and OVERFLOWS at 13320. That
+  // is the largest swing any placement has shown in this run of elements, and
+  // it is the difference between shipping and not.
+  { id:"sandwich", e:"\u{1F96A}",
+    r:[["bacon","bread"]] },
   { id:"swan", e:"\u{1F9A2}",
     r:[["white","duck"],["white","bird"]] },
   // Bird + colour, the Flamingo's and the Swan's sentence, and this is the
@@ -870,8 +963,97 @@ export const ELEMENTS = ([
   { id:"field", c:"#5fb54a",
     bg:"linear-gradient(180deg, #a8dbff 0%, #7ec8ff 46%, #5fb54a 46%, #3f8c36 100%)",
     r:[["earth","plant"],["earth","green"]] },
+  // THE CORN'S SENTENCE ONE RANK UP, which is the move the Crown makes on the
+  // Ring: Plant + Yellow is the Corn, and the Field is Plant in the Earth, so
+  // Field + Yellow is the golden crop standing in it. Sun + Field is the same
+  // crop ripened rather than coloured — two directions, not one said twice.
+  // Pressed against the Field because it spends "field" in both recipes and
+  // "field" is the rarer string in either, which is the Bacon's rule.
+  //
+  // THE SECOND SVG IN THE TABLE, after Matter, and the reason is that Unicode
+  // has no wheat. U+1F33E is named SHEAF OF RICE and is drawn like one — a
+  // bent panicle with the grains drooping AWAY from the stem, where a wheat
+  // ear is stiff and upright with the grains pressed against it. At 32px the
+  // droop is the only thing that survives, so the glyph reads "rice" to anyone
+  // who knows the difference and "grass" to everyone else. It stays on the
+  // FARMER, \u{1F9D1}\u{200D}\u{1F33E}, where the grain is a prop in a hand
+  // and only has to read as "crop"; standing alone as the crop itself, two
+  // rows from the Corn, it has to do more than that.
+  //
+  // COSTS +104 B, MEASURED — 13191 to 13295. The awned version, with three
+  // strokes past the tip for the bristles that are what actually separate
+  // wheat from every other grain, is the better drawing and costs +146 B,
+  // which is 25 B OVER the budget. Both are drawn and argued in
+  // experiments/wheat-icon.html; take the awns when there is room, and the
+  // stale fn-order re-fit is the first place to look for it.
+  //
+  // AND DO NOT ESTIMATE AN SVG FROM THE TABLE'S OWN RATE. This was first
+  // costed at ~55 B from the character count at the table's 1.86 bits/char,
+  // and was wrong by three times: the table is that cheap because it is
+  // overwhelmingly REPEATED text, and an SVG is novel markup that packs at
+  // about 2.7 bits/char. Budget a byte for every three raw characters.
+  { id:"wheat", c:"#e9a53f",
+    s:"<g transform='translate(16 14)'>" +
+      "<rect x='-1.2' y='-1' width='2.4' height='16' rx='1.2' fill='#b9782a'/>" +
+      "<g fill='#e9a53f'>" +
+      "<ellipse cx='-3.7' cy='4' rx='2.5' ry='3.9' transform='rotate(-30 -3.7 4)'/>" +
+      "<ellipse cx='3.7' cy='4' rx='2.5' ry='3.9' transform='rotate(30 3.7 4)'/>" +
+      "<ellipse cx='-3.4' cy='-2' rx='2.5' ry='3.9' transform='rotate(-30 -3.4 -2)'/>" +
+      "<ellipse cx='3.4' cy='-2' rx='2.5' ry='3.9' transform='rotate(30 3.4 -2)'/>" +
+      "<ellipse cx='0' cy='-7.5' rx='2.5' ry='4.2'/></g></g>",
+    r:[["field","yellow"],["field","sun"]] },
+  // AND THE WHOLE REASON THE WHEAT EXISTS — but not the reason it was first
+  // written down, and the difference is worth keeping. The Bread was built to
+  // wear the Chef-and-Cooking DOUBLET the Burger, the French Fries and the
+  // Bacon wear, where either verb makes the same dish; the Corn could not give
+  // it one, Popcorn already owning both Corn + Cooking and Corn + Fire.
+  //
+  // THE DOUBLET IS NOT WHAT THE WHEAT ENDED UP CARRYING. The two verbs split
+  // here instead: Cooking is the bare process and gives the plain loaf, the
+  // Chef is the skilled hand and gives the Croissant below. That reads better
+  // than the doublet did, and it re-states the Bacon's own line — "Cooking is
+  // the process, the Chef is who does it" — as a distinction rather than as
+  // two names for one thing.
+  // So the table now says: the verbs AGREE unless the skilled version is a
+  // different dish. The Burger, the Fries and the Bacon are the agreeing case;
+  // the Bread and the Croissant are the splitting one, and so is the Pizza
+  // against the Fondue, which stops being the anomaly it looked like.
+  // Against the Wheat, whose id it spends and which is among the rarest
+  // strings in the file.
+  { id:"bread", e:"\u{1F35E}",
+    r:[["cooking","wheat"]] },
+  // THE BREAD'S THIRD CONSUMER, after the Pizza and the Sandwich, and the one
+  // that makes it a hub rather than a leaf. Two directions rather than one
+  // said twice: Bread + Pig is what the thing IS — the Bacon's own animal
+  // between two halves of the Bread — and Bread + Cooking is the lazier route
+  // a player reaches for first, the Bread simply put on the heat.
+  // Against the Bread and NOT up in the pig run beside the Sandwich, measured
+  // both ways: 13329 here against 13339 there. That is the opposite of where
+  // the Sandwich landed, which wanted the pig run and refused the Bread by the
+  // same 8-10 B — one more count against there being any rule to this.
+  { id:"hot dog", e:"\u{1F32D}",
+    r:[["bread","pig"],["bread","cooking"]] },
+  // THE SKILLED HALF of that split, and the Chef's most demanding job in the
+  // table: same grain, same baker, and what separates the loaf from the pastry
+  // is the hand rather than the ingredient. Pressed against the Bread so the
+  // two halves of the argument above sit together and "wheat" is one line up.
+  { id:"croissant", e:"\u{1F950}",
+    r:[["chef","wheat"]] },
+  { id:"waffle", e:"\u{1F9C7}",
+    r:[["egg","wheat"]] },
   { id:"park", e:"\u{1F3DE}\u{FE0F}",
     r:[["field","water"]] },
+  // AND HERE THE PATTERN THE BANK AND THE CHAMPAGNE SUGGESTED BREAKS, which is
+  // why it was measured rather than trusted. Both of those went to the LATER
+  // of two placements, by 15 B and 16 B; this one is 3 B CHEAPER in the early
+  // one — 13177 beside the Park against 13180 down beside the Angel, where it
+  // would have joined the Baby's own figure-plus-place run and repeated
+  // "baby" one line up.
+  // Three measurements, no rule: placement is worth an A/B and is not worth a
+  // theory, which is the finding tools/fn-order.mjs already carries about
+  // function order for the same compressor. Take the A/B, keep the number.
+  { id:"playground", e:"\u{1F6DD}",
+    r:[["baby","park"]] },
   // TREE AND NUT MAKE EACH OTHER — Blossom + Tree is the Nut, a wet Nut is the
   // Tree. Cyclic the way Magic and the Crystal Ball are, and it resolves for
   // the same reason: Tree keeps Water + Plant, a route that does not run
@@ -995,8 +1177,24 @@ export const ELEMENTS = ([
     r:[["air","paper"]] },
   { id:"scissors", e:"\u{2702}\u{FE0F}",
     r:[["paper","tool"]] },
+  // AND THE SCISSORS' FIRST, for the reason the Diving Mask is the Goggles':
+  // "scissors" appears once in the whole file and "dog" four times, so the
+  // poodle is filed with the stationery rather than with the beasts. The Lion
+  // sits away from the animals on the same argument. A dog that has been at
+  // the groomer's is the joke, and the clip is the one thing a poodle is.
+  { id:"poodle", e:"\u{1F429}",
+    r:[["dog","scissors"]] },
   { id:"bookmark", e:"\u{1F516}",
     r:[["book","paper"]] },
+  // THE SECOND ACRONYM, spelled the way the uFO is and for the same reason:
+  // the derivation only ever uppercases a word's FIRST letter, so "iD" is what
+  // comes back out as "ID". Human + Paper is the whole joke — a person written
+  // down is the piece of paper that says who they are.
+  // In the paper run rather than beside the Human, which is the placement rule
+  // the Crown and the Lion already follow: "paper" is in six recipes and
+  // "human" in twenty-odd, so the rare string is the one to hug.
+  { id:"iD", e:"\u{1FAAA}",
+    r:[["human","paper"]] },
   // The one color no amount of mixing light can reach, so it arrives through
   // the materials instead. A plain black square would vanish into the tile, so
   // the swatch keeps a soft top-left sheen and lends a grey — not black — glow.
