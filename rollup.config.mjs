@@ -527,6 +527,18 @@ export default {
         compress: {
           passes: 5,
           keep_fargs: false,
+          // Booleans as 0/1, which is byte-neutral before compression and
+          // measured -20 B after it: `!0`/`!1` leave the chunk entirely, and
+          // one less spelling suits roadroller's context model the way the
+          // var->let and const->let respellings do.
+          // The flag ALSO relaxes `===` against a boolean into `==`, which is
+          // safe here because nothing compares against a boolean identity:
+          // the save file's three booleans are read back through `!!run.q`,
+          // and the mute slot was already an integer (`cell[S_MUTE] === 1`).
+          // A save written by an older build carries `true` where this writes
+          // `1`; both coerce the same, so the format survives in both
+          // directions.
+          booleans_as_integers: true,
           unsafe: true,
           unsafe_arrows: true,
           unsafe_comps: true,
