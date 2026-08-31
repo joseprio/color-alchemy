@@ -423,7 +423,7 @@ export const ELEMENTS = ([
   { id:"camel", e:"\u{1F42A}",
     r:[["desert","animal"]] },
   { id:"crab", e:"\u{1F980}",
-    r:[["animal","sand"]] },
+    r:[["animal","island"]] },
   // The Crab is the shore, the Sea is the deep — same creature, further out.
   // Against the Crab because "crab" is a single occurrence before this line
   // and "sea" is in six recipes, and it gives the Crab its first consumer.
@@ -432,6 +432,8 @@ export const ELEMENTS = ([
   // no size to tell them apart.
   { id:"lobster", e:"\u{1F99E}",
     r:[["crab","sea"]] },
+  { id:"scorpion", e:"\u{1F982}",
+    r:[["animal","sand"],["bug","sand"]] },
   { id:"horse", e:"\u{1F434}",
     r:[["animal","field"]] },
   { id:"donkey", e:"\u{1FACF}",
@@ -440,6 +442,10 @@ export const ELEMENTS = ([
     r:[["animal","cloud"]] },
   { id:"yarn", e:"\u{1F9F6}",
     r:[["sheep","tool"]] },
+  { id:"spider", e:"\u{1F577}\u{FE0F}",
+    r:[["animal","yarn"]] },
+  { id:"web", e:"\u{1F578}\u{FE0F}",
+    r:[["spider","yarn"]] },
   { id:"scarf", e:"\u{1F9E3}",
     r:[["human","yarn"]] },
   // Figure + material is the effigy, the sentence the Statue, the Snowman and
@@ -470,7 +476,7 @@ export const ELEMENTS = ([
   { id:"milk", e:"\u{1F95B}",
     r:[["cow","water"],["white","water"]] },
   { id:"cat", e:"\u{1F408}",
-    r:[["animal","yarn"],["animal","milk"]] },
+    r:[["animal","fish"],["animal","milk"]] },
   { id:"black cat", e:"\u{1F408}\u{200D}\u{2B1B}",
     r:[["cat","black"],["cat","night"],["cat","wizard"]] },
   { id:"cheese", e:"\u{1F9C0}",
@@ -523,7 +529,13 @@ export const ELEMENTS = ([
   { id:"shoe", e:"\u{1F45F}",
     r:[["human","earth"],["human","sand"]] },
   { id:"boot", e:"\u{1F97E}",
-    r:[["human","mountain"],["mountain","shoe"]] },
+    r:[["mountain","shoe"],["field","shoe"],["park","shoe"]] },
+  { id:"climbing", e:"\u{1F9D7}",
+    r:[["human","mountain"]] },
+  { id:"racing", e:"\u{1F3C7}",
+    r:[["horse","human"]] },
+  { id:"skiing", e:"\u{26F7}\u{FE0F}",
+    r:[["mountain","snow"]] },
   { id:"ninja", e:"\u{1F977}",
     r:[["human","black"]] },
   { id:"wizard", e:"\u{1F9D9}",
@@ -600,6 +612,8 @@ export const ELEMENTS = ([
   // alternates went with the problem they were solving.
   { id:"snowman", e:"\u{26C4}",
     r:[["human","snow"]] },
+  { id:"swimming", e:"\u{1F3CA}",
+    r:[["human","water"],["human","sea"]] },
   { id:"santa", e:"\u{1F385}",
     r:[["wizard","snow"],["christmas","human"]] },
   // MUTUALLY CYCLIC WITH THE SANTA, the way Magic and the Crystal Ball are: he
@@ -639,13 +653,13 @@ export const ELEMENTS = ([
   { id:"syringe", e:"\u{1F489}",
     r:[["doctor","tool"]] },
   { id:"bird", e:"\u{1F426}",
-    r:[["air","animal"]] },
+    r:[["air","animal"],["animal","worm"]] },
   { id:"chick", e:"\u{1F425}",
     // Four ways through an Egg, and then the plain one: a yellow bird is a
     // chick, the same sentence the Flamingo and the Swan say in their colours.
     r:[["egg","bird"],["duck","egg"],["egg","flamingo"],["egg","swan"],["bird","yellow"]] },
   { id:"penguin", e:"\u{1F427}",
-    r:[["bird","ice"],["bird","black"]] },
+    r:[["bird","ice"]] },
   { id:"duck", e:"\u{1F986}",
     r:[["bird","water"]] },
   { id:"fish", e:"\u{1F41F}",
@@ -724,6 +738,27 @@ export const ELEMENTS = ([
     r:[["bird","plant"],["bird","olive"]] },
   { id:"phoenix", e:"\u{1F426}\u{200D}\u{1F525}",
     r:[["bird","fire"],["ash","fire"]] },
+  // AGAINST THE PHOENIX, not the other black bird: both are the Bird's own
+  // emoji with a ZWJ and one glyph after it, so eleven characters of this
+  // entry repeat the line above — the Farmer's argument, and it beats sitting
+  // with the Penguin whose route it took by 2 B, the Owl by 12, the Black Cat
+  // by 13. The Penguin keeps the Ice, which was always the truer half of it.
+  { id:"crow", e:"\u{1F426}\u{200D}\u{2B1B}",
+    r:[["bird","black"]] },
+  { id:"worm", e:"\u{1FAB1}",
+    r:[["animal","earth"]] },
+  { id:"bug", e:"\u{1F41B}",
+    r:[["egg","plant"]] },
+  { id:"ant", e:"\u{1F41C}",
+    r:[["bug","earth"],["black","bug"]] },
+  { id:"fly", e:"\u{1FAB0}",
+    r:[["air","bug"]] },
+  { id:"cricket", e:"\u{1F997}",
+    r:[["bug","plant"]] },
+  { id:"ladybug", e:"\u{1F41E}",
+    r:[["bug","red"]] },
+  { id:"roach", e:"\u{1FAB3}",
+    r:[["bug","house"],["bug","brown"],["bug","zombie"]] },
   { id:"bee", e:"\u{1F41D}",
     r:[["animal","blossom"],["animal","yellow"]] },
   // IN THE INSECTS, not beside the Blood: 13186 here against 13192 up there,
@@ -734,7 +769,10 @@ export const ELEMENTS = ([
   // small fliers off the same Animal.
   { id:"mosquito", e:"\u{1F99F}",
     r:[["blood","animal"]] },
-  // ANY FLOWER PLUS A RAINBOW. Three routes saying one thing, which usually
+  // ANY FLOWER PLUS A RAINBOW, and then the fourth route that is not that
+  // sentence at all: Blossom + Bug is the metamorphosis, not the colour, and it
+  // is the one an insect-hunting player finds first. The three rainbow routes
+  // still say one thing between them, which usually
   // fails the two-directions test — but the Rose and the Sunflower are both
   // CHILDREN of the Blossom, so a player who has already spent theirs on one
   // is not sent back for another. Forgiving rather than redundant, and it gives
@@ -744,7 +782,7 @@ export const ELEMENTS = ([
   // two of its three ingredients live at the far end of the table with the
   // flowers: 13087 here against 13093 down there.
   { id:"butterfly", e:"\u{1F98B}",
-    r:[["blossom","rainbow"],["rose","rainbow"],["sunflower","rainbow"]] },
+    r:[["blossom","rainbow"],["rose","rainbow"],["sunflower","rainbow"],["blossom","bug"]] },
   { id:"honey", e:"\u{1F36F}",
     r:[["bee","blossom"]] },
   { id:"bear", e:"\u{1F43B}",
@@ -803,11 +841,14 @@ export const ELEMENTS = ([
   // the Elephant has sat beside its RAREST ingredient — "violet" is in the
   // file five times and "egg" eight, against "plant"'s twelve — but all three
   // placements were built and the vegetables won: 13056 here, 13061 beside the
-  // Egg, 13067 beside the Violet. The reason is that this entry leans on
-  // "plant" TWICE, once in each recipe, so the string worth being near is not
-  // the rarest in the file but the one the entry itself repeats.
+  // Egg, 13067 beside the Violet. The reason WAS that this entry leaned on
+  // "plant" twice, once in each recipe — but the Bug has since taken Egg +
+  // Plant, so only the Violet route is left and the doubled string is gone.
+  // The measurement above is therefore stale for this entry; it stays with the
+  // vegetables because Plant is still its surviving half, not because of a
+  // repeat. Re-measure before moving it.
   { id:"eggplant", e:"\u{1F346}",
-    r:[["egg","plant"],["violet","plant"]] },
+    r:[["violet","plant"]] },
   // THE SAME ARGUMENT AS THE EGGPLANT, one line up: this entry spends "plant"
   // twice too, so it sits with the vegetables rather than beside the Farmer,
   // who is the rarer string. Measured a tie at 12766 either side of the
