@@ -261,6 +261,26 @@ npm run audio-bench       # what a sample costs, against the callback budget
   the budget, with 800 B of headroom in hand. Deleting the `initKeyboard()`
   wrapper now that it holds one assignment is **+2 B**: closure already inlined
   it, and the import-for-side-effect shape costs more than the call did.
+  **And three ports from galaxy-raid's gamepad helpers, all three rejected**,
+  which is the sharpest reminder yet that a finding does not travel between
+  chunks. Measured one at a time against 13286, with the fn-order fit still
+  valid (it keys on top-level `function` declarations and `pollPad` is not one
+  after closure, so these are like-for-like):
+  `(p0.buttons[i] || 0).pressed` for `p0.buttons[i] && p0.buttons[i].pressed`
+  **+8 B**; dropping the `p0.axes &&` guard **+7 B**; `for (const d of
+  Object.keys(dirs))` to `.map` **+4 B**; all three together **+9 B**.
+  Their OPTIMIZATIONS.md #15 measured the same `.map` conversion at **&minus;18.3**
+  over six sites, gamepad helpers included, on the finding that loop scaffolding
+  plus repeated `X[i]` subscripts costs more than a callback's bound parameter.
+  The opposite holds here, and the reason is the one this file keeps arriving
+  at from other directions: **a repeat is nearly free and a novel shape is
+  not.** `p0.buttons[i]` said twice is a token run roadroller has already
+  modelled — the same argument as `Math.` thirty-seven times beating a
+  destructure, and as the four near-identical shine gradients beating the
+  template that removes them. Removing a repeat is only a win when what
+  replaces it is cheaper than free, and `|| 0).pressed` is not.
+  Note also that our own `.map` win is `.forEach` &rarr; `.map`, one shorter word
+  in an identical shape; `for`-of &rarr; `.map` is a different shape and loses.
 - **No `const { sin, cos, ... } = Math`.** Destructuring Math into short
   locals is the classic size-golf move and it is **38 B WORSE** here.
   `Math.` is a five-character string repeated 37 times, which roadroller
