@@ -295,7 +295,7 @@ f {
   animation: din .47s cubic-bezier(.18, .62, .28, 1), dout .35s 2.9s ease-in forwards; }
 @keyframes din { from { background-color: #04060c00; } }
 @keyframes dout { to { opacity: 0; } }
-#ds .m { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); }
+.m { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); }
 #ds .g { display: flex; line-height: 1; font-size: 62px; }
 #ds .g .s { width: 62px; height: 62px; border-radius: 12px; }
 #ds .r { font-size: 110px; transform: scale(.2); opacity: 0; filter: blur(6px);
@@ -315,8 +315,8 @@ f {
    The vertical start is the altar too, and it moves with the dock: the slot
    centre is 51px above the dock's own top, the animation is centred at 44vh,
    and 100vh - dock + 51 - 44vh is the 56vh - dock + 51 below. */
-#ds .a { --o: -122px; --w: max(-205px, -30vw); --d: -1; }
-#ds .b { --o: -6px; --w: min(205px, 30vw); --d: 1; }
+.a { --o: -122px; --w: max(-205px, -30vw); --d: -1; }
+.b { --o: -6px; --w: min(205px, 30vw); --d: 1; }
 /* Every stop carries the SAME three transform functions in the same order.
    Mismatched lists make the browser interpolate the matrix instead, and a
    decomposed matrix takes the short way round — three turns would become
@@ -325,7 +325,7 @@ f {
    They meet at 66.9% and the last third is the two of them stacked on the spot
    winding down, so the burst at 1.05s lands on a pair that has visibly touched
    rather than one still closing. */
-#ds .a, #ds .b { animation: dA 1.35s linear both; }
+.a, .b { animation: dA 1.35s linear both; }
 @keyframes dA {
   from { transform: translate(var(--o), calc(56vh - var(--dock) + 51px)) scale(.5) rotate(0);
     animation-timing-function: cubic-bezier(.18, .62, .28, 1); }
@@ -336,26 +336,26 @@ f {
   77.8% { transform: translate(0, 0) scale(.42) rotate(calc(var(--d) * -1080deg)); opacity: 1; }
   to { transform: translate(0, 0) scale(.025) rotate(calc(var(--d) * -1080deg)); opacity: 0; }
 }
-#ds .k {
+.k {
   position: absolute; left: 50%; top: 44%; width: 2px; height: 0; transform-origin: 50% 0;
   background: linear-gradient(180deg, #fff, var(--c) 40%, transparent);
   animation: dk .62s 1.05s cubic-bezier(.1, .85, .3, 1) forwards;
 }
 @keyframes dk { from { height: 0; opacity: 1; } 55% { opacity: 1; } to { height: 520px; opacity: 0; } }
-#ds .f {
+.f {
   position: absolute; inset: 0; opacity: 0;
   background: radial-gradient(circle at 50% 44%, #fff 0 4%, #ffd75e 8%, transparent 34%);
   animation: df .38s 1.03s ease-out forwards;
 }
 @keyframes df { 20% { opacity: .95; } to { opacity: 0; } }
-#ds .c { position: absolute; left: 0; right: 0; top: 63%; text-align: center; padding: 0 24px; opacity: 0;
+.c { position: absolute; left: 0; right: 0; top: 63%; text-align: center; padding: 0 24px; opacity: 0;
   animation: dc .4s 1.5s ease-out forwards; }
-#ds .c b { display: block; font-size: 26px; color: #fff; margin-bottom: 6px; }
+.c b { display: block; font-size: 26px; color: #fff; margin-bottom: 6px; }
 @keyframes dc { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 /* reduced motion gets the still, not a faster animation */
 @media (prefers-reduced-motion: reduce) {
-  #ds .a, #ds .b, #ds .k, #ds .f { display: none; }
-  #ds .r, #ds .c { animation: none; opacity: 1; transform: none; filter: none; }
+  .a, #ds .b, #ds .k, .f { display: none; }
+  .r, .c { animation: none; opacity: 1; transform: none; filter: none; }
   /* the hint keeps its glow and just stops breathing: .t.g's own box-shadow is
      the resting state the animation departs from, so switching the animation
      off leaves exactly the steady glow, not an unmarked tile */
@@ -395,9 +395,9 @@ f {
 .A h2 { margin: 6px 0 2px; color: #fff; font-size: 22px; }
 #ov .A { border-color: #ffd75e; box-shadow: 0 0 50px #ffd75e22; }
 #ov .T { color: #ffd75e; }
-#ov .L { margin: 6px 0 0; color: #cfe3ff; }
+.L { margin: 6px 0 0; color: #cfe3ff; }
 #ov .S { color: #ffd75e; }
-#ov .N { color: #7dff9a; font-weight: 700; letter-spacing: .1em; }
+.N { color: #7dff9a; font-weight: 700; letter-spacing: .1em; }
 #ob { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
 #ob button {
   background: #101528; color: #cfe3ff; border: 1px solid #33436e; border-radius: 8px;
