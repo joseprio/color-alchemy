@@ -1041,6 +1041,21 @@ export const ELEMENTS = ([
     r:[["chef","wheat"]] },
   { id:"waffle", e:"\u{1F9C7}",
     r:[["egg","wheat"]] },
+  // THE GRAIN FAMILY'S FIFTH AND THE SALT'S SECOND JOB. The run reads as one
+  // base plus the thing that distinguishes each product — Cooking the process,
+  // the Chef the skill, the Egg the batter, the Salt the crust — and Salt is
+  // the only one of the four that is also the finished article's defining
+  // feature rather than a step in making it. Bread + Salt is the same thing
+  // said from one rank up, for a player who has the loaf before the grain.
+  // The Salt had exactly one consumer before this (Rust, via Metal + Salt),
+  // which is the near-leaf argument the Student makes for the School.
+  // AND THE RARE-STRING RULE LOSES A THIRD TIME. "salt" is one occurrence
+  // against "wheat"'s several, and this entry spends it TWICE, which is the
+  // Bacon's own argument for pressing it against the Salt. Measured both ways:
+  // 13341 here in the grain run, 13350 up beside the Salt. Nine bytes for
+  // staying with the family it belongs to.
+  { id:"pretzel", e:"\u{1F968}",
+    r:[["salt","wheat"],["bread","salt"]] },
   { id:"park", e:"\u{1F3DE}\u{FE0F}",
     r:[["field","water"]] },
   // AND HERE THE PATTERN THE BANK AND THE CHAMPAGNE SUGGESTED BREAKS, which is
@@ -1096,6 +1111,17 @@ export const ELEMENTS = ([
   // "fruit" leads again, so the Banana, the Lime and this all share a prefix.
   { id:"lemon", e:"\u{1F34B}",
     r:[["fruit","acid"],["lime","yellow"]] },
+  // Against the Lemon it is made from, which is three occurrences against the
+  // Orange's dozen-odd as a colour — the rare string, and the citrus it is
+  // actually a cross of.
+  // ORANGE + FRUIT IS NOT HERE, and was asked for: it is the Pumpkin's ONLY
+  // recipe, four entries down. RECIPE is last-write-wins over a sorted key and
+  // this entry sits earlier, so the Pumpkin would simply take the pair back —
+  // and moving this below it would leave the Pumpkin with no route at all and
+  // fail the reachability walk. It needs the Pumpkin re-rooted first; Plant +
+  // Orange and Fruit + Fire are both free and either would do it.
+  { id:"tangerine", e:"\u{1F34A}",
+    r:[["lemon","orange"]] },
   // Fruit + colour again, and it is here to be an INGREDIENT: the Peace was
   // Bird + Plant, a generic branch doing the work of a specific one, and this
   // is the branch the story actually names.
