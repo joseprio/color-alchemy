@@ -151,7 +151,7 @@ const cutDirectorCss = (css) =>
 // for a `body{font-family:monospace,emoji}` rule appended here. The name is
 // inert in the builds that do not define it.
 const GOLF_EMOJI_CSS = golf
-  ? `@font-face{font-family:emoji;src:url(//joseprio.github.io/color-emoji/emoji.woff2)}`
+  ? `@font-face{font-family:emoji;src:url(//joseprio.github.io/color-alchemy/emoji.woff2)}`
   : "";
 const minCss = execSync("npx postcss", {
   input: cutDirectorCss(readFileSync("src/style.css", "utf8")),
