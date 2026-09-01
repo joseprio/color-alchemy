@@ -302,6 +302,19 @@ const encodeRecipes = {
     if (!ids.length) throw new Error("encode-recipes: no id: fields found in elements.ts");
     const dupes = [...new Set(ids.filter((v, i) => ids.indexOf(v) !== i))];
     if (dupes.length) throw new Error(`encode-recipes: duplicate element ids: ${dupes.join(", ")}`);
+    // Element ids are also KEYS OF A PLAIN OBJECT at runtime: `found` and the
+    // hint's `want` are dictionaries rather than Sets (game.ts says why), so an
+    // id that names something on Object.prototype would read back truthy before
+    // it was ever discovered — the element would start the game already found,
+    // silently, and only in a shipping build. None of the ids collide today;
+    // this is what keeps it that way.
+    const proto = ids.filter((id) => ({})[id] !== undefined);
+    if (proto.length) {
+      throw new Error(
+        `encode-recipes: element id(s) shadow Object.prototype and cannot key a ` +
+        `dictionary: ${proto.join(", ")}`
+      );
+    }
     if (ids.length > RECIPE_BASE * RECIPE_BASE) {
       throw new Error(`encode-recipes: ${ids.length} elements outgrew the two-character alphabet`);
     }

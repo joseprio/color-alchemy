@@ -55,7 +55,18 @@ const S_RUN = 1, S_QUEST = 2, S_FULL = 3, S_CODEX = 4;
 if (cell[0] !== TREE) { cell[0] = TREE; cell[S_QUEST] = cell[S_FULL] = 0; }
 
 /* ------------------------------------------------------------------- state */
-let found = new Set<string>();      // discovered element ids (this run)
+// A PLAIN OBJECT RATHER THAN A Set, the same trade `tried` makes below, and
+// worth 24 B across the three dictionaries this file kept in Sets. `has` and
+// `add` are both shorter as a subscript, and `.size` — the one thing an object
+// does worse — is not needed at all: every `found[id] = 1` is paired with an
+// addTile(id), which pushes to `order`, so order.length IS the count and the
+// reset clears both together.
+// The `__proto__` hazard is real here in a way it is not for `tried`, whose
+// keys all contain a "+": these keys are bare element ids, so an id named
+// `constructor` or `toString` would read back truthy before discovery. The
+// encode-recipes plugin fails the build on one rather than leaving it to be
+// found by playing.
+let found: Record<string, 1> = {};  // discovered element ids (this run)
 const order: string[] = [];         // discovery order (drives the grid)
 // EVERY PAIR PUT IN THE CAULDRON THIS RUN, successes included. RUN state, so
 // it rides the run save and New game wipes it with the board. It was failures
@@ -87,7 +98,7 @@ let tried: Record<string, 1> = {};
 // which is what earns the merge animation. Not tree-scoped: knowledge
 // survives balance patches, with stale entries filtered on load.
 const codexF: string[] = [];
-const codexK = new Set<string>();
+const codexK: Record<string, 1> = {};
 let moves = 0;                      // every combination attempt, incl. failures
 let questDone = false;              // Rainbow + Unicorn found this run
 let fullDone = false;               // all elements found this run
@@ -123,13 +134,13 @@ function save(): void {
   put(S_RUN, { f: order, t: tried, m: moves, q: questDone, c: fullDone, x: cheated });
 }
 function saveCodex(): void {
-  put(S_CODEX, { f: codexF, k: [...codexK] });
+  put(S_CODEX, { f: codexF, k: Object.keys(codexK) });
 }
 
 /* -------------------------------------------------------------------- HUD */
 function hud(): void {
   mv.textContent = String(moves);
-  ct.textContent = found.size + " / " + ELEMENTS.length;
+  ct.textContent = order.length + " / " + ELEMENTS.length;
   const q = cell[S_QUEST];
   bq.textContent = q ? "Best quest: " + q : "";
   gl.innerHTML = cheated
@@ -247,7 +258,7 @@ function renderFocus(): void {
   // out of step with `found`. It is monotonic anyway — the missing set only
   // shrinks — so nothing ever un-spends and no label flickers.
   const live: Record<string, 1> = {};
-  for (const el of ELEMENTS) if (!found.has(el.id))
+  for (const el of ELEMENTS) if (!found[el.id])
     (el.r || []).map(q => (live[q[0]] = live[q[1]] = 1));
   tiles.map((t, i) => {
     // one element wears one of the two: gold for a locked pick, cyan for a
@@ -555,12 +566,12 @@ export function attempt(aId: string, bId: string): void {
   // board. Unguarded and unsaved: it is run state, and the save() at the tail
   // of this function carries it either way.
   tried[k] = 1;
-  if (res && !codexK.has(k)) { codexK.add(k); saveCodex(); }
+  if (res && !codexK[k]) { codexK[k] = 1; saveCodex(); }
   slotA = aId;
   slotB = bId;
   slotR = res || null;
-  if (res && !found.has(res)) {
-    found.add(res);
+  if (res && !found[res]) {
+    found[res] = 1;
     addTile(res);
     if (!codexF.includes(res)) { codexF.push(res); saveCodex(); openDisc(res, aId, bId); }
     const el = BY_ID[res];
@@ -617,7 +628,7 @@ let lastHint: [string, string, string] | null = null;
 // through an alternate recipe — retires the glow exactly as it retires the
 // hint, with no second piece of state that could disagree with this one.
 function standingHint() {
-  return lastHint && !found.has(lastHint[2]) ? lastHint : null;
+  return lastHint && !found[lastHint[2]] ? lastHint : null;
 }
 function showHint([a, b]: [string, string, string], tail: string): void {
   toast("Hint: try " + N(a) + " + " + N(b) + tail);
@@ -640,11 +651,11 @@ function showHint([a, b]: [string, string, string], tail: string): void {
 // cheapest one. A hint that named only the shortest path would be telling the
 // player which route to take, and the hint's whole contract is that it reveals
 // the pair and never the plan.
-function questWants(): Set<string> {
-  const want = new Set<string>();
+function questWants(): Record<string, 1> {
+  const want: Record<string, 1> = {};
   const walk = (id: string): void => {
-    if (found.has(id) || want.has(id)) return;
-    want.add(id);
+    if (found[id] || want[id]) return;
+    want[id] = 1;
     (BY_ID[id].r || []).map(p => { walk(p[0]); walk(p[1]); });
   };
   walk("rainbow");
@@ -660,8 +671,8 @@ export function hint(): void {
   }
   let picks: [string, string, string][] = [];
   for (const el of ELEMENTS) {
-    if (found.has(el.id)) continue;
-    for (const p of el.r || []) if (found.has(p[0]) && found.has(p[1])) picks.push([p[0], p[1], el.id]);
+    if (found[el.id]) continue;
+    for (const p of el.r || []) if (found[p[0]] && found[p[1]]) picks.push([p[0], p[1], el.id]);
   }
   // While the quest stands, answer it. Narrowing rather than replacing: if
   // nothing within reach is on the quest path the full list stands, so a hint is
@@ -669,7 +680,7 @@ export function hint(): void {
   // reachable pair is fair game again, which is what the endgame asks for.
   if (!questDone) {
     const want = questWants();
-    const on = picks.filter(p => want.has(p[2]));
+    const on = picks.filter(p => want[p[2]]);
     if (on.length) picks = on;
   }
   // Nothing within reach is free — no move, no score. Defensive: running out of
@@ -821,12 +832,12 @@ function bestLine(slot: number, val: number): string {
 }
 function checkMilestones(): void {
   if (cheated) return;   // nothing an unlocked board reaches is earned
-  if (!questDone && found.has("rainbow") && found.has("unicorn")) {
+  if (!questDone && found["rainbow"] && found["unicorn"]) {
     questDone = true;
     const q = bestLine(S_QUEST, moves);
     save();
     hud();
-    if (found.size === ELEMENTS.length) return finishFull(q); // unicorn was the last element
+    if (order.length === ELEMENTS.length) return finishFull(q); // unicorn was the last element
     SFX.fanfare();
     openOverlay(
       '<div class="B">\u{1F308}\u{1F984}</div>' +
@@ -839,7 +850,7 @@ function checkMilestones(): void {
     if (__DIRECTOR__) fireworks(1.6);
     return;
   }
-  if (!fullDone && found.size === ELEMENTS.length) finishFull("");
+  if (!fullDone && order.length === ELEMENTS.length) finishFull("");
 }
 function finishFull(questHtml: string): void {
   fullDone = true;
@@ -875,7 +886,7 @@ let armLabel = "";         // ...and the label to put back when it disarms
 let armTimer = 0;
 // "Continue" is only offered when there is something to continue: a fresh
 // boot, and a Reset everything, both leave nothing behind it
-const inRun = (): boolean => moves > 0 || found.size > STARTERS.length;
+const inRun = (): boolean => moves > 0 || order.length > STARTERS.length;
 
 function menuButtons(): HTMLElement[] {
   return [...mu.querySelectorAll("button")] as HTMLElement[];
@@ -903,7 +914,7 @@ function armed(i: number, warn: string): boolean {
   return false;
 }
 function newGame(i: number): void {
-  if ((moves > 0 || found.size > STARTERS.length) && !armed(i, "Sure? (wipes the run)")) return;
+  if ((moves > 0 || order.length > STARTERS.length) && !armed(i, "Sure? (wipes the run)")) return;
   disarm();
   reset();
   closeMenu();
@@ -912,7 +923,7 @@ function newGame(i: number): void {
 // flagged from here on, so no best can come out of it.
 function unlockAll(i: number): void {
   if (!armed(i, "Sure? (ends scoring)")) return;
-  ELEMENTS.map(e => { if (!found.has(e.id)) { found.add(e.id); addTile(e.id); } });
+  ELEMENTS.map(e => { if (!found[e.id]) { found[e.id] = 1; addTile(e.id); } });
   cheated = true;
   renderFocus();
   hud();
@@ -925,7 +936,7 @@ function wipeAll(i: number): void {
   if (!armed(i, "Sure? (scores and codex too)")) return;
   [S_RUN, S_QUEST, S_FULL, S_CODEX].map(i => put(i, 0));
   codexF.length = 0;
-  codexK.clear();
+  for (const k in codexK) delete codexK[k];
   reset();
   paintMenu();
   // deliberately NOT closeMenu(): New game means "start playing", this means
@@ -1030,7 +1041,7 @@ function encycloHtml(): string {
   // alternates stay unspoiled.
   const rows = codexF.map(id => {
     const el = BY_ID[id];
-    const known = (el.r || []).filter(p => codexK.has(rkey(p[0], p[1])));
+    const known = (el.r || []).filter(p => codexK[rkey(p[0], p[1])]);
     const rec = known.length
       ? known.map(p => N(p[0]) + " + " + N(p[1])).join(" &nbsp;&middot;&nbsp; ")
       : el.r ? "?" : "primordial";
@@ -1042,7 +1053,7 @@ function encycloHtml(): string {
   }).join("");
   return rows +
     '<div class="O">' + codexF.length + " / " + ELEMENTS.length + " elements &middot; " +
-    codexK.size + " / " + Object.keys(RECIPE).length + " combinations</div>";
+    Object.keys(codexK).length + " / " + Object.keys(RECIPE).length + " combinations</div>";
 }
 
 /* ---------------------------------------------------------------- restart */
@@ -1051,7 +1062,7 @@ export function reset(): void {
   closeOverlay();
   closeDisc();
   clearSlots();
-  found = new Set(); // the codex deliberately survives — New game wipes the board, not the knowledge
+  found = {}; // the codex deliberately survives — New game wipes the board, not the knowledge
   order.length = 0;
   tiles.length = 0;
   gd.innerHTML = "";
@@ -1062,7 +1073,7 @@ export function reset(): void {
   held = false;
   cursor = 0;
   lastHint = null;  // its ingredients just left the board
-  STARTERS.map(id => { found.add(id); addTile(id); });
+  STARTERS.map(id => { found[id] = 1; addTile(id); });
   renderFocus();
   paintCauldron();
   hud();
@@ -1088,7 +1099,7 @@ export function boot(): void {
       (cx.f && cx.f.map ? (cx.f as string[]) : []).filter(id => BY_ID[id])
         .map(id => { if (!codexF.includes(id)) codexF.push(id); });
       (cx.k && cx.k.map ? (cx.k as string[]) : []).filter(k => RECIPE[k])
-        .map(k => codexK.add(k));
+        .map(k => (codexK[k] = 1));
     }
   } catch {}
   STARTERS.map(id => { if (!codexF.includes(id)) codexF.push(id); });
@@ -1099,17 +1110,17 @@ export function boot(): void {
   if (run && run.f && (run.f as string[]).map) {
     const ids = (run.f as string[]).filter(id => BY_ID[id]);
     STARTERS.map(id => { if (!ids.includes(id)) ids.unshift(id); });
-    ids.map(id => { found.add(id); addTile(id); });
+    ids.map(id => { found[id] = 1; addTile(id); });
     // migrate pre-codex saves: a run's discoveries and combos are knowledge
     ids.map(id => { if (!codexF.includes(id)) codexF.push(id); });
-    if (run.k && (run.k as string[]).map) (run.k as string[]).filter(k => RECIPE[k]).map(k => codexK.add(k));
+    if (run.k && (run.k as string[]).map) (run.k as string[]).filter(k => RECIPE[k]).map(k => (codexK[k] = 1));
     tried = (run.t as Record<string, 1>) || {};
     moves = Math.max(0, (run.m as number) | 0);
     questDone = !!run.q;
     fullDone = !!run.c;
     cheated = !!run.x;
   } else {
-    STARTERS.map(id => { found.add(id); addTile(id); });
+    STARTERS.map(id => { found[id] = 1; addTile(id); });
   }
   hud();
   save();
