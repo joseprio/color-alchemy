@@ -428,7 +428,22 @@ f {
   font-size: min(17vw, 100px); font-weight: 900; letter-spacing: 0; line-height: 1;
   background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff, #ff3b30);
   background-size: 200% 100%;
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  /* NO -webkit- PREFIX, deliberately, and do not add one back without
+     measuring. It was there and dropping it is worth 2 B — and the arithmetic
+     is not the obvious one, because with BOTH present the unprefixed line is
+     an exact repeat of the token just seen and therefore nearly free:
+       both                        13306
+       drop unprefixed, keep -webkit-  13311   (+5, the repeat was cheaper)
+       drop -webkit-, keep unprefixed  13304   (-2)
+     Deleting the LONGER, first-seen string is what pays; deleting the cheap
+     repeat costs.
+     WHAT IT BUYS AND WHAT IT COSTS. Unprefixed background-clip:text is Chrome,
+     Firefox and Safari 15.5+ (May 2022); the prefix covered Safari before that
+     and old Chrome/Edge. On anything older the title does not degrade, it
+     VANISHES — this line pairs with color:transparent, so a browser that
+     ignores the clip paints transparent letters on no background. Taken
+     knowingly for two bytes. */
+  background-clip: text; color: transparent;
   animation: rbflow 5s linear infinite;
   filter: drop-shadow(0 0 18px #ffffff22);
 }
