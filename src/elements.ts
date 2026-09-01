@@ -556,6 +556,12 @@ export const ELEMENTS = ([
     r:[["cheese","fire"],["cheese","chef"]] },
   { id:"party", e:"\u{1F389}",
     r:[["beer","pizza"],["beer","sushi"],["cheese","wine"],["burger","french fries"]] },
+  // An -ing id, which puts it with the Climbing, the Racing, the Skiing and the
+  // Swimming rather than with the things it is made of: the display name is
+  // derived, so "dancing" renders "Dancing" and needs no n field. Against the
+  // Party at five occurrences rather than the Human at twenty-odd.
+  { id:"dancing", e:"\u{1F57A}",
+    r:[["human","party"]] },
   { id:"fireworks", e:"\u{1F386}",
     r:[["party","sky"],["party","night"]] },
   // THE SECOND PLACEMENT THE RARE-STRING RULE LOSES, and it lost the same way
@@ -895,6 +901,12 @@ export const ELEMENTS = ([
   // flowers: 13087 here against 13093 down there.
   { id:"butterfly", e:"\u{1F98B}",
     r:[["blossom","rainbow"],["rose","rainbow"],["sunflower","rainbow"],["blossom","bug"]] },
+  // THE BUTTERFLY'S FIRST CONSUMER — four routes in and nothing out until now.
+  // Wings plus the thing that animates them, which is the Mermaid's move said
+  // with Magic instead of a Fish. Against the Butterfly because "butterfly"
+  // appeared exactly once in the file and "magic" several times.
+  { id:"fairy", e:"\u{1F9DA}",
+    r:[["butterfly","magic"]] },
   { id:"honey", e:"\u{1F36F}",
     r:[["bee","blossom"]] },
   { id:"bear", e:"\u{1F43B}",
