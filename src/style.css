@@ -433,17 +433,29 @@ f {
   filter: drop-shadow(0 0 18px #ffffff22);
 }
 @keyframes rbflow { to { background-position: 200% 0; } }
-/* Spread to the title's width by flex, not by a letter-spacing that would
-   have to be re-guessed for every font size. Arial has no true small caps, so
+/* TRACKED, not spread, and still flush at both ends. This was
+   `display:flex; justify-content:space-between` over seven <span>s, one per
+   letter; it is one text node and a letter-spacing now, which is 7 B cheaper
+   and looks identical.
+   THE NEGATIVE RIGHT MARGIN IS THE WHOLE TRICK. letter-spacing adds its gap
+   after EVERY character including the last, so the line's advance runs one gap
+   wider than the ink -- and #tw is fit-content, so that phantom gap would swell
+   the lockup and slide the pair off-centre. Cancelling it with an equal and
+   opposite margin-right takes it back out of #tw's measure, and the letters
+   land on COLOR's edges: measured 185..573 against COLOR's 185..572.
+   The two values must stay equal and opposite. What this gives up against the
+   flex version is per-font tuning: .87em is fitted to Arial's metrics at this
+   size ratio, where space-between never needed a number at all.
+   Arial has no true small caps, so
    the browser scales its capitals — which is the intended look here: a quieter
    line under a heavy title, not a second display face.
    The size sets the tracking: the width is pinned, so bigger letters leave
    smaller gaps. At 40px against a 100px title the gaps are 0.87em, where 27px
    left 1.64em. */
 #tb {
-  width: 100%; display: flex; justify-content: space-between;
+  width: 100%; letter-spacing: .87em;
   font-family: Arial, Helvetica, sans-serif; font-weight: 700; font-variant: small-caps;
-  color: #8fb4d8; font-size: min(6.9vw, 40px); line-height: 1.1; margin: 6px 0 30px;
+  color: #8fb4d8; font-size: min(6.9vw, 40px); line-height: 1.1; margin: 6px -.87em 30px 0;
 }
 #mu { display: flex; flex-direction: column; gap: 10px; width: 250px; }
 #mu button {

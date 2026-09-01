@@ -143,21 +143,30 @@ check("boot: the help line is appended into <f>, after the goal line",
   })()`));
 
 // --- title screen ---------------------------------------------------------
-check("boot: title screen shows COLOR / AlchemY, locked to one width",
+check("boot: title screen shows COLOR / AlchemY as one text node each",
   s.phase === "menu" &&
   await evalJs(`document.getElementById('tl').textContent === 'COLOR'
     && document.getElementById('tb').textContent === 'AlchemY'
-    && document.getElementById('tb').children.length === 7`));
-// The two words are one lockup: #tw is shrink-to-fit so COLOR sets the
-// measure, and #tb's letters spread across it. Measured rather than assumed —
-// a font change or a stray width would part them silently.
+    && document.getElementById('tb').children.length === 0`));
+// The two words are one lockup and both edges must line up. AlchemY is tracked
+// by letter-spacing with a negative right margin cancelling the gap that
+// letter-spacing leaves after the last letter; get either number wrong and the
+// pair parts, or the phantom gap swells #tw and slides the lockup off-centre.
+// MEASURE THE INK, NOT THE ADVANCE. A Range's client rects include that
+// trailing gap, so the naive reading reports 35px of overshoot that no glyph
+// occupies -- it is why this was briefly, and wrongly, believed unfixable.
+// Bounding boxes are no use either: both elements are block-level and fill #tw.
 check("boot: COLOR and AlchemY come out the same width", await evalJs(`(() => {
-  const t = document.getElementById('tl'), s = document.getElementById('tb');
-  const track = parseFloat(getComputedStyle(t).letterSpacing) || 0;
-  const a = t.getBoundingClientRect().width - track;
-  const k = s.children;
-  const b = k[k.length - 1].getBoundingClientRect().right - k[0].getBoundingClientRect().left;
-  return Math.abs(a - b) / a < 0.02;
+  const ink = (el) => {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    const rects = [...r.getClientRects()];
+    const track = parseFloat(getComputedStyle(el).letterSpacing) || 0;
+    return [Math.min(...rects.map(x => x.left)), Math.max(...rects.map(x => x.right)) - track];
+  };
+  const [cl, cr] = ink(document.getElementById('tl'));
+  const [al, ar] = ink(document.getElementById('tb'));
+  return Math.abs(al - cl) <= 2 && Math.abs(ar - cr) <= 2;
 })()`));
 // Unlock all and Reset everything are DEVELOPMENT TOOLS, behind __DEV__ and
 // absent from a plain `npm run build`. One suite covers both builds: it asks the

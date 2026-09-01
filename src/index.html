@@ -61,13 +61,15 @@
 <div id="gd"></div>
 <f><div id="gl"></div></f>
 <div id="ti" class="C">
-  <!-- #tw is shrink-to-fit, so COLOR sets the measure and #tb spreads
-       its letters across exactly that width. One span per letter is what makes
-       the spread possible; AlchemY keeps an initial and a terminal capital so
-       small-caps leaves A and Y full height. -->
+  <!-- #tw is shrink-to-fit, so COLOR sets the measure and #tb tracks its
+       letters out across it, flush at both ends. This was seven spans spread by
+       flex; one text node and a letter-spacing does the same job 7 B cheaper,
+       with a negative right margin in style.css cancelling the gap that
+       letter-spacing leaves after the final letter. AlchemY keeps an initial
+       and a terminal capital so small-caps leaves A and Y full height. -->
   <div id="tw">
     <div id="tl">COLOR</div>
-    <div id="tb"><span>A</span><span>l</span><span>c</span><span>h</span><span>e</span><span>m</span><span>Y</span></div>
+    <div id="tb">AlchemY</div>
   </div>
   <!-- The button column AND the Highscore/Encyclopedia subscreen: whichever
        is up, openPanel and paintMenu write it here. -->
