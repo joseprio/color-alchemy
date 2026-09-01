@@ -135,6 +135,21 @@ npm run audio-bench       # what a sample costs, against the callback budget
   params and the order are co-fitted**: re-search the order after source
   changes, the params on their own schedule, each a strict-win A/B. Do not
   chase the loop between them.
+- **The fn-order search space is NOT authorable, and trying costs 7 B.** The
+  pass permutes top-level `FunctionDeclaration` nodes — 54 of them — so the
+  obvious idea is to write more of the program that way and give the search
+  more material. `frame`, the rAF loop in `src/index.ts`, is the one candidate:
+  it is authored `const frame = (t) => …` and ships as `let si=e=>{…}`, outside
+  the reorderable set. Rewritten as `function frame(t) {…}` the chunk gains
+  nothing — `fn-order` still reports **54** and still matches, because terser
+  inlines the function into its single `requestAnimationFrame(frame)` call site
+  as a NAMED FUNCTION EXPRESSION (`requestAnimationFrame(function e(i){…})`)
+  rather than leaving a declaration behind. **13288 → 13295**, and the extra
+  bytes are the name: single-use and self-referential, it recursed through the
+  top-level binding when it was an arrow and has to carry its own name when it
+  is not.
+  So what lands as a top-level declaration is decided by terser's inlining, not
+  by the spelling in the source. The 54 are what they are.
 - **Only UNIQUE PROSE is worth moving into the payload.** The same trade as the
   stylesheet above, applied to what markup was left, and the rule that came out
   of measuring it: the zip DEFLATES the markup, roadroller MODELS the payload,
