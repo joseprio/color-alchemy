@@ -340,6 +340,15 @@ export const ELEMENTS = ([
     r:[["night","sun"]] },
   { id:"telescope", e:"\u{1F52D}",
     r:[["night","glass"],["star","glass"]] },
+  // A comet IS ice in space, which is the whole recipe. Against the Star and
+  // the Telescope rather than up with the Ice: "star" is six occurrences to
+  // "ice"'s nine, and this is the night-sky run the Star, the Moon and the
+  // Telescope already make.
+  // U+2604 is TEXT presentation by default, so it wears the variation selector
+  // the way the Skiing and the Ice Skate do — without it a browser may draw
+  // the outline glyph.
+  { id:"comet", e:"\u{2604}\u{FE0F}",
+    r:[["ice","star"]] },
   { id:"ghost", e:"\u{1F47B}",
     r:[["night","air"],["ash","night"]] },
   { id:"cloud", e:"☁️",
@@ -356,6 +365,16 @@ export const ELEMENTS = ([
     r:[["human","sky"]] },
   { id:"tornado", e:"\u{1F32A}️",
     r:[["air","storm"]] },
+  // A cloud that came down, which is what fog is and how a player will read
+  // it. Closes the weather run the Cloud opens — Rain, Lightning, Storm,
+  // Umbrella, Parachute, Tornado — and hugs "cloud" at eight occurrences
+  // rather than "earth" at twenty.
+  // The variation selector again, and note the two spellings sitting side by
+  // side: the Rain and the Tornado above carry a LITERAL U+FE0F, invisible in
+  // the source, where this writes it as an escape. Same bytes in the chunk
+  // (ascii_only re-escapes it either way) and one of them can be read.
+  { id:"fog", e:"\u{1F32B}\u{FE0F}",
+    r:[["cloud","earth"]] },
   { id:"life", e:"\u{1F9EC}",
     r:[["lightning","water"],["sun","water"]] },
   { id:"alien", e:"\u{1F47D}",
