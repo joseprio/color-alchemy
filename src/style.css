@@ -30,7 +30,19 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
-  margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 monospace;
+  /* `emoji` is the family the SHIPPING build defines with an @font-face in
+     rollup.config.mjs; it rides in the shorthand here rather than in a rule of
+     its own because appending `body{font-family:emoji,monospace}` to the sheet
+     costs 33 characters and this costs 7. Inert everywhere else: nothing
+     defines the family in a dev build, and the director's cut overrides the
+     whole font-family with its own Noto face further down the sheet.
+     FIRST, not last: a family the page names is tried before the browser's own
+     fallback chain, so trailing it behind monospace lets any emoji coverage
+     monospace happens to have win instead. Leading with it is what actually
+     pins the artwork. Safe because the face is emoji-only — every latin
+     character falls straight through to monospace, which still sets all the
+     text. A face carrying latin glyphs would restyle the whole UI from here. */
+  margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 emoji, monospace;
   display: flex; flex-direction: column; align-items: center;
   touch-action: manipulation; overflow-x: hidden;
   background-attachment: fixed;

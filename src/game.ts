@@ -184,7 +184,7 @@ function addTile(id: string): void {
   const d = document.createElement("div");
   d.className = "t";
   d.dataset.id = id;
-  d.innerHTML = '<div class="o">' + iconHtml(el) + '</div><div class="n">' + el.n + "</div>";
+  d.innerHTML = '<div class="o">' + iconHtml(el) + '</div><div class="n">' + el.n;
   const i = order.length;
   d.onclick = () => {
     if (performance.now() < clickGuard) return; // that click ended a drag
@@ -453,7 +453,7 @@ function fill(box: HTMLElement, id: string | null): void {
   const el = id ? BY_ID[id] : null;
   box.innerHTML = el
     ? (el.c || el.bg || el.s ? iconHtml(el) : '<span class="i">' + el.e + "</span>") +
-      "<span>" + el.n + "</span>"
+      "<span>" + el.n
     : "";
 }
 function paintCauldron(): void {
@@ -499,7 +499,7 @@ function openDisc(id: string, aId: string, bId: string): void {
     '<span class="m"><span class="g a">' + iconHtml(BY_ID[aId]) + "</span></span>" +
     '<span class="m"><span class="g b">' + iconHtml(BY_ID[bId]) + "</span></span>" +
     '<span class="m"><span class="g r">' + iconHtml(el) + "</span></span>" +
-    '<span class="c"><b>' + el.n + "</b>" + (__DIRECTOR__ ? cardQuote(id) : "") + "</span>";
+    '<span class="c"><b>' + el.n + "</b>" + (__DIRECTOR__ ? cardQuote(id) : "");
   reflow(ds);            // re-arm the fade when one discovery follows another
   ds.classList.add("y");
   discTimer = setTimeout(closeDisc, 3250);
@@ -568,12 +568,12 @@ export function attempt(aId: string, bId: string): void {
     SFX.discover();
     sweep(2200);
   } else if (res) {
-    cq.innerHTML = "<b>" + N(res) + "</b> <i>&mdash; already discovered</i>";
+    cq.innerHTML = "<b>" + N(res) + "</b> <i>&mdash; already discovered";
     flash(res); // point at the element you already own
     SFX.dupe();
     sweep(1500);
   } else {
-    cq.innerHTML = "<i>nothing happens</i>";
+    cq.innerHTML = "<i>nothing happens";
     SFX.fail();
     sweep(1100);
   }
@@ -702,7 +702,7 @@ function openOverlay(html: string, buttons: OverlayButton[]): void {
   // is ever painted. Every overlay this game opens is a completion screen, so
   // the rule belongs here rather than at the two places that raise one.
   closeDisc();
-  oc.innerHTML = html + '<div id="ob"></div>';
+  oc.innerHTML = html + '<div id="ob">';
   obFns = [];
   obCur = 0;
   buttons.map(([label, fn]) => {
@@ -985,7 +985,7 @@ function closeMenu(): void {
 }
 function openPanel(head: string, listHtml: string): void {
   mu.innerHTML = '<div id="mh">' + head.toUpperCase() + '</div><div id="ml">' + listHtml +
-    '</div><button id="mb">Back</button>';
+    '</div><button id="mb">Back';
   mb.onclick = menuBack;   // the button is rebuilt with the panel, so is this
   panel = true;
   mu.classList.add("j");

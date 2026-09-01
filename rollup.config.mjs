@@ -78,8 +78,9 @@ const injectCss = {
     if (!code.includes("__MARKUP__ = ") && !code.includes("__MARKUP__;")) {
       throw new Error("inject-css: src/css.ts no longer mentions __MARKUP__");
     }
-    // fontCss is empty unless this is a director build
-    const sheet = minCss + fontCss;
+    // GOLF_EMOJI_CSS is empty unless this is a shipping build, fontCss unless
+    // it is a director one — the two are never both set.
+    const sheet = minCss + GOLF_EMOJI_CSS + fontCss;
     return { code: code.replace(/__MARKUP__/g, () => JSON.stringify(sheet)), map: null };
   },
 };
@@ -126,6 +127,32 @@ const cutDirectorCss = (css) =>
   DIRECTOR
     ? css.replace(/\/\*[><]director\*\//g, "")
     : css.replace(/\/\*>director\*\/[\s\S]*?\/\*<director\*\//g, "");
+// GOLF-ONLY: the shipping build pins its emoji too, from a URL rather than from
+// the payload. The cut compiles its own 237 KB COLRv1 font and carries it in
+// the zip (tools/emoji-font.mjs); a 13312-byte build can afford neither the
+// font nor a fraction of it, so this is the same artwork fetched at runtime for
+// the cost of the rule that names it.
+//
+// THE TRADE, said plainly because it is not free: the page stops being
+// self-contained. Every other byte of this game is inside the zip, and this is
+// a reference OUT of it — offline the rule simply does not resolve and the
+// emoji fall back to the platform's own, which is exactly what shipped before,
+// so the failure mode is the old behaviour rather than a broken page. Worth
+// knowing that most size-limited competitions require an entry to run with no
+// network at all; under those rules this rule is the one thing to take out.
+//
+// Protocol-relative so the page works from file:// as well as over https.
+// Appended AFTER cssnano for the reason the director's font rules are: nothing
+// should get to rewrite a src url on the way through.
+// NOT in src/style.css, because that file is shared with the cut, and the cut
+// has a real font of its own to name.
+// Only the @font-face: the family is NAMED in style.css's own body shorthand
+// (`font: 14px/1.45 monospace, emoji`), which is 7 characters there against 33
+// for a `body{font-family:monospace,emoji}` rule appended here. The name is
+// inert in the builds that do not define it.
+const GOLF_EMOJI_CSS = golf
+  ? `@font-face{font-family:emoji;src:url(//joseprio.github.io/color-emoji/emoji.woff2)}`
+  : "";
 const minCss = execSync("npx postcss", {
   input: cutDirectorCss(readFileSync("src/style.css", "utf8")),
 }).toString().trim();
@@ -203,7 +230,25 @@ const injectBody = {
     if (!code.includes("__BODY__")) {
       throw new Error("inject-body: src/css.ts no longer mentions __BODY__");
     }
-    const body = (await minifyHtml(bodyOf(readFileSync("src/index.html", "utf8")), BODY_MIN_OPTS)).trim();
+    // TRAILING CLOSE TAGS ARE IMPLIED, and this is the one place that can act
+    // on it without lying to anyone. The markup is assigned with innerHTML, and
+    // a fragment parser closes whatever is still open when the string ends — so
+    // every `</div>` in a run at the very end is describing something the
+    // parser was going to do anyway. html-minifier will not do this, and it is
+    // right not to: `removeOptionalTags` only drops what the SPEC calls
+    // optional (`</li>`, `</td>`, `</p>` — none of which this page uses) and
+    // what is left would not be a valid document. It does not have to be one.
+    // It is an innerHTML payload, and src/index.html stays a real, valid,
+    // well-formed HTML file that opens in a browser and that the dev build
+    // serves as-is.
+    // Only the trailing RUN, never an interior tag: dropping `</div>` in the
+    // middle would nest the next element inside the previous one instead of
+    // making it a sibling, silently and visibly.
+    const closed = (await minifyHtml(bodyOf(readFileSync("src/index.html", "utf8")), BODY_MIN_OPTS)).trim();
+    const body = closed.replace(/(?:<\/[a-z]+>)+$/, "");
+    if (closed.length !== body.length) {
+      console.log(`inject-body: dropped ${closed.length - body.length} chars of implied trailing close tags`);
+    }
     if (body.includes("</script")) {
       throw new Error("inject-body: the template body contains '</script' — cannot ride in an inline script");
     }
@@ -391,6 +436,33 @@ const constToLet = {
   },
 };
 
+// `transparent` -> `#0000`, which is the same colour in six fewer characters
+// and is worth 11 B measured. A BUILD PASS rather than a source edit, for the
+// reason the whole size-golf tail exists: src/style.css and the forty hand-
+// commented gradient stacks in src/elements.ts stay readable, and the byte is
+// taken here. `transparent` says what it means; `#0000` does not.
+//
+// SAFE AS A TEXT PASS because every occurrence in this chunk is inside a string
+// literal — the stylesheet, and the `bg:`/`s:` values in the element table.
+// `transparent` is not a JS keyword and nothing in src/*.ts uses it as an
+// identifier, checked. The count is logged and the pass throws if it ever finds
+// none, which is what a rename or a refactor that moved the CSS would look like.
+//
+// Cheap in raw characters and NOT cheap in packed bytes, which is the lesson
+// this project keeps relearning: 318 characters leave the chunk and 11 bytes
+// leave the zip, because `transparent` repeated 53 times is a token roadroller
+// has long since modelled. Removing repetition is close to free in both
+// directions; it is unique text that costs.
+const shortenTransparent = {
+  name: "shorten-transparent",
+  renderChunk(code) {
+    const n = (code.match(/transparent/g) || []).length;
+    if (!n) throw new Error("shorten-transparent: no `transparent` in the chunk — has the CSS moved?");
+    console.log(`shorten-transparent: ${n} occurrence(s) -> #0000, ${n * 6} chars`);
+    return code.replace(/transparent/g, "#0000");
+  },
+};
+
 /* ------------------------------------------------------------- roadroller */
 // Params come from rr-config.json when it exists, and from an in-process search
 // when it doesn't. Pinned params are what make the build byte-deterministic —
@@ -519,6 +591,7 @@ export default {
       }),
     golf && eslintVarToLet,
     golf && constToLet,
+    golf && shortenTransparent,
     golf &&
       terser({
         ecma: 2021,

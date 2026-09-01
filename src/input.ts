@@ -61,7 +61,10 @@ type Dir = "left" | "right" | "up" | "down";
 const DELTA: Record<Dir, [number, number]> = {
   left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1],
 };
-let prevA = false, prevB = false, prevX = false, prevY = false, prevStart = false;
+// One slot per button index rather than five named flags: an empty array
+// reads undefined, which is already falsy, so this needs no initialiser at
+// all — where five booleans cost an "=0" apiece.
+const held: boolean[] = [];
 const dirHeld: Partial<Record<Dir, { since: number; last: number }>> = {};
 
 export function pollPad(now: number): void {
@@ -95,29 +98,31 @@ export function pollPad(now: number): void {
       }
     } else delete dirHeld[d];
   }
-  const a = bt(0), b = bt(1), x = bt(2), y = bt(3), st = bt(9);
-  if (a && !prevA) {
+  // Rising edge: true only on the frame a button goes down. Called once per
+  // button per frame as the `if` condition itself, so the state still updates
+  // for every button despite the && below.
+  const edge = (i: number): boolean => {
+    const v = bt(i), was = held[i];
+    held[i] = v;
+    return v && !was;
+  };
+  if (edge(0)) {
     const p = phase();
     if (p === "overlay") obGo();
     else if (p === "menu") menuGo();
     else padSelect();
   }
-  if (b && !prevB) {
+  if (edge(1)) {
     const p = phase();
     if (p === "menu") menuBack();
     else if (p === "play") { if (!clearSel()) openMenu(); } // Ⓑ mirrors Escape
   }
-  if (x && !prevX) muteToggle();                 // Ⓧ mirrors M, in every phase
-  if (y && !prevY && phase() === "play") hint(); // Ⓨ mirrors H; ignored elsewhere
-  if (st && !prevStart) {
+  if (edge(2)) muteToggle();                 // Ⓧ mirrors M, in every phase
+  if (edge(3) && phase() === "play") hint(); // Ⓨ mirrors H; ignored elsewhere
+  if (edge(9)) {
     const p = phase();
     if (p === "overlay") obGo();
     else if (p === "menu") menuBack();  // Start toggles the pause menu closed
     else openMenu();                    // and open
   }
-  prevA = a;
-  prevB = b;
-  prevX = x;
-  prevY = y;
-  prevStart = st;
 }
