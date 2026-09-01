@@ -83,6 +83,28 @@ if (!html.includes("<style id=st>") && !html.includes('<style id="st">')) {
 // already inside the 48 the move measured.
 if (!/<body[\s>]/.test(html)) html = html.replace("<script>", "<body><script>");
 
+// THE PAGE DECLARES NO CHARSET, and this is what makes that safe. Dropping
+// <meta charset=utf-8> is worth 11 B — the shell is deflated at the worst ratio
+// in the build, so its characters are the dearest ones here — and it is only
+// safe while every byte of the page is ASCII, which every ASCII-compatible
+// default decodes identically. Nothing in the page is non-ASCII today: terser
+// runs with ascii_only so the chunk escapes its emoji, and roadroller's packed
+// output is printable ASCII.
+//
+// "Today" is the problem, so it is asserted rather than assumed. A roadroller
+// re-fit that began emitting a byte above 0x7E, or a stray character pasted into
+// src/index.html, would otherwise be decoded by whatever the browser guessed and
+// silently corrupt the payload — a mojibake page rather than a build error.
+const nonAscii = [...html].filter((c) => c.codePointAt(0) > 0x7e);
+if (nonAscii.length) {
+  throw new Error(
+    `postbuild: ${nonAscii.length} non-ASCII character(s) in the page (first: ` +
+    `U+${nonAscii[0].codePointAt(0).toString(16).toUpperCase()}), but it declares no ` +
+    `charset. Either re-add <meta charset=utf-8> to src/index.html, or find what ` +
+    `stopped being ASCII.`
+  );
+}
+
 writeFileSync(BUNDLE_FILE, html);
 
 // --- the crc the zip container needs, whichever kind we are writing --------

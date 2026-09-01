@@ -52,14 +52,14 @@ interface RawDef {
 export interface ElementDef extends RawDef { n: string }
 
 export const ELEMENTS = ([
-  { id:"red", c:"#ff3b30" },
-  { id:"green", c:"#34d158" },
-  { id:"blue", c:"#2f6bff" },
-  { id:"yellow", c:"#ffdc32",
+  { id:"red", c:"#f33" },
+  { id:"green", c:"#3c5" },
+  { id:"blue", c:"#36f" },
+  { id:"yellow", c:"#fd3",
     r:[["red","green"]] },
-  { id:"magenta", c:"#ff44ff",
+  { id:"magenta", c:"#f4f",
     r:[["red","blue"]] },
-  { id:"cyan", c:"#33e9e9",
+  { id:"cyan", c:"#3ee",
     r:[["green","blue"]] },
   // ONE ROUTE, which is the colour run's own idiom rather than an omission:
   // every colour but the White has exactly one, and this is the same sentence
@@ -70,7 +70,7 @@ export const ELEMENTS = ([
   // a bluer cyan; neither says turquoise without the player guessing.
   // Against the Cyan because "cyan" is in three recipes and "green" in
   // thirteen, and the entry keeps this run's { id, c, r } shape exactly.
-  { id:"turquoise", c:"#2ec4a6",
+  { id:"turquoise", c:"#3ca",
     r:[["cyan","green"]] },
   // The wheel's other clean gap, and the same one-route sentence: the Yellow
   // with the Green beside it. The pair reads ["green","yellow"] so the Green
@@ -78,7 +78,7 @@ export const ELEMENTS = ([
   // so this is only ever a packing choice, and it is NOT measured, unlike most
   // of the orders in this file.
   // The two that are left stay out: Blue + Cyan is an Azure the SKY already
-  // owns at #7ec8ff, and Red + Magenta is a Rose the Pink owns at #ffa8c5.
+  // owns at #7cf, and Red + Magenta is a Rose the Pink owns at #fac.
   // Both would put a near-duplicate swatch on the board. Four of six is where
   // this run ends.
   // LIME IS NOT THIS COLOUR'S NAME, deliberately: Fruit + Yellow is a Banana
@@ -86,7 +86,7 @@ export const ELEMENTS = ([
   // as a colour. It went to Fruit + CHARTREUSE rather than Fruit + Green, which
   // is the better half of the bargain — a lime is that yellow-green exactly,
   // and it leaves this colour with a consumer instead of a dead end.
-  { id:"chartreuse", c:"#a8dc32",
+  { id:"chartreuse", c:"#ad3",
     r:[["green","yellow"]] },
   // THREE ROUTES, where every colour but the White has one — deliberate, and
   // the reason is that the three are not one sentence said three times. Red +
@@ -95,45 +95,45 @@ export const ELEMENTS = ([
   // said before. Red + Blood is what the word actually means, and it gives the
   // Blood a fifth consumer and the Black a ninth.
   // The name is what makes this gap safe: the wheel's last free slot is a Rose
-  // otherwise, and a rose sits on top of the Pink at #ffa8c5. Crimson is deep
+  // otherwise, and a rose sits on top of the Pink at #fac. Crimson is deep
   // where the Pink is pale, so the two read apart on a board of swatches.
   // "red" leads all three so the entry is one prefix repeated.
-  { id:"crimson", c:"#b3123c",
+  { id:"crimson", c:"#b14",
     r:[["red","magenta"],["red","black"],["red","blood"]] },
   // The DARKENING again, one entry after the Crimson invented it, which is what
   // makes it an idiom rather than a one-off: a teal is a dark cyan the way a
   // crimson is a dark red. Kept against the Crimson for that reading and for
   // the tail — both pairs end `,"black"]`, an exact repeat.
   // Three blue-greens on one board is the tightest neighbourhood in the table,
-  // so this swatch is dark on purpose: the Cyan at #33e9e9, the Turquoise at
-  // #2ec4a6 and this separate by BRIGHTNESS, not by hue.
-  { id:"teal", c:"#0f6b6b",
+  // so this swatch is dark on purpose: the Cyan at #3ee, the Turquoise at
+  // #3ca and this separate by BRIGHTNESS, not by hue.
+  { id:"teal", c:"#166",
     r:[["cyan","black"]] },
   // The LIGHTENING, which balances the two darkenings above it: the Pink is
   // Red + White and had been saying that alone, and this is the same sentence
   // for the Brown. Placed here so the pale one sits with the dark ones and the
   // three read as the one idea.
-  // The swatch is the whole difficulty, not the recipe — the Sand at #e0c078
-  // is ALREADY this table's pale tan, with the Ash at #b9b3ad and the Clay at
-  // #c1663c beside it. So this one separates on saturation rather than hue:
+  // The swatch is the whole difficulty, not the recipe — the Sand at #db7
+  // is ALREADY this table's pale tan, with the Ash at #bba and the Clay at
+  // #b64 beside it. So this one separates on saturation rather than hue:
   // the Sand is golden, this is drained and paler, and the Ash is greyer still.
-  { id:"beige", c:"#e8ddc4",
+  { id:"beige", c:"#edc",
     r:[["brown","white"]] },
-  { id:"white", c:"#ffffff",
+  { id:"white", c:"#fff",
     r:[["blue","yellow"],["red","cyan"],["green","magenta"]] },
-  { id:"orange", c:"#ff9430",
+  { id:"orange", c:"#f93",
     r:[["red","yellow"]] },
-  { id:"violet", c:"#9a4dff",
+  { id:"violet", c:"#95f",
     r:[["blue","magenta"]] },
-  { id:"indigo", c:"#4a30d8",
+  { id:"indigo", c:"#43d",
     r:[["blue","violet"]] },
-  { id:"pink", c:"#ffa8c5",
+  { id:"pink", c:"#fac",
     r:[["red","white"]] },
   // Brown TAKES the pair Earth used to own. Earth is not lost: it comes back
   // below as Brown + Matter, which is the only reason this swap is safe —
   // green + orange was Earth's single route, and 72 of the elements after it
   // are downstream of Earth.
-  { id:"brown", c:"#8b5a2b",
+  { id:"brown", c:"#853",
     r:[["green","orange"]] },
   // Both routes are a COMPLEMENTARY PAIR — violet against yellow, orange
   // against blue — which is the whole idea: the two halves of the colour wheel
@@ -141,19 +141,19 @@ export const ELEMENTS = ([
   // here rather than by depth because every string it uses (the two hexes, the
   // four ingredient ids) is already in this stretch of the table, and an exact
   // repeat costs roadroller almost nothing.
-  { id:"matter", c:"#7ec8ff",
-    s:"<g transform='translate(16 16)' fill='none' stroke='#7ec8ff' stroke-width='2'>" +
+  { id:"matter", c:"#7cf",
+    s:"<g transform='translate(16 16)' fill='none' stroke='#7cf' stroke-width='2'>" +
       "<ellipse rx='13' ry='5'/>" +
       "<ellipse rx='13' ry='5' transform='rotate(60)'/>" +
       "<ellipse rx='13' ry='5' transform='rotate(-60)'/>" +
-      "<circle r='4' fill='#eaf8ff' stroke='none'/></g>",
+      "<circle r='4' fill='#eff' stroke='none'/></g>",
     r:[["violet","yellow"],["blue","orange"]] },
   { id:"air", e:"\u{1F4A8}",
     r:[["white","matter"]] },
-  { id:"sky", c:"#7ec8ff",
-    bg:"radial-gradient(circle at 68% 30%, #fff3a0 0 6%, #ffdc32 6% 13%, transparent 17%)," +
-       "radial-gradient(circle at 68% 30%, #ffdc3244 0 22%, transparent 30%)," +
-       "linear-gradient(180deg, #a8dbff 0%, #7ec8ff 55%, #4f9fe8 100%)",
+  { id:"sky", c:"#7cf",
+    bg:"radial-gradient(circle at 68% 30%, #fe9 0 6%, #fd3 6% 13%, transparent 17%)," +
+       "radial-gradient(circle at 68% 30%, #fd34 0 22%, transparent 30%)," +
+       "linear-gradient(180deg, #adf 0%, #7cf 55%, #59e 100%)",
     r:[["air","blue"],["air","cyan"]] },
   // THE SAME SHINE THE METAL WEARS, said in gold: a diagonal highlight band
   // over a vertical tone ramp, the two stacked in that order so the band
@@ -162,40 +162,40 @@ export const ELEMENTS = ([
   // stop — a near-repeat of a run roadroller has already modelled costs a
   // fraction of a fresh one, and the two materials wanting to look like
   // members of the same set is the whole point anyway.
-  { id:"gold", c:"#f7c948",
-    bg:"linear-gradient(120deg, transparent 0 30%, #fff8d0aa 30% 38%, transparent 38% 62%," +
-       "#fff8d055 62% 68%, transparent 68%)," +
-       "linear-gradient(180deg, #ffeaa0 0%, #f7c948 38%, #a9741a 62%, #ffdd7a 100%)",
+  { id:"gold", c:"#fc4",
+    bg:"linear-gradient(120deg, transparent 0 30%, #ffca 30% 38%, transparent 38% 62%," +
+       "#ffc5 62% 68%, transparent 68%)," +
+       "linear-gradient(180deg, #fe9 0%, #fc4 38%, #a72 62%, #fd7 100%)",
     r:[["yellow","orange"],["metal","yellow"]] },
-  { id:"copper", c:"#b87333",
-    bg:"linear-gradient(120deg, transparent 0 30%, #ffe0c0aa 30% 38%, transparent 38% 62%," +
-       "#ffe0c055 62% 68%, transparent 68%)," +
-       "linear-gradient(180deg, #e8b184 0%, #b87333 38%, #6e3a12 62%, #dda36b 100%)",
+  { id:"copper", c:"#b73",
+    bg:"linear-gradient(120deg, transparent 0 30%, #fdba 30% 38%, transparent 38% 62%," +
+       "#fdb5 62% 68%, transparent 68%)," +
+       "linear-gradient(180deg, #ea8 0%, #b73 38%, #631 62%, #da6 100%)",
     r:[["brown","metal"]] },
   // THE THIRD OF THE SHINE, and the stack is the Metal's again — same bands,
   // same four stops, only the ramp said in a brighter, cooler set of greys so
   // it reads as polished rather than as the Metal's raw steel.
-  { id:"silver", c:"#dfe6ec",
-    bg:"linear-gradient(120deg, transparent 0 30%, #ffffffcc 30% 38%, transparent 38% 62%," +
-       "#ffffff77 62% 68%, transparent 68%)," +
-       "linear-gradient(180deg, #ffffff 0%, #dfe6ec 38%, #98a3ae 62%, #f2f6f9 100%)",
+  { id:"silver", c:"#dee",
+    bg:"linear-gradient(120deg, transparent 0 30%, #fffc 30% 38%, transparent 38% 62%," +
+       "#fff7 62% 68%, transparent 68%)," +
+       "linear-gradient(180deg, #fff 0%, #dee 38%, #9aa 62%, #eef 100%)",
     r:[["grey","white"]] },
   { id:"water", e:"\u{1F4A7}",
     r:[["blue","matter"],["fire","ice"],["ice","sun"],["snowman","sun"],["fire","snowman"]] },
   { id:"fire", e:"\u{1F525}",
     r:[["red","matter"],["orange","matter"],["red","air"],["orange","air"],
        ["red","wood"],["orange","wood"],["fire","air"]] },
-  { id:"earth", c:"#a4713f",
-    bg:"radial-gradient(circle at 30% 35%, #7a4a26cc 0 5%, transparent 9%)," +
-       "radial-gradient(circle at 62% 60%, #5c3a1e 0 4%, transparent 8%)," +
-       "radial-gradient(circle at 78% 28%, #b98a55 0 4%, transparent 8%)," +
-       "radial-gradient(circle at 42% 78%, #5c3a1e 0 4.5%, transparent 8%)," +
-       "radial-gradient(circle at 15% 65%, #b98a55aa 0 3.5%, transparent 7%)," +
-       "linear-gradient(180deg, #a4713f 0%, #7c5230 55%, #59391f 100%)",
+  { id:"earth", c:"#a74",
+    bg:"radial-gradient(circle at 30% 35%, #742c 0 5%, transparent 9%)," +
+       "radial-gradient(circle at 62% 60%, #532 0 4%, transparent 8%)," +
+       "radial-gradient(circle at 78% 28%, #b85 0 4%, transparent 8%)," +
+       "radial-gradient(circle at 42% 78%, #532 0 4.5%, transparent 8%)," +
+       "radial-gradient(circle at 15% 65%, #b85a 0 3.5%, transparent 7%)," +
+       "linear-gradient(180deg, #a74 0%, #753 55%, #532 100%)",
     r:[["brown","matter"]] },
-  { id:"clay", c:"#c1663c",
-    bg:"radial-gradient(circle at 33% 26%, #ffc49faa 0 11%, transparent 32%),"
-       + "linear-gradient(150deg, #d4794c 0%, #c1663c 46%, #8f4526 100%)",
+  { id:"clay", c:"#b64",
+    bg:"radial-gradient(circle at 33% 26%, #fc9a 0 11%, transparent 32%),"
+       + "linear-gradient(150deg, #c74 0%, #b64 46%, #842 100%)",
     r:[["earth","water"],["earth","red"],["brown","water"]] },
   { id:"pottery", e:"\u{1F3FA}",
     r:[["clay","fire"]] },
@@ -239,12 +239,12 @@ export const ELEMENTS = ([
     r:[["red","water"],["crimson","water"],["human","syringe"]] },
   { id:"coffee", e:"\u{2615}",
     r:[["black","water"],["brown","milk"],["black","milk"]] },
-  { id:"lava", c:"#ff5a1f",
-    bg:"radial-gradient(circle at 27% 32%, #ffe08a 0 3.5%, transparent 7%)," +
-       "radial-gradient(circle at 72% 62%, #ffc04dcc 0 4%, transparent 8%)," +
-       "linear-gradient(108deg, #2b0e07 0 14%, transparent 14% 27%, #1f0905 27% 35%," +
-       "transparent 35% 58%, #2b0e07 58% 68%, transparent 68% 84%, #1f0905 84% 92%, transparent 92%)," +
-       "linear-gradient(180deg, #ffb020 0%, #ff5a1f 45%, #a32206 100%)",
+  { id:"lava", c:"#f52",
+    bg:"radial-gradient(circle at 27% 32%, #fd8 0 3.5%, transparent 7%)," +
+       "radial-gradient(circle at 72% 62%, #fb5c 0 4%, transparent 8%)," +
+       "linear-gradient(108deg, #310 0 14%, transparent 14% 27%, #210 27% 35%," +
+       "transparent 35% 58%, #310 58% 68%, transparent 68% 84%, #210 84% 92%, transparent 92%)," +
+       "linear-gradient(180deg, #fa2 0%, #f52 45%, #a20 100%)",
     r:[["earth","fire"],["red","stone"],["orange","stone"],["lava","stone"]] },
   { id:"volcano", e:"\u{1F30B}",
     r:[["lava","earth"]] },
@@ -271,10 +271,10 @@ export const ELEMENTS = ([
   // the ramp sits. The Silver has nowhere to go above white, so the Metal
   // moved instead — every stop down one step, the bands down with them, which
   // reads as raw steel against the Silver's polish.
-  { id:"metal", c:"#a9b5c1",
-    bg:"linear-gradient(120deg, transparent 0 30%, #ffffff99 30% 38%, transparent 38% 62%," +
-       "#ffffff44 62% 68%, transparent 68%)," +
-       "linear-gradient(180deg, #ccd6df 0%, #93a0ad 38%, #59636e 62%, #b0bcc7 100%)",
+  { id:"metal", c:"#abb",
+    bg:"linear-gradient(120deg, transparent 0 30%, #fff9 30% 38%, transparent 38% 62%," +
+       "#fff4 62% 68%, transparent 68%)," +
+       "linear-gradient(180deg, #cdd 0%, #99a 38%, #566 62%, #abc 100%)",
     r:[["fire","stone"],["rust","acid"]] },
   // RUST EATS METAL AND ACID GIVES IT BACK. metal + air/water/salt corrodes;
   // rust + acid strips it back to bare metal, the one REVERSAL in the table.
@@ -288,12 +288,12 @@ export const ELEMENTS = ([
   // Orange and Sand at the warm end. See experiments/rust-tile.html.
   { id:"anchor", e:"\u{2693}",
     r:[["boat","metal"],["metal","sea"]] },
-  { id:"rust", c:"#c1571f",
-    bg:"radial-gradient(circle at 30% 32%, #d2691ee6 0 26%, transparent 44%)," +
-       "radial-gradient(circle at 70% 62%, #a33f0bdd 0 24%, transparent 42%)," +
-       "radial-gradient(circle at 52% 18%, #e08b3fcc 0 16%, transparent 30%)," +
-       "radial-gradient(circle at 18% 78%, #8a2f08cc 0 14%, transparent 28%)," +
-       "linear-gradient(120deg, #8f9aa6 0 46%, #6f7b88 46% 100%)",
+  { id:"rust", c:"#b52",
+    bg:"radial-gradient(circle at 30% 32%, #c62e 0 26%, transparent 44%)," +
+       "radial-gradient(circle at 70% 62%, #a41d 0 24%, transparent 42%)," +
+       "radial-gradient(circle at 52% 18%, #d84c 0 16%, transparent 30%)," +
+       "radial-gradient(circle at 18% 78%, #830c 0 14%, transparent 28%)," +
+       "linear-gradient(120deg, #89a 0 46%, #778 46% 100%)",
     r:[["metal","air"],["metal","water"],["metal","salt"],
        ["red","metal"],["orange","metal"]] },
   { id:"tool", e:"\u{1F6E0}\u{FE0F}",
@@ -304,17 +304,17 @@ export const ELEMENTS = ([
     r:[["gold","tool"]] },
   { id:"shovel", e:"\u{1FA8F}",
     r:[["sand","tool"],["earth","tool"]] },
-  { id:"sand", c:"#e0c078",
-    bg:"radial-gradient(circle at 30% 30%, #fff2c8aa 0 3%, transparent 6%)," +
-       "radial-gradient(circle at 70% 45%, #b98a4d88 0 3%, transparent 6%)," +
-       "radial-gradient(circle at 45% 70%, #fff2c899 0 2.5%, transparent 5%)," +
-       "linear-gradient(115deg, #ecd08a 0 54%, #d3ab5e 54% 100%)",
+  { id:"sand", c:"#db7",
+    bg:"radial-gradient(circle at 30% 30%, #feca 0 3%, transparent 6%)," +
+       "radial-gradient(circle at 70% 45%, #b858 0 3%, transparent 6%)," +
+       "radial-gradient(circle at 45% 70%, #fec9 0 2.5%, transparent 5%)," +
+       "linear-gradient(115deg, #ec8 0 54%, #ca6 54% 100%)",
     // Earth + Beige is Earth + Yellow said in the paler colour, and it is the
     // BEIGE'S ONLY CONSUMER — the colour was a dead end until this line.
     r:[["earth","air"],["stone","air"],["earth","yellow"],["earth","beige"]] },
-  { id:"glass", c:"#bfe6f2",
-    bg:"linear-gradient(135deg, transparent 0 28%, #ffffff99 28% 37%, transparent 37% 54%, #ffffff55 54% 60%, transparent 60% 100%)," +
-       "linear-gradient(180deg, #d8f1f8 0%, #a8d8ea 60%, #8ec4dc 100%)",
+  { id:"glass", c:"#bee",
+    bg:"linear-gradient(135deg, transparent 0 28%, #fff9 28% 37%, transparent 37% 54%, #fff5 54% 60%, transparent 60% 100%)," +
+       "linear-gradient(180deg, #def 0%, #ade 60%, #8cd 100%)",
     r:[["sand","fire"],["sand","electricity"],["sand","lightning"]] },
   { id:"mirror", e:"\u{1FA9E}",
     r:[["glass","metal"],["glass","grey"]] },
@@ -325,14 +325,14 @@ export const ELEMENTS = ([
   // Violet + Sky or Black + Sky, and the gradient is exactly that: the violet
   // at the top edge, falling to the Black the other route mixed in. Stars
   // unchanged.
-  { id:"night", c:"#8a56e0",
+  { id:"night", c:"#85d",
     bg:"radial-gradient(circle at 22% 28%, #fff 0 4%, transparent 8%)," +
        "radial-gradient(circle at 65% 16%, #fff 0 3%, transparent 6%)," +
-       "radial-gradient(circle at 82% 52%, #ffffffcc 0 3.5%, transparent 7%)," +
-       "radial-gradient(circle at 38% 62%, #ffffffbb 0 3%, transparent 6%)," +
+       "radial-gradient(circle at 82% 52%, #fffc 0 3.5%, transparent 7%)," +
+       "radial-gradient(circle at 38% 62%, #fffb 0 3%, transparent 6%)," +
        "radial-gradient(circle at 58% 84%, #fff 0 2.5%, transparent 5%)," +
-       "radial-gradient(circle at 12% 76%, #ffffff99 0 3%, transparent 6%)," +
-       "linear-gradient(160deg, #7b3fd0 0%, #241047 45%, #04060c 100%)",
+       "radial-gradient(circle at 12% 76%, #fff9 0 3%, transparent 6%)," +
+       "linear-gradient(160deg, #74c 0%, #214 45%, #001 100%)",
     r:[["black","sky"],["violet","sky"],["indigo","sky"]] },
   { id:"star", e:"⭐",
     r:[["night","white"],["night","yellow"]] },
@@ -618,6 +618,12 @@ export const ELEMENTS = ([
     r:[["shoe","yarn"]] },
   { id:"climbing", e:"\u{1F9D7}",
     r:[["human","mountain"]] },
+  // THE CLIMBING'S FIRST CONSUMER — one route in and nothing out until now.
+  // The activity, built: the same move the Umbrella makes on the Rain, an
+  // -ing turned into the object that serves it. Against the Climbing at one
+  // occurrence rather than the Wood at twenty.
+  { id:"ladder", e:"\u{1FA9C}",
+    r:[["climbing","wood"]] },
   { id:"racing", e:"\u{1F3C7}",
     r:[["horse","human"]] },
   { id:"skiing", e:"\u{26F7}\u{FE0F}",
@@ -736,6 +742,15 @@ export const ELEMENTS = ([
     r:[["human","green"],["ghost","human"]] },
   { id:"skull", e:"\u{1F480}",
     r:[["bone","human"]] },
+  // THE SKULL'S FIRST CONSUMER, and two directions rather than one said twice:
+  // Skull + Wood is what the box is FOR, Vampire + Wood is who sleeps in it.
+  // The second is also the joke a player reaches for — wood and a vampire is a
+  // stake, and this table gives them the coffin instead.
+  // Against the Skull, one occurrence to the Vampire's two and the Wood's
+  // twenty. U+26B0 is TEXT presentation by default, so it carries the
+  // variation selector, like the Skiing, the Ice Skate, the Fog and the Comet.
+  { id:"coffin", e:"\u{26B0}\u{FE0F}",
+    r:[["skull","wood"],["vampire","wood"]] },
   { id:"x-ray", e:"\u{1FA7B}",
     r:[["bone","doctor"]] },
   { id:"teacher", e:"\u{1F9D1}\u{200D}\u{1F3EB}",
@@ -926,14 +941,14 @@ export const ELEMENTS = ([
   { id:"snow", e:"\u{1F328}️",
     r:[["cloud","ice"],["cloud","white"]] },
   // the one icon that has to show a mechanism: white light in, spectrum out
-  { id:"prism", c:"#bfe6f2",
-    s:'<path d="M16 3 30 28H2Z" fill="#cfeaf544" stroke="#eaf8ff" stroke-width="1.6" stroke-linejoin="round"/>' +
+  { id:"prism", c:"#bee",
+    s:'<path d="M16 3 30 28H2Z" fill="#cee4" stroke="#eff" stroke-width="1.6" stroke-linejoin="round"/>' +
       '<path d="M0 11h12" stroke="#fff" stroke-width="2.4"/>' +
       '<g stroke-width="2.4" stroke-linecap="round">' +
-      '<path d="M22 15 32 7" stroke="#ff3b30"/><path d="M22 15 32 10" stroke="#ff9430"/>' +
-      '<path d="M22 15 32 13" stroke="#ffdc32"/><path d="M22 15 32 16" stroke="#34d158"/>' +
-      '<path d="M22 15 32 19" stroke="#33e9e9"/><path d="M22 15 32 22" stroke="#2f6bff"/>' +
-      '<path d="M22 15 32 25" stroke="#9a4dff"/></g>',
+      '<path d="M22 15 32 7" stroke="#f33"/><path d="M22 15 32 10" stroke="#f93"/>' +
+      '<path d="M22 15 32 13" stroke="#fd3"/><path d="M22 15 32 16" stroke="#3c5"/>' +
+      '<path d="M22 15 32 19" stroke="#3ee"/><path d="M22 15 32 22" stroke="#36f"/>' +
+      '<path d="M22 15 32 25" stroke="#95f"/></g>',
     r:[["diamond","glass"],["glass","tool"],["glass","scientist"],
        ["glass","white"]] },
   { id:"rainbow", e:"\u{1F308}",
@@ -991,8 +1006,8 @@ export const ELEMENTS = ([
   { id:"desert", e:"\u{1F3DC}\u{FE0F}",
     r:[["cactus","sand"]] },
   // a horizon rather than an object: sky above, green below, hard stop between
-  { id:"field", c:"#5fb54a",
-    bg:"linear-gradient(180deg, #a8dbff 0%, #7ec8ff 46%, #5fb54a 46%, #3f8c36 100%)",
+  { id:"field", c:"#6b4",
+    bg:"linear-gradient(180deg, #adf 0%, #7cf 46%, #6b4 46%, #483 100%)",
     r:[["earth","plant"],["earth","green"]] },
   // THE CORN'S SENTENCE ONE RANK UP, which is the move the Crown makes on the
   // Ring: Plant + Yellow is the Corn, and the Field is Plant in the Earth, so
@@ -1023,10 +1038,10 @@ export const ELEMENTS = ([
   // and was wrong by three times: the table is that cheap because it is
   // overwhelmingly REPEATED text, and an SVG is novel markup that packs at
   // about 2.7 bits/char. Budget a byte for every three raw characters.
-  { id:"wheat", c:"#e9a53f",
+  { id:"wheat", c:"#ea4",
     s:"<g transform='translate(16 14)'>" +
-      "<rect x='-1.2' y='-1' width='2.4' height='16' rx='1.2' fill='#b9782a'/>" +
-      "<g fill='#e9a53f'>" +
+      "<rect x='-1.2' y='-1' width='2.4' height='16' rx='1.2' fill='#b72'/>" +
+      "<g fill='#ea4'>" +
       "<ellipse cx='-3.7' cy='4' rx='2.5' ry='3.9' transform='rotate(-30 -3.7 4)'/>" +
       "<ellipse cx='3.7' cy='4' rx='2.5' ry='3.9' transform='rotate(30 3.7 4)'/>" +
       "<ellipse cx='-3.4' cy='-2' rx='2.5' ry='3.9' transform='rotate(-30 -3.4 -2)'/>" +
@@ -1198,18 +1213,18 @@ export const ELEMENTS = ([
   // in ten recipes against "animal"'s forty.
   { id:"beaver", e:"\u{1F9AB}",
     r:[["animal","wood"]] },
-  { id:"charcoal", c:"#8a3a14",
-    bg:"radial-gradient(circle at 34% 38%, #7c3312cc 0 4%, transparent 8%)," +
-       "radial-gradient(circle at 68% 66%, #6b2a10aa 0 3%, transparent 7%)," +
-       "linear-gradient(125deg, #2c2c2f 0 28%, #171719 28% 44%, #333338 44% 60%," +
-       "#1b1b1e 60% 78%, #27272b 78% 100%)",
+  { id:"charcoal", c:"#831",
+    bg:"radial-gradient(circle at 34% 38%, #731c 0 4%, transparent 8%)," +
+       "radial-gradient(circle at 68% 66%, #621a 0 3%, transparent 7%)," +
+       "linear-gradient(125deg, #333 0 28%, #111 28% 44%, #333 44% 60%," +
+       "#222 60% 78%, #223 78% 100%)",
     r:[["wood","fire"],["tree","fire"],["black","wood"]] },
   // Charcoal taken one burn further: a pale, cold powder, so the swatch drops
   // charcoal's brown embers for a grey drift and keeps one dying ember in it.
-  { id:"ash", c:"#b9b3ad",
-    bg:"radial-gradient(circle at 28% 30%, #efece8cc 0 6%, transparent 12%)," +
-       "radial-gradient(circle at 70% 64%, #ff6a2aaa 0 3%, transparent 8%)," +
-       "linear-gradient(140deg, #b3aca4 0%, #8a827b 46%, #625b55 100%)",
+  { id:"ash", c:"#bba",
+    bg:"radial-gradient(circle at 28% 30%, #eeec 0 6%, transparent 12%)," +
+       "radial-gradient(circle at 70% 64%, #f62a 0 3%, transparent 8%)," +
+       "linear-gradient(140deg, #baa 0%, #887 46%, #655 100%)",
     r:[["charcoal","fire"],["bone","fire"],["fire","paper"],
        ["book","fire"],["fire","painting"],["sun","vampire"]] },
   { id:"mushroom", e:"\u{1F344}",
@@ -1255,12 +1270,12 @@ export const ELEMENTS = ([
   // The one color no amount of mixing light can reach, so it arrives through
   // the materials instead. A plain black square would vanish into the tile, so
   // the swatch keeps a soft top-left sheen and lends a grey — not black — glow.
-  { id:"black", c:"#5b6472",
-    bg:"radial-gradient(circle at 30% 26%, #2a2f3a 0 18%, transparent 42%)," +
-       "linear-gradient(155deg, #17191f 0%, #0a0b0e 55%, #000000 100%)",
+  { id:"black", c:"#567",
+    bg:"radial-gradient(circle at 30% 26%, #233 0 18%, transparent 42%)," +
+       "linear-gradient(155deg, #112 0%, #111 55%, #000 100%)",
     r:[["charcoal","stone"],["charcoal","tool"],["charcoal","earth"],
        ["ash","charcoal"]] },
-  { id:"grey", c:"#7f8894",
+  { id:"grey", c:"#789",
     r:[["black","white"]] },
   { id:"diamond", e:"\u{1F48E}",
     r:[["charcoal","lava"],["volcano","charcoal"]] },

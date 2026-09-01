@@ -42,35 +42,35 @@ body {
      pins the artwork. Safe because the face is emoji-only — every latin
      character falls straight through to monospace, which still sets all the
      text. A face carrying latin glyphs would restyle the whole UI from here. */
-  margin: 0; background: #05060f; color: #cfe3ff; font: 14px/1.45 emoji, monospace;
+  margin: 0; background: #001; color: #cdf; font: 14px/1.45 emoji, monospace;
   display: flex; flex-direction: column; align-items: center;
   touch-action: manipulation; overflow-x: hidden;
   background-attachment: fixed;
   background-image:
-    radial-gradient(1200px 600px at 80% -10%, #1a1035 0%, transparent 60%),
-    radial-gradient(900px 500px at 10% 110%, #071f2a 0%, transparent 60%);
+    radial-gradient(1200px 600px at 80% -10%, #213 0%, transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, #022 0%, transparent 60%);
 }
 
 /* the goal line rides with the help text at the foot of the page */
-#gl { margin: 0 0 5px; color: #8fb4d8; font-size: 13px; }
+#gl { margin: 0 0 5px; color: #8bd; font-size: 13px; }
 
 #hd {
   display: flex; gap: 18px; align-items: center; justify-content: center;
   margin: 10px 0 4px; font-size: 13px; flex-wrap: wrap;
 }
 #hd b { color: #fff; font-weight: 700; }
-#bq { color: #ffd75e; }
+#bq { color: #fd6; }
 #bq:empty { display: none; }
 #ht, #mn, #sn {
-  background: #101528; color: #7f9fc0; border: 1px solid #2a3555;
+  background: #112; color: #79b; border: 1px solid #235;
   font: inherit; font-size: 12px; padding: 2px 10px; cursor: pointer; border-radius: 6px;
   transition: border-color .12s;   /* the same easing the tiles lighten on */
 }
-/* Hover lightens the border to the tiles' #3d5584, so the whole board and the
+/* Hover lightens the border to the tiles' #458, so the whole board and the
    row above it answer a pointer the same way. */
-#ht:hover, #mn:hover, #sn:hover { border-color: #3d5584; }
+#ht:hover, #mn:hover, #sn:hover { border-color: #458; }
 /* the keys that do the same thing, dimmer than the label */
-#ht i, #mn i, #sn i { font-style: normal; color: #55708e; margin-left: 6px; }
+#ht i, #mn i, #sn i { font-style: normal; color: #578; margin-left: 6px; }
 
 /* ------------------------------------------------------------------ cauldron
    Always on screen, directly under the HUD: two slots and a result well. #ca
@@ -84,13 +84,13 @@ body {
 :root { --dock: 134px; }
 #dk {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 7;
-  background: #070a14f2; border-top: 1px solid #16203a; padding: 9px 0 11px;
+  background: #011e; border-top: 1px solid #123; padding: 9px 0 11px;
 }
 #cd { display: flex; align-items: center; justify-content: center; gap: 12px; }
 .l, .W {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  border: 1px solid #223052; background: #0c1122cc; border-radius: 14px;
-  font-size: 11px; color: #b9d2ee; line-height: 1; text-align: center;
+  border: 1px solid #235; background: #112c; border-radius: 14px;
+  font-size: 11px; color: #bce; line-height: 1; text-align: center;
 }
 .l { position: relative; width: 84px; height: 84px; }
 .W { width: 96px; height: 96px; border-radius: 16px; }
@@ -99,10 +99,10 @@ body {
 .W .i { font-size: 34px; height: 40px; }
 .W .s { width: 40px; height: 40px; }
 /* empty: dashed and quiet, so the filled slots are the only thing lit */
-.l:empty, .W:empty { border-style: dashed; border-color: #1b2540; }
+.l:empty, .W:empty { border-style: dashed; border-color: #224; }
 /* #ca carries the lock, and clicking it still empties it — the corner X that
    used to advertise that is gone; the padlock badge is the only mark now. */
-#ca.y { border-color: #ffd75e; background: #14120acc; box-shadow: 0 0 16px #ffd75e22; cursor: pointer; }
+#ca.y { border-color: #fd6; background: #111c; box-shadow: 0 0 16px #fd62; cursor: pointer; }
 /* The lock, said the same way in both places it shows: a padlock badge on the
    cauldron's A slot and on the board tile that slot came from. Colour carried
    it alone before — gold for locked, cyan for a loose pick — which is a
@@ -113,20 +113,20 @@ body {
   content: "🔒"; position: absolute; top: 5px; left: 5px;
   width: 20px; height: 20px; border-radius: 50%; display: grid;
   place-items: center; font-size: 12px; line-height: 1;
-  background: #14120a; border: 1px solid #ffd75e;
+  background: #111; border: 1px solid #fd6;
 }
 .t.e { position: relative; }
 /* the empty B slot invites the second pick while A is held */
-#ca.y ~ #cb:empty { border-color: #33e9e9; color: #33e9e9; }
-#cr:not(:empty) { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 22px #ffd75e22; }
-.q { color: #33e9e9; font-size: 15px; }
+#ca.y ~ #cb:empty { border-color: #3ee; color: #3ee; }
+#cr:not(:empty) { border-color: #fd6; color: #fd6; box-shadow: 0 0 22px #fd62; }
+.q { color: #3ee; font-size: 15px; }
 /* the whole altar shakes when the pair makes nothing */
 #cd.x { animation: shake .4s cubic-bezier(.36, .07, .19, .97); }
 /* the result's own line: the name, where the modal used to put it (and the
    quote too, until that left for the director's cut) */
-#cq { min-height: 18px; margin: 6px 0 0; color: #8fb4d8; font-size: 12px; text-align: center; padding: 0 12px; }
+#cq { min-height: 18px; margin: 6px 0 0; color: #8bd; font-size: 12px; text-align: center; padding: 0 12px; }
 #cq b { color: #fff; }
-#cq i { color: #55708e; }
+#cq i { color: #578; }
 /* the new element arrives in the well with the pop the merge card used to own */
 #cr.P { animation: cpop .45s cubic-bezier(.2, 1.9, .4, 1); }
 @keyframes cpop { from { transform: scale(.3); } }
@@ -149,7 +149,7 @@ body {
 }
 .t {
   width: 92px; padding: 10px 4px 8px; text-align: center; cursor: pointer;
-  background: #0c1122cc; border: 1px solid #223052; border-radius: 12px;
+  background: #112c; border: 1px solid #235; border-radius: 12px;
   user-select: none; -webkit-user-select: none;
   transition: transform .08s, border-color .12s, background .12s;
   animation: pop .25s ease-out;
@@ -157,7 +157,7 @@ body {
   scroll-margin-bottom: calc(var(--dock) + 12px);
 }
 @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.t:hover { border-color: #3d5584; }
+.t:hover { border-color: #458; }
 /* ALREADY TRIED WITH THE PICK, AND IT MADE NOTHING. Border, ground, name and
    the ICON all give way together. The icon used to be exempt — the argument
    was that dimming the one square carrying the colour would be a lie about the
@@ -171,8 +171,8 @@ body {
    Placed above every other tile state so a marked tile that is also hinted, or
    being dragged onto, still reads as those: the mark is the weakest thing a
    tile can say, and the first to give way. */
-.t.x { border-color: #16203a; background: #080c17cc; }
-.t.x .n { color: #45536c; }
+.t.x { border-color: #123; background: #011c; }
+.t.x .n { color: #456; }
 .t.x .o { opacity: .35; }
 /* NOTHING LEFT TO MAKE. Every combination this element has left either makes
    nothing or remakes something already on the board — true of every terminal
@@ -186,21 +186,21 @@ body {
    needs it. Instead the two compose. The dimmed chrome and icon say NOT THIS
    PAIR; the name that stays green says AND NEVER ANY PAIR, which is the
    reason the tile is dim in the first place. */
-.t.S .n { color: #7dff9a; }
+.t.S .n { color: #7f9; }
 /* A hint bought and not yet spent: BOTH named tiles hold a steady violet glow
    until the pair's result exists — no pulse, so it can sit there for as long
    as the answer goes unused. Placed ABOVE the pick and pulse rules on purpose:
    picking a hinted tile must still read as picked, and a repeat combination's
    .h pulse still wins while it plays. Violet is neither pick colour, so the
    glow and the picks never say the same thing. */
-.t.g { border-color: #9a4dff; box-shadow: 0 0 14px #9a4dff66; }   /* the resting state; it breathes below */
-.t.e { border-color: #ffd75e; background: #1a1a10cc; transform: scale(1.06); box-shadow: 0 0 14px #ffd75e33; }
+.t.g { border-color: #95f; box-shadow: 0 0 14px #95f6; }   /* the resting state; it breathes below */
+.t.e { border-color: #fd6; background: #221c; transform: scale(1.06); box-shadow: 0 0 14px #fd63; }
 /* the second element, marked on the board while it sits in the cauldron's
    second slot — cyan, to match that slot, so it never reads as the gold lock */
-.t.E { border-color: #33e9e9; background: #0b1a1fcc; box-shadow: 0 0 12px #33e9e933; }
-.t.u { outline: 2px solid #33e9e9; outline-offset: 2px; }
+.t.E { border-color: #3ee; background: #122c; box-shadow: 0 0 12px #3ee3; }
+.t.u { outline: 2px solid #3ee; outline-offset: 2px; }
 .t.d { opacity: .35; }
-.t.p { border-color: #7dff9a; background: #101f14cc; transform: scale(1.06); box-shadow: 0 0 14px #7dff9a44; }
+.t.p { border-color: #7f9; background: #121c; transform: scale(1.06); box-shadow: 0 0 14px #7f94; }
 /* pop belongs to the tile's arrival only: once it has played the tile is
    settled, so dropping .x later cannot re-trigger it (.x comes after,
    and wins for as long as it is set) */
@@ -221,14 +221,14 @@ body {
    to exactly its resting value with nothing to keep in sync. 2.6s because a
    hint can stand for a long time and this must never become nagging. */
 .t.g { animation: breathe 2.6s ease-in-out infinite; }
-@keyframes breathe { 50% { box-shadow: 0 0 22px 3px #9a4dff88; } }
+@keyframes breathe { 50% { box-shadow: 0 0 22px 3px #95f8; } }
 /* a combination you already know: the element it makes pulses, so the toast
    is not the only thing pointing at it */
-.t.h { border-color: #33e9e9; animation: pulse .5s ease-out; }
+.t.h { border-color: #3ee; animation: pulse .5s ease-out; }
 @keyframes pulse {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 #33e9e955; }
-  45% { transform: scale(1.13); box-shadow: 0 0 18px 4px #33e9e955; }
-  to { transform: scale(1); box-shadow: 0 0 0 0 #33e9e900; }
+  0% { transform: scale(1); box-shadow: 0 0 0 0 #3ee5; }
+  45% { transform: scale(1.13); box-shadow: 0 0 18px 4px #3ee5; }
+  to { transform: scale(1); box-shadow: 0 0 0 0 #3ee0; }
 }
 .t.G {
   position: fixed; left: 0; top: 0; z-index: 5; margin: 0;
@@ -237,7 +237,7 @@ body {
 }
 .o { height: 42px; display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 1; }
 .s { width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 0 10px 1px var(--g, transparent); }
-.n { margin-top: 6px; font-size: 12px; color: #b9d2ee; }
+.n { margin-top: 6px; font-size: 12px; color: #bce; }
 
 /* the dock is fixed over the bottom of the page, so the last thing in the flow
    has to carry enough bottom margin for the final row of tiles to scroll clear
@@ -248,13 +248,13 @@ body {
    with overflowing content — is clipped from the scrollable overflow. Padding
    inside the last element is real box height, so it survives. */
 f {
-  margin: 4px 0 18px; color: #55708e; font-size: 11px;
+  margin: 4px 0 18px; color: #578; font-size: 11px;
   text-align: center; padding: 0 12px calc(var(--dock) + 8px);
 }
 
 #to {
   position: fixed; left: 50%; bottom: calc(var(--dock) + 12px); transform: translateX(-50%);
-  background: #131a30f0; border: 1px solid #33436e; color: #cfe3ff;
+  background: #123e; border: 1px solid #346; color: #cdf;
   padding: 8px 16px; border-radius: 8px; font-size: 13px; text-align: center;
   /* Shrink-to-fit, so it stays one line whenever one line fits — but bounded,
      because the longest hint ("Cloud + Electricity — already paid for") is
@@ -279,7 +279,7 @@ f {
    self-clearing after 2.9s.
    Chosen in experiments/discovery-approach.html, which compares nine ways to
    cross that first second against this exact ending. */
-#ds { position: fixed; inset: 0; z-index: 10; display: none; overflow: hidden; background: #04060ce8; }
+#ds { position: fixed; inset: 0; z-index: 10; display: none; overflow: hidden; background: #001e; }
 /* Two fades on the layer itself, and they are the first and last things that
    happen. IN: the veil is not there when the layer arrives — it darkens from
    nothing over .47s, which is exactly how long the pair takes to reach the
@@ -293,7 +293,7 @@ f {
    premultiplied, and no argument with the ones that might not. */
 #ds.y { display: block;
   animation: din .47s cubic-bezier(.18, .62, .28, 1), dout .35s 2.9s ease-in forwards; }
-@keyframes din { from { background-color: #04060c00; } }
+@keyframes din { from { background-color: #0010; } }
 @keyframes dout { to { opacity: 0; } }
 .m { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); }
 #ds .g { display: flex; line-height: 1; font-size: 62px; }
@@ -344,7 +344,7 @@ f {
 @keyframes dk { from { height: 0; opacity: 1; } 55% { opacity: 1; } to { height: 520px; opacity: 0; } }
 .f {
   position: absolute; inset: 0; opacity: 0;
-  background: radial-gradient(circle at 50% 44%, #fff 0 4%, #ffd75e 8%, transparent 34%);
+  background: radial-gradient(circle at 50% 44%, #fff 0 4%, #fd6 8%, transparent 34%);
   animation: df .38s 1.03s ease-out forwards;
 }
 @keyframes df { 20% { opacity: .95; } to { opacity: 0; } }
@@ -369,7 +369,7 @@ f {
 
 .v {
   position: fixed; inset: 0; z-index: 9; display: none;
-  align-items: center; justify-content: center; background: #030409cc;
+  align-items: center; justify-content: center; background: #001c;
 }
 .v.w { display: flex; }
 /* The completion fireworks, DIRECTOR'S CUT ONLY. The effect itself is behind
@@ -385,25 +385,25 @@ f {
 #fw { position: absolute; inset: 0; z-index: -1; }
 /*<director*/
 .A {
-  background: #0c1122; border: 1px solid #33e9e9; border-radius: 14px;
+  background: #112; border: 1px solid #3ee; border-radius: 14px;
   padding: 26px 34px; text-align: center; max-width: min(88vw, 420px);
-  box-shadow: 0 0 40px #33e9e922;
+  box-shadow: 0 0 40px #3ee2;
 }
 .A .B { font-size: 56px; line-height: 1; margin-bottom: 10px; display: flex; justify-content: center; }
 .A .B .s { width: 56px; height: 56px; border-radius: 10px; }
-.A .T { font-size: 11px; letter-spacing: .3em; color: #33e9e9; }
+.A .T { font-size: 11px; letter-spacing: .3em; color: #3ee; }
 .A h2 { margin: 6px 0 2px; color: #fff; font-size: 22px; }
-#ov .A { border-color: #ffd75e; box-shadow: 0 0 50px #ffd75e22; }
-#ov .T { color: #ffd75e; }
-.L { margin: 6px 0 0; color: #cfe3ff; }
-#ov .S { color: #ffd75e; }
-.N { color: #7dff9a; font-weight: 700; letter-spacing: .1em; }
+#ov .A { border-color: #fd6; box-shadow: 0 0 50px #fd62; }
+#ov .T { color: #fd6; }
+.L { margin: 6px 0 0; color: #cdf; }
+#ov .S { color: #fd6; }
+.N { color: #7f9; font-weight: 700; letter-spacing: .1em; }
 #ob { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
 #ob button {
-  background: #101528; color: #cfe3ff; border: 1px solid #33436e; border-radius: 8px;
+  background: #112; color: #cdf; border: 1px solid #346; border-radius: 8px;
   font: inherit; padding: 8px 16px; cursor: pointer;
 }
-#ob button.F { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
+#ob button.F { border-color: #fd6; color: #fd6; box-shadow: 0 0 12px #fd63; }
 
 /* title screen: floats over the bare background; .M hides the game UI.
    Unqualified on purpose: M is only ever set on <body> (see the legend), so
@@ -426,7 +426,7 @@ f {
 #tl {
   font-family: "Arial Black", Arial, Helvetica, sans-serif;
   font-size: min(17vw, 100px); font-weight: 900; letter-spacing: 0; line-height: 1;
-  background: linear-gradient(90deg, #ff3b30, #ff9430, #ffdc32, #34d158, #33e9e9, #2f6bff, #9a4dff, #ff3b30);
+  background: linear-gradient(90deg, #f33, #f93, #fd3, #3c5, #3ee, #36f, #95f, #f33);
   background-size: 200% 100%;
   /* NO -webkit- PREFIX, deliberately, and do not add one back without
      measuring. It was there and dropping it is worth 2 B — and the arithmetic
@@ -445,7 +445,7 @@ f {
      knowingly for two bytes. */
   background-clip: text; color: transparent;
   animation: rbflow 5s linear infinite;
-  filter: drop-shadow(0 0 18px #ffffff22);
+  filter: drop-shadow(0 0 18px #fff2);
 }
 @keyframes rbflow { to { background-position: 200% 0; } }
 /* TRACKED, not spread, and still flush at both ends. This was
@@ -470,28 +470,28 @@ f {
 #tb {
   width: 100%; letter-spacing: .87em;
   font-family: Arial, Helvetica, sans-serif; font-weight: 700; font-variant: small-caps;
-  color: #8fb4d8; font-size: min(6.9vw, 40px); line-height: 1.1; margin: 6px -.87em 30px 0;
+  color: #8bd; font-size: min(6.9vw, 40px); line-height: 1.1; margin: 6px -.87em 30px 0;
 }
 #mu { display: flex; flex-direction: column; gap: 10px; width: 250px; }
 #mu button {
-  background: #101528cc; color: #cfe3ff; border: 1px solid #33436e; border-radius: 10px;
+  background: #112c; color: #cdf; border: 1px solid #346; border-radius: 10px;
   font: inherit; font-family: Arial, Helvetica, sans-serif; font-size: 16px;
   letter-spacing: .04em; padding: 10px 16px; cursor: pointer;
 }
-#mu button.F { border-color: #ffd75e; color: #ffd75e; box-shadow: 0 0 12px #ffd75e33; }
-#mu button.R { border-color: #a04040; color: #ff8080; }
+#mu button.F { border-color: #fd6; color: #fd6; box-shadow: 0 0 12px #fd63; }
+#mu button.R { border-color: #944; color: #f88; }
 /* the same column, wearing the subscreen's geometry */
 #mu.j { align-items: center; width: min(92vw, 460px); }
-#mh { color: #ffd75e; letter-spacing: .3em; font-size: 13px; }
+#mh { color: #fd6; letter-spacing: .3em; font-size: 13px; }
 #ml {
   width: 100%; max-height: 46vh; overflow-y: auto; text-align: left;
-  background: #0c1122cc; border: 1px solid #223052; border-radius: 12px; padding: 12px 14px;
+  background: #112c; border: 1px solid #235; border-radius: 12px; padding: 12px 14px;
 }
 .H { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; }
-.H b { color: #ffd75e; }
-.O { color: #55708e; font-size: 11px; margin-top: 8px; text-align: center; }
-.J { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid #16203a; align-items: flex-start; }
+.H b { color: #fd6; }
+.O { color: #578; font-size: 11px; margin-top: 8px; text-align: center; }
+.J { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid #123; align-items: flex-start; }
 .J:last-of-type { border-bottom: 0; }
 .I { display: flex; align-items: center; justify-content: center; font-size: 20px; line-height: 1.3; min-width: 24px; }
 .I .s { width: 18px; height: 18px; border-radius: 4px; }
-.X { color: #8fb4d8; font-style: normal; font-size: 12px; margin-left: 6px; }
+.X { color: #8bd; font-style: normal; font-size: 12px; margin-left: 6px; }
