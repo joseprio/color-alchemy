@@ -59,6 +59,33 @@ npm run audio-bench       # what a sample costs, against the callback budget
   minifies the page with **html-minifier-next**, zips it with fixed DOS-epoch
   timestamps, and recompresses that zip with **ECT then advzip**. Dev
   (`npm start`) skips the whole tail, so a watch build stays readable and fast.
+- **The director's cut builds its own emoji font, and it is 237 KB instead of
+  1317.** `tools/emoji-font.mjs` fetches Noto's source SVGs for exactly the 245
+  sequences the table shows (`tools/emoji-svg.mjs`, keyed off `e:` fields, so
+  adding an element fetches its artwork on the next build) and compiles them
+  with **nanoemoji** into a COLRv1 font. Needs Python with `nanoemoji` and
+  `ninja`; without them the cut still builds, falling back loudly to the nine
+  CDN chunks it used before, which are five and a half times heavier and
+  identical on screen. `npm run emoji-font` builds it alone. The whole font is
+  cached in `.fonts/` under a hash of the sequence set, so it is built once.
+- **The obvious way to do that is wrong, and it fails silently.** harfbuzzjs
+  ships `harfbuzz-subset.wasm` — no Python, no native build — and subsetting
+  `Noto-COLRv1.ttf` with it gives a **216 KB** woff2 whose 245 sequences all
+  shape to one glyph. It renders **nothing**. That build of harfbuzz has no
+  colour-table support: it drops `COLR` and `CPAL`, and `CBDT`/`CBLC` from the
+  bitmap build (10.18 MB &rarr; 5 KB), leaving structurally valid glyphs with no
+  paint. `subset-font` bundles the same harfbuzzjs and fails identically.
+  Passing `COLR` through untouched cannot work either — the layer glyphs it
+  references have no cmap entry, so they go, and the glyph ids are remapped
+  underneath it.
+  **SHAPING IS NOT RENDERING**, which is the finding worth keeping: the broken
+  subset passed a shaping check, loaded in Chrome without complaint, and drew
+  blank tiles. Only a screenshot caught it. `verifyRendering` in
+  `tools/emoji-font.mjs` is what shaping is still good for — it counts VISIBLE
+  glyphs, because a sequence carrying U+FE0F shapes to two (the emoji, and a
+  zero-advance glyph for the selector, since Noto's filenames drop FE0F so
+  nanoemoji builds no ligature for it) and renders perfectly. A strict glyph
+  count calls 30 of 245 broken; the visible count calls none.
 - **The CSS is not in the HTML.** `src/style.css` is the readable source of
   truth; the rollup config runs it through **cssnano** (`postcss.config.js`,
   preset `advanced`) at config load and injects the minified text into

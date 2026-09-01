@@ -79,15 +79,37 @@ export function codepointsOf(elementsTs) {
   return cps;
 }
 
-// WHY NOT A REAL SUBSET. 184 codepoints out of a 3600-glyph font would fit in a
-// couple of hundred KB with pyftsubset or harfbuzz, and both mean a new
-// toolchain in a project whose build is Node and nothing else — for an artifact
-// with no size constraint. Google already splits the font by unicode-range for
-// its own CDN, so taking the chunks that cover this table is a free 35% and
-// costs no dependency: 9 of 10 chunks, 1.3 MB of the 2.0 MB whole. The `text=`
-// trick the title font uses below is no help here — it is capped well under
-// 183 emoji, and a ZWJ sequence is not a character it can subset by.
+// TWO WAYS TO GET THE EMOJI, and the first one is tried first.
+//
+// BUILT (tools/emoji-font.mjs): nanoemoji compiles Noto's own source SVGs into
+// a COLRv1 font holding exactly the 245 sequences this table shows — 237 KB.
+// Needs Python with nanoemoji and ninja.
+//
+// FETCHED (below): nine of Google's ten CDN chunks, 1317 KB, because a
+// unicode-range chunk is the smallest unit the CDN sells. No toolchain at all.
+// This is what the cut did before the built path existed and it stays as the
+// fallback, so a machine without Python still produces a working cut — five and
+// a half times heavier, and identical on screen.
+//
+// The `text=` trick the title font uses below is no help to either: it is
+// capped well under 245 emoji, and a ZWJ sequence is not a character it can
+// subset by.
 export async function emojiFontCss({ elementsTs, outDir, publicPath, log = () => {} }) {
+  const { buildEmojiFont } = await import("./emoji-font.mjs");
+  const built = await buildEmojiFont({ elementsTs, log });
+  if (built) {
+    writeFileSync(join(outDir, built.name), built.woff2);
+    return (
+      `@font-face{font-family:"Noto Color Emoji";font-style:normal;font-weight:400;` +
+      `src:url(${publicPath}${built.name}) format("woff2")}` +
+      `body{font-family:monospace,"Noto Color Emoji"}`
+    );
+  }
+  log(
+    `fonts: nanoemoji not found, falling back to the CDN chunks (5x heavier).\n` +
+    `       install it with: python -m pip install nanoemoji ninja`
+  );
+
   const css = await getCss("https://fonts.googleapis.com/css2?family=Noto+Color+Emoji", "noto-color-emoji.css");
   const faces = parseFaces(css);
   if (!faces.length) throw new Error("fonts: no @font-face rules for Noto Color Emoji — the API shape changed");
