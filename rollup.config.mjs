@@ -64,7 +64,23 @@ const emojiFont = {
       // IM Fell English ships one weight, and a browser answering that with
       // synthetic bold smears a face whose whole character is its thin
       // strokes.
-      `#tb{font-family:"IM Fell English",Georgia,serif;font-weight:400}`;
+      //
+      // AND THE TRACKING COMES WITH THE FACE, which is the thing this rule
+      // was missing. style.css says .87em in as many words: "fitted to Arial's
+      // metrics at this size ratio", the price it paid for dropping the
+      // space-between flex version that needed no number at all. Swap the
+      // family and that number is fitted to the wrong face -- IM Fell English
+      // is narrower, and AlchemY came out 14.44px short of COLOR's right edge
+      // against a 2px tolerance, breaking the lockup the whole trick exists to
+      // hold. Nobody saw it because the cut had not built since the face
+      // landed; the charset guard was killing it first.
+      // .93em is measured, not derived: the ink spans SIX gaps for seven
+      // letters, so 14.44/6 = 2.41px per gap on a 40px size, .87 + .0602 =
+      // .9302, taken to .93 for -0.04px of residual. The margin is equal and
+      // opposite, the same as in style.css -- the two must move together or
+      // the phantom trailing gap swells #tw and slides the pair off-centre.
+      `#tb{font-family:"IM Fell English",Georgia,serif;font-weight:400;` +
+      `letter-spacing:.93em;margin-right:-.93em}`;
   },
 };
 
@@ -96,8 +112,9 @@ const DEV = !production || process.env.npm_lifecycle_event === "build-dev";
 // budget behind it. Read the same way DEV is, and for the same reason.
 // It is a RELEASE build, not a development one — DEV stays false, so the two
 // menu tools are absent from it exactly as they are from a shipping bundle.
-// What it drops is the whole size-golf tail (closure, the two respellings,
-// terser, fn-order, roadroller): every one of those exists to fit 13312 bytes,
+// What it drops is nearly the whole size-golf tail (closure, the two
+// respellings, fn-order, roadroller): every one of those exists to fit 13312
+// bytes,
 // and each one costs something a cut with no budget has no reason to pay —
 // ADVANCED's dead-code hazards, mangled names in a stack trace, an eval'd
 // payload with a decoder that leaks globals. Content meant for it goes behind
@@ -113,7 +130,9 @@ const OUT_DIR = DIRECTOR ? "dist/director" : "dist";
 const FONT_DIR = "dist/fonts";
 const FONT_HREF = "fonts/";
 // Every pass in the size-golf tail is gated on this one flag rather than on
-// `production` alone, so "what a director build skips" is one grep.
+// `production` alone, so "what a director build skips" is one grep -- with
+// exactly one exception, terser, which is gated on `production` and runs in
+// both cuts. The reason is in the comment on the plugin itself.
 const golf = production && !DIRECTOR;
 
 // DIRECTOR-ONLY RULES. src/style.css marks spans that style something only the
@@ -605,7 +624,30 @@ export default {
     golf && eslintVarToLet,
     golf && constToLet,
     golf && shortenTransparent,
-    golf &&
+    // TERSER RUNS IN BOTH CUTS, and it is the one size-golf pass that does: the
+    // gate is `production`, not `golf`. Not for the bytes -- the cut has no
+    // budget -- but for `format.ascii_only` at the bottom of this config, which
+    // is what postbuild.mjs's no-charset guard depends on. That guard's own
+    // comment says the page is safe to ship without <meta charset=utf-8>
+    // "while every byte of the page is ASCII, which every ASCII-compatible
+    // default decodes identically", and names terser's ascii_only as the thing
+    // that escapes the emoji. Skip terser and that stops being true: the
+    // director chunk carried 254 non-ASCII characters and the cut had not
+    // built at all since whichever of them landed first -- 216 em dashes and
+    // 8 ellipses in comments, the circled gamepad letters in more comments,
+    // and about 21 in real string literals (the codex separator, the star, the
+    // padlock, the weather glyphs, U+FE0F). Comments do not survive terser and
+    // string literals come out \uXXXX-escaped, so one pass settles all 254.
+    // THE COST IS PAID KNOWINGLY. Running the SAME parameters means compress
+    // and the default mangle come with it, so the cut is no longer the
+    // readable ~100 KB page README describes -- it is a minified bundle with
+    // the argument comments and the quote table's prose gone from the emitted
+    // JS (the quotes themselves still render; they are strings).
+    // If readability is wanted back, this is the place: mangle:false,
+    // compress:false and format.comments:"all" under a `!golf` branch keep
+    // every byte of ascii_only's actual work and cost only size, which is the
+    // one currency this cut does not spend.
+    production &&
       terser({
         ecma: 2021,
         module: true,

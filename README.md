@@ -11,7 +11,7 @@ primaries.
 npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
-npm run build-director    # the director's cut: no budget, no size-golf tail
+npm run build-director    # the director's cut: no budget, size-golf tail bar terser
 npm test                  # 158 headless checks against dist/bundle.html
 node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
@@ -28,10 +28,22 @@ npm run audio-bench       # what a sample costs, against the callback budget
 - **The director’s cut** is `npm run build-director` — `dist/director.html`,
   the same game with nothing to fit into. It is a *release* build, not a
   development one: `__DEV__` is false, so Unlock all and Reset everything are
-  as absent from it as they are from a shipping bundle. What it drops is the
-  whole size-golf tail, which is the only reason any of that tail exists —
-  closure ADVANCED, the two respellings, terser, `fn-order.json`, roadroller —
-  so the page is readable JavaScript and about 100 KB. Content meant only for
+  as absent from it as they are from a shipping bundle. What it drops is
+  nearly the whole size-golf tail, which is the only reason any of that tail
+  exists — closure ADVANCED, the two respellings, `fn-order.json`, roadroller.
+  **Terser is the exception and runs in both cuts**, gated on `production`
+  rather than on `golf`: not for the bytes, but because `format.ascii_only` is
+  what `postbuild.mjs`'s no-charset guard depends on. Skip terser and the cut
+  carries raw em dashes and emoji, the guard throws, and the page never gets
+  written — which is exactly what had been happening, unnoticed, since the
+  first non-ASCII character landed. The cost is that the cut is a minified
+  ~73 KB page rather than a readable ~100 KB one: `compress` and the default
+  `mangle` come with the shared parameters, so the argument comments are gone
+  from the emitted JS. The quotes still render — they are strings, not
+  comments. To get readability back, give terser a `!golf` branch with
+  `mangle:false`, `compress:false` and `format.comments:"all"`; that keeps
+  every byte of `ascii_only`'s actual work and costs only size, which is the
+  one currency this cut does not spend. Content meant only for
   it goes behind `__DIRECTOR__`, the `__DEV__` mechanism exactly: a literal by
   the time closure runs, so a whole scene behind one costs a shipping build
   nothing. It builds through `dist/director/` and writes `dist/director.html`,
