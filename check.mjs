@@ -22,8 +22,14 @@ const { evalJs, send, sleep } = t;
    no DOM form is the recipe tree, which is read out of src/elements.ts instead;
    see RECIPE below for what that costs. */
 
+// The value is JSON-QUOTED, and it has to be: ids carry spaces ("white rice",
+// "french fries"), and `[data-id=white rice]` is not a selector — querySelector
+// throws on it. That went unnoticed for as long as it did because order() picks
+// the FIRST makeable pair, and every multi-word id happened to sit in a recipe
+// that had a single-word alternative earlier in the list. The Curry, whose only
+// route is White Rice + Chef, is the first pair with no way around it.
 const tileClick = (id) =>
-  `document.querySelector('[data-id=${id}]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`;
+  `document.querySelector('[data-id=${JSON.stringify(id)}]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`;
 // Emptying the altar, the way a player would, whichever state the pick is in:
 // a cyan (loose) pick locks on the next click and lets go on the one after, a
 // gold (locked) one lets go on the first. Two clicks on the cyan one and one on
@@ -110,7 +116,7 @@ for (const chunk of ENTRIES) {
 // rather than being suffixed onto two key names
 const best = async (kind) => +((await cellGet(SLOT[kind])) || 0);
 const click = (id) =>
-  evalJs(`document.querySelector('[data-id=${id}]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`);
+  evalJs(`document.querySelector('[data-id=${JSON.stringify(id)}]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`);
 const key = (k, init = {}) =>
   evalJs(`window.dispatchEvent(new KeyboardEvent('keydown',
     Object.assign({key:${JSON.stringify(k)}}, ${JSON.stringify(init)})))`);

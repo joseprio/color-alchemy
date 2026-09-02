@@ -1,7 +1,7 @@
 {
   "maxMemoryMB": 150,
   "allowFreeVars": true,
-  "modelRecipBaseCount": 20,
+  "modelRecipBaseCount": 21,
   "matchModel": 1,
   "wordModel": 1,
   "sse": 2,
@@ -15,17 +15,17 @@
     7,
     14,
     25,
-    52,
-    99,
+    56,
+    97,
     385,
-    448
+    452
   ],
-  "precision": 15,
   "mixerContextBits": 8,
   "mixerRecipInitialWeight": 10,
-  "recipLearningRate": 520,
+  "precision": 15,
+  "recipLearningRate": 496,
   "_fittedTo": {
-    "hash": "be8926aad7f7",
-    "bytes": 49485
+    "hash": "a5f5c1859d87",
+    "bytes": 49833
   }
 }

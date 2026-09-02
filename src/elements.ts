@@ -526,8 +526,21 @@ export const ELEMENTS = ([
     r:[["chef","tool"]] },
   { id:"burger", e:"\u{1F354}",
     r:[["chef","cow"],["cooking","cow"]] },
+  // THE SECOND ROUTE IS THE CANONICAL ONE, and it arrived after the Rice did.
+  // Chef + Fish is the skilled hand on the ingredient, the Burger's sentence
+  // one line up said with a fish; Rice + Fish is what the dish actually IS,
+  // and it is the only route here a player can walk without ever finding the
+  // Chef. Two directions rather than one said twice, which is the Hot Dog's
+  // own rule — except that here the WHO and the WHAT swap places, the Chef
+  // being the lazier guess and the Rice the thing on the plate.
+  // "fish" trails both pairs so the repeat is exact, the Blood's argument, and
+  // the Chef's pair stays FIRST: 13041 in that order against 13048 with the
+  // Rice leading, which is 7 B for leaving the existing pair where it was.
+  // AND THE WHOLE ENTRY IS NET NEGATIVE — 13045 before this route existed,
+  // 13041 after. A second recipe made the bundle SMALLER, because the pair it
+  // adds is almost entirely made of context roadroller already had.
   { id:"sushi", e:"\u{1F363}",
-    r:[["chef","fish"]] },
+    r:[["chef","fish"],["white rice","fish"]] },
   { id:"french fries", e:"\u{1F35F}",
     r:[["potato","chef"],["potato","cooking"]] },
   // Bread + Cheese is what a pizza IS, where Cheese + Cooking is only how it
@@ -751,6 +764,14 @@ export const ELEMENTS = ([
   // variation selector, like the Skiing, the Ice Skate, the Fog and the Comet.
   { id:"coffin", e:"\u{26B0}\u{FE0F}",
     r:[["skull","wood"],["vampire","wood"]] },
+  // AND THE COFFIN'S OTHER ENDING, against the cremation it takes down in the
+  // Ash. Two ways to be finished with: Coffin + Fire is the burial that leaves
+  // nothing, Coffin + Stone is the one that leaves a name — which is the
+  // quote's whole complaint, that the stone outlasts and outsizes what it
+  // stands for. U+1FAA6 is HEADSTONE and needs no variation selector, unlike
+  // the Coffin one line up.
+  { id:"headstone", e:"\u{1FAA6}",
+    r:[["coffin","stone"]] },
   { id:"x-ray", e:"\u{1FA7B}",
     r:[["bone","doctor"]] },
   { id:"teacher", e:"\u{1F9D1}\u{200D}\u{1F3EB}",
@@ -1102,6 +1123,49 @@ export const ELEMENTS = ([
   // staying with the family it belongs to.
   { id:"pretzel", e:"\u{1F968}",
     r:[["salt","wheat"],["bread","salt"]] },
+  // THE GRAIN RUN'S SIXTH, AND THE ONE PLACE U+1F33E IS THE RIGHT GLYPH. The
+  // Wheat is an SVG two rows up for exactly one reason: SHEAF OF RICE is drawn
+  // like a sheaf of rice, and at 32px the droop is all that survives. Here the
+  // droop IS the drawing, so the glyph the Wheat had to refuse costs this entry
+  // nothing — the Farmer's argument, "it only has to read as the crop", with
+  // the crop finally being the one the glyph depicts.
+  // Wheat + Water is the grain wetted rather than baked, the run's one product
+  // no verb makes, and it keeps the run's shape: one base plus the single thing
+  // that distinguishes what comes out.
+  { id:"rice", e:"\u{1F33E}",
+    r:[["wheat","water"]] },
+  // THE RICE'S OWN COOKING STEP, which is the one thing the grain run above
+  // never needed: the Wheat is inedible until something is made OF it, so
+  // Cooking there gives the Bread. The Rice is already the food, so Cooking
+  // gives back the Rice — plainer, whiter, and the base every dish below
+  // stands on. White + Rice is the same bowl reached by its colour, the short
+  // way in a player finds first, and it is the Earth-and-Cloud idiom: a plain
+  // colour is the cheap route to something the tree also cooks.
+  { id:"white rice", e:"\u{1F35A}",
+    r:[["rice","cooking"],["rice","white"]] },
+  // AND NOW THE CHEF'S SPLIT RUNS TWICE, one rank apart, which is more than
+  // the Bread and the Croissant ever managed. On the raw grain the Chef makes
+  // the Paella — the pan dish where the rice is cooked IN the thing that
+  // flavours it, so there is no plain bowl in its history. On the cooked bowl
+  // the Chef makes the Curry, which is the sauce arriving over rice that was
+  // already rice. Same hand, two ranks, two dishes, and which one you get is
+  // decided by whether you boiled the grain first.
+  { id:"paella", e:"\u{1F958}",
+    r:[["rice","chef"]] },
+  // The quote's own point, and the reason the Curry sits on the White Rice
+  // rather than on the grain: boiled rice is what the Curry is poured over.
+  { id:"curry", e:"\u{1F35B}",
+    r:[["white rice","chef"]] },
+  // THE RICE'S FOURTH CONSUMER, and the only one that is not a dish. Rice +
+  // Wine is not a grain plus a verb: it is the grain plus the thing it
+  // BECOMES, the quote's own line — born in water, dies in wine — read as a
+  // recipe. The Wine is nine hundred lines up among the drinks and stays
+  // there; this sits with the Rice, which is the rarer of the two strings.
+  // Measured both ways, and the margin is the smallest in the file: 13045
+  // here against 13047 up beside the Wine. Two bytes is not an argument, so
+  // the tie is broken by where the entry READS, which is here.
+  { id:"sake", e:"\u{1F376}",
+    r:[["rice","wine"]] },
   { id:"park", e:"\u{1F3DE}\u{FE0F}",
     r:[["field","water"]] },
   // AND HERE THE PATTERN THE BANK AND THE CHAMPAGNE SUGGESTED BREAKS, which is
@@ -1136,7 +1200,13 @@ export const ELEMENTS = ([
     r:[["fruit","water"]] },
   { id:"banana", e:"\u{1F34C}",
     r:[["fruit","yellow"]] },
-  // Fruit + colour, the sentence the Banana above and the Pumpkin below both
+  // The same sentence in the coldest colour the run has, and the one fruit here
+  // that is named for it: a blueberry is a berry that is blue, where a banana
+  // is not a fruit that is yellow. "fruit" leads, so this and the Banana are
+  // an exact repeat as far as the second id.
+  { id:"blueberries", e:"\u{1FAD0}",
+    r:[["fruit","blue"]] },
+  // Fruit + colour, the sentence the two above and the Pumpkin below all
   // say, and this one spends the Chartreuse — the colour a lime actually is.
   // "fruit" leads the pair so all three read `["fruit", …]` exactly.
   //
@@ -1221,11 +1291,20 @@ export const ELEMENTS = ([
     r:[["wood","fire"],["tree","fire"],["black","wood"]] },
   // Charcoal taken one burn further: a pale, cold powder, so the swatch drops
   // charcoal's brown embers for a grey drift and keeps one dying ember in it.
+  // THE COFFIN'S SECOND ENDING. The box gets two burns in this table now: the
+  // Skull's own route made it, and Coffin + Fire is the cremation — which is
+  // the same sentence the Bone one pair earlier already says, one rank up and
+  // with the wood around it. It goes THIRD in the list, right behind the Bone
+  // it echoes, and that is not only where it reads: 13068 there against 13077
+  // down beside the Book, and 13075 with no such recipe at all. A SEVENTH
+  // route made the bundle SMALLER than six did — the pair is almost entirely
+  // context roadroller already had, and "fire"] is the most repeated two-id
+  // tail in the file.
   { id:"ash", c:"#bba",
     bg:"radial-gradient(circle at 28% 30%, #eeec 0 6%, transparent 12%)," +
        "radial-gradient(circle at 70% 64%, #f62a 0 3%, transparent 8%)," +
        "linear-gradient(140deg, #baa 0%, #887 46%, #655 100%)",
-    r:[["charcoal","fire"],["bone","fire"],["fire","paper"],
+    r:[["charcoal","fire"],["bone","fire"],["coffin","fire"],["fire","paper"],
        ["book","fire"],["fire","painting"],["sun","vampire"]] },
   { id:"mushroom", e:"\u{1F344}",
     r:[["rain","wood"]] },
