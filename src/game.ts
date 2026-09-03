@@ -1,5 +1,5 @@
-// Core game: state, the element grid, combining, discovery cards, the two
-// goal overlays, and persistence.
+// Core game: state, the element grid, combining, discovery cards, the quest
+// and completion overlays, and persistence.
 //
 // Scoring: every combination ATTEMPT counts as a move — successes, failures
 // and rediscoveries alike — and so does a HINT, which buys a productive pair
@@ -8,9 +8,9 @@
 //
 // PERSISTENCE IS ONE localStorage ENTRY, `colorAlchemy`, holding one array;
 // src/store.ts owns it and the S_* constants below name the slots:
-//   0 tree      the recipe-tree fingerprint. A mismatch drops both bests and
-//               keeps everything else — the two bests are only meaningful
-//               against the tree that set them.
+//   0 tree      the recipe-tree fingerprint. A mismatch drops every best and
+//               keeps everything else — a best is only meaningful against
+//               the tree that set it.
 //   1 run       the current run, so closing the tab loses nothing. Restart
 //               (double-press to confirm) wipes it, never the bests.
 //   2 bestQuest fewest moves to hold both Rainbow and Unicorn. Shown in the
@@ -21,6 +21,15 @@
 //               so it cannot linger in the DOM either).
 //   4 codex     all-time knowledge, outliving every run.
 //   5 mute      a preference, which is why Reset everything leaves it alone.
+//   6 bestPeace fewest moves to hold both World and Peace. Appended rather
+//               than slotted next to bestQuest because the index IS the key:
+//               renumbering would read every existing save's codex as its
+//               mute. sfx.ts owning 5 is why a game slot sits after it.
+//   7 bestColor fewest moves to hold all 17 colours, appended for the same
+//               reason: every new best takes the next index and none ever
+//               moves.
+//   8 bestCowa  fewest moves to hold Ninja, Turtle and Pizza. The one quest
+//               that wants THREE elements rather than two.
 // Five separate keys became this and it measured -41 B: the win is not the
 // repeated `colorAlchemy.` prefix (roadroller charges almost nothing for an
 // exact repeat) but the code the shape removes — a three-method wrapper, two
@@ -47,12 +56,12 @@ for (const ch of JSON.stringify(Object.entries(RECIPE).sort()) + ELEMENTS.length
 }
 const TREE = vh.toString(36);
 // ONE localStorage entry, sections by index: [tree, run, bestQuest, bestFull,
-// codex, mute]. The tree hash rides in slot 0 instead of being suffixed onto two
-// key names — a mismatch drops the two bests and keeps everything else, which is
-// what the suffixed keys did by orphaning them.
+// codex, mute, bestPeace, bestColor]. The tree hash rides in slot 0 instead
+// of being suffixed onto key names — a mismatch drops the bests and keeps
+// everything else, which is what the suffixed keys did by orphaning them.
 import { cell, put } from "./store";
-const S_RUN = 1, S_QUEST = 2, S_FULL = 3, S_CODEX = 4;
-if (cell[0] !== TREE) { cell[0] = TREE; cell[S_QUEST] = cell[S_FULL] = 0; }
+const S_RUN = 1, S_QUEST = 2, S_FULL = 3, S_CODEX = 4, S_PEACE = 6, S_COLOR = 7, S_COWA = 8;
+if (cell[0] !== TREE) { cell[0] = TREE; cell[S_QUEST] = cell[S_FULL] = cell[S_PEACE] = cell[S_COLOR] = cell[S_COWA] = 0; }
 
 /* ------------------------------------------------------------------- state */
 // A PLAIN OBJECT RATHER THAN A Set, the same trade `tried` makes below, and
@@ -101,6 +110,9 @@ const codexF: string[] = [];
 const codexK: Record<string, 1> = {};
 let moves = 0;                      // every combination attempt, incl. failures
 let questDone = false;              // Rainbow + Unicorn found this run
+let peaceDone = false;              // World + Peace found this run
+let colorDone = false;              // every colour found this run
+let cowaDone = false;               // Ninja + Turtle + Pizza found this run
 let fullDone = false;               // all elements found this run
 // "Unlock all" hands you the whole board, so the run must never score again.
 // Persisted with the run: a reload cannot launder a cheated run into a best.
@@ -131,7 +143,8 @@ function reflow(el: HTMLElement): void {
 }
 
 function save(): void {
-  put(S_RUN, { f: order, t: tried, m: moves, q: questDone, c: fullDone, x: cheated });
+  put(S_RUN, { f: order, t: tried, m: moves, q: questDone, c: fullDone, x: cheated,
+    p: peaceDone, o: colorDone, n: cowaDone });
 }
 function saveCodex(): void {
   put(S_CODEX, { f: codexF, k: Object.keys(codexK) });
@@ -143,13 +156,15 @@ function hud(): void {
   ct.textContent = order.length + " / " + ELEMENTS.length;
   const q = cell[S_QUEST];
   bq.textContent = q ? "Best quest: " + q : "";
+  // STATUS ONLY, no objective: what to aim for is the Quests screen's job now,
+  // and naming one quest here made the other two look like they did not count.
+  // The element stays whatever it says — css.ts anchors the help line on it
+  // with gl.after(), so #gl is furniture as well as text.
   gl.innerHTML = cheated
     ? "Unlocked &mdash; this run does not score"
     : fullDone
     ? "Complete. \u{1F3C6}"
-    : questDone
-      ? "Endgame: discover all " + ELEMENTS.length + " elements"
-      : "Forge the \u{1F308} <b>Rainbow</b> and the \u{1F984} <b>Unicorn</b>";
+    : "";
 }
 
 let toastTimer = 0;
@@ -843,27 +858,57 @@ function bestLine(slot: number, val: number): string {
   }
   return '<div class="L S">best: ' + prev + "</div>";
 }
+// THE COLOURS ARE THE FIRST 17 ENTRIES OF THE TABLE, in its own order: the
+// spectrum block the game opens with, the three starters out through Brown,
+// ending exactly where `matter` begins. A slice rather than a list of ids —
+// the block is already contiguous, and seventeen strings is a lot to carry for
+// what is otherwise one comparison. check.mjs pins BOTH ENDS of it, so a colour
+// inserted in the wrong place fails the suite instead of quietly resizing the
+// quest. Teal is the deep one at eleven steps; everything else is within four.
+const COLORS = 17;
 function checkMilestones(): void {
   if (cheated) return;   // nothing an unlocked board reaches is earned
+  // AT MOST ONE named quest can land per move: a move discovers a single
+  // element, and no element belongs to two of these sets — the colour block is
+  // the table's first 17, and none of the other three names one. So these are
+  // plain sequential ifs rather than a collected list, and the ceremony they
+  // share lives in finishQuest below rather than being written out four times.
   if (!questDone && found["rainbow"] && found["unicorn"]) {
     questDone = true;
-    const q = bestLine(S_QUEST, moves);
-    save();
-    hud();
-    if (order.length === ELEMENTS.length) return finishFull(q); // unicorn was the last element
-    SFX.fanfare();
-    openOverlay(
-      '<div class="B">\u{1F308}\u{1F984}</div>' +
-      '<div class="T">QUEST COMPLETE</div>' +
-      "<h2>Rainbow &amp; Unicorn</h2>" +
-      '<div class="L">forged in <b>' + moves + "</b> moves</div>" + q,
-      [["Keep playing", () => { closeOverlay(); hud(); }],
-       ["New game", () => { closeOverlay(); reset(); }]],
-    );
-    if (__DIRECTOR__) fireworks(1.6);
-    return;
+    return finishQuest(S_QUEST, "\u{1F308}\u{1F984}", "Unicorns and Rainbows");
+  }
+  if (!peaceDone && found["world"] && found["peace"]) {
+    peaceDone = true;
+    return finishQuest(S_PEACE, "\u{1F30D}\u{1F54A}", "World Peace");
+  }
+  if (!cowaDone && found["ninja"] && found["turtle"] && found["pizza"]) {
+    cowaDone = true;
+    return finishQuest(S_COWA, "\u{1F977}\u{1F422}\u{1F355}", "COWABUNGA!");
+  }
+  if (!colorDone && ELEMENTS.slice(0, COLORS).every(e => found[e.id])) {
+    colorDone = true;
+    return finishQuest(S_COLOR, "\u{1F3A8}", "Full Color Alchemist");
   }
   if (!fullDone && order.length === ELEMENTS.length) finishFull("");
+}
+// Compare-and-store, then either hand the line straight to the completion
+// screen — the element that finished the quest was also the last on the board
+// — or raise the quest's own card.
+function finishQuest(slot: number, icons: string, name: string): void {
+  const q = bestLine(slot, moves);
+  save();
+  hud();
+  if (order.length === ELEMENTS.length) return finishFull(q);
+  SFX.fanfare();
+  openOverlay(
+    '<div class="B">' + icons + "</div>" +
+    '<div class="T">QUEST COMPLETE</div>' +
+    "<h2>" + name + "</h2>" +
+    '<div class="L">forged in <b>' + moves + "</b> moves</div>" + q,
+    [["Keep playing", () => { closeOverlay(); hud(); }],
+     ["New game", () => { closeOverlay(); reset(); }]],
+  );
+  if (__DIRECTOR__) fireworks(1.6);
 }
 function finishFull(questHtml: string): void {
   fullDone = true;
@@ -874,7 +919,7 @@ function finishFull(questHtml: string): void {
   SFX.grand();
   openOverlay(
     '<div class="B">\u{1F3C6}</div>' +
-    '<div class="T">GRAND ALCHEMIST</div>' +
+    '<div class="T">GOTTA CATCH \'EM ALL!</div>' +
     "<h2>All " + ELEMENTS.length + " elements</h2>" +
     (questHtml ? '<div class="L">quest also completed — in <b>' + moves + "</b> moves</div>" : "") +
     '<div class="L">complete run: <b>' + moves + "</b> moves</div>" + f,
@@ -886,10 +931,10 @@ function finishFull(questHtml: string): void {
 /* ------------------------------------------------------- title screen menu */
 // Boot lands here; Escape / Start / the HUD "Menu" button reopen it. The
 // title floats over the bare background (body.M hides the game UI), and
-// Highscores / Encyclopedia write their subscreen into #mu, over the column.
+// Quests / Encyclopedia write their subscreen into #mu, over the column.
 // The panel head is the BUTTON'S OWN LABEL, uppercased at write time, rather
-// than a second string saying the same word in caps: "Highscore" against
-// "HIGHSCORES" was a near-miss repeat, and a near miss is what roadroller
+// than a second string saying the same word in caps: "Quests" against
+// "QUESTS" was a near-miss repeat, and a near miss is what roadroller
 // actually pays for. Worth 13 B, and 6 more were on the table for dropping the
 // caps altogether — declined, the letter-spaced head is the look.
 let mCur = 0;
@@ -967,7 +1012,7 @@ function continueGame(): void {
 const MENU: [string, (i: number) => void][] = [
   ["Continue", continueGame],
   ["New game", newGame],
-  ["Highscores", () => openPanel("Highscores", highscoreHtml())],
+  ["Quests", () => openPanel("Quests", questsHtml())],
   ["Encyclopedia", () => openPanel("Encyclopedia", encycloHtml())],
 ];
 // DEVELOPMENT TOOLS, and not in the shipped build. Pushed inside an if rather
@@ -1038,14 +1083,22 @@ export function menuBack(): void {
   if (armIdx >= 0) { disarm(); return; }
   continueGame();
 }
-function highscoreHtml(): string {
-  const q = cell[S_QUEST], f = cell[S_FULL];
+// One row per quest, each its own name and its own best, and every unset one
+// reads "—". The full clear used to read "???" instead, from when its best was
+// the hidden one and the row could not admit the board was finishable at all —
+// but the row names the goal and the count now, so the "???" was concealing
+// only a number you cannot have without finishing. One blank for all four, and
+// the parameter that carried the difference goes with it.
+function questsHtml(): string {
+  const row = (name: string, best: unknown): string =>
+    '<div class="H"><span>' + name + "</span><b>" +
+    (best ? best + " moves" : "—") + "</b></div>";
   return (
-    '<div class="H"><span>Quest — Rainbow &amp; Unicorn</span><b>' +
-    (q ? q + " moves" : "—") + "</b></div>" +
-    '<div class="H"><span>Complete run — all ' + ELEMENTS.length + " elements</span><b>" +
-    (f ? f + " moves" : "???") + "</b></div>" +
-    (f ? "" : '<div class="O">the complete-run best reveals itself only to a Grand Alchemist</div>')
+    row("Unicorns and Rainbows — \u{1F308}\u{1F984}", cell[S_QUEST]) +
+    row("World Peace — \u{1F30D}\u{1F54A}", cell[S_PEACE]) +
+    row("COWABUNGA! — \u{1F977}\u{1F422}\u{1F355}", cell[S_COWA]) +
+    row("Full Color Alchemist — all " + COLORS + " colors", cell[S_COLOR]) +
+    row("Gotta catch 'em all! — all " + ELEMENTS.length + " elements", cell[S_FULL])
   );
 }
 function encycloHtml(): string {
@@ -1081,7 +1134,7 @@ export function reset(): void {
   gd.innerHTML = "";
   tried = {};
   moves = 0;
-  questDone = fullDone = cheated = false;
+  questDone = fullDone = peaceDone = colorDone = cowaDone = cheated = false;
   sel = -1;
   held = false;
   cursor = 0;
@@ -1118,7 +1171,7 @@ export function boot(): void {
   STARTERS.map(id => { if (!codexF.includes(id)) codexF.push(id); });
 
   // then the saved run
-  let run: { f?: unknown; t?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean } | null = null;
+  let run: { f?: unknown; t?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean; p?: boolean; o?: boolean; n?: boolean } | null = null;
   run = cell[S_RUN] || null;
   if (run && run.f && (run.f as string[]).map) {
     const ids = (run.f as string[]).filter(id => BY_ID[id]);
@@ -1132,6 +1185,9 @@ export function boot(): void {
     questDone = !!run.q;
     fullDone = !!run.c;
     cheated = !!run.x;
+    peaceDone = !!run.p;
+    colorDone = !!run.o;
+    cowaDone = !!run.n;
   } else {
     STARTERS.map(id => { found[id] = 1; addTile(id); });
   }
@@ -1144,7 +1200,7 @@ export function boot(): void {
 function showRestoredCompletion(): void {
   openOverlay(
     '<div class="B">\u{1F3C6}</div>' +
-    '<div class="T">GRAND ALCHEMIST</div>' +
+    '<div class="T">GOTTA CATCH \'EM ALL!</div>' +
     "<h2>All " + ELEMENTS.length + " elements</h2>" +
     '<div class="L">complete run: <b>' + moves + "</b> moves</div>" +
     '<div class="L S">best: ' + (+(cell[S_FULL] || 0) || moves) + "</div>",

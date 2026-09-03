@@ -201,8 +201,9 @@ npm run audio-bench       # what a sample costs, against the callback budget
   player does: `attempt(a, b)` releases the altar, clicks tile a, clicks
   tile b and releases again, all in ONE round trip, because `selectAt` is
   synchronous — so the suite is no slower than the hooks were. State is read
-  off the page; `questDone` and `fullDone` are not stored anywhere visible,
-  but `hud()` composes the goal line from them, so the line IS the state.
+  off the page, except the run flags — `questDone`, `peaceDone` and
+  `fullDone` — which are read out of the SAVE, since the goal line that used
+  to carry them is status-only now.
   One thing has no DOM form: the recipe tree. Those 25 assertions now parse
   `src/elements.ts` in node, which checks the tree as WRITTEN rather than as
   SHIPPED — the one place in the file where a mangled build could still pass.
@@ -501,8 +502,11 @@ The game boots to a title screen — *COLOR* in an animated rainbow over
 - **Continue** — resume the current run (a completed run returns to its
   completion screen).
 - **New game** — restart; asks for confirmation when a run is in progress.
-- **Highscore** — the quest best, and the complete-run best, which shows as
-  `???` until the game has actually been completed.
+- **Quests** — one row per quest, each `NAME — TARGET`: the *Unicorns and
+  Rainbows*, *World Peace* and *COWABUNGA!* rows name their target elements as
+  emoji, the other two as a count. Every best not yet set reads `—`, the full
+  clear included — its move count stays hidden until the completion screen, but
+  the row itself no longer pretends the board cannot be finished.
 - **Encyclopedia** — the player's journal: every discovered element with the
   combinations *actually performed* (alternate recipes never tried stay
   unspoiled; the three starters have no recipe line at all), and, in the
@@ -621,23 +625,45 @@ Reopen it any time with the HUD **Menu** button — which names its shortcuts,
   two tiles — the pair you tried is sitting in the slots, so that is where the
   answer belongs. A pair you have already combined still pulses the element it
   makes, out on the board.
-- **The quest:** forge the 🌈 **Rainbow** (White + Prism, or Sun + Rain)
-  and the 🦄 **Unicorn**. When you hold both, your move count is compared with
-  the stored best and kept if lower. You can then keep playing.
-- **The endgame:** discover all 101 elements. The total move count of a full
-  clear is the *hidden highscore* — it is only ever compared and shown on the
+- **The named quests**, each scored into a best of its own and each raising
+  its own card. *Unicorns and Rainbows*: forge the 🌈 **Rainbow** (White +
+  Prism, or Sun + Rain) and the 🦄 **Unicorn**. *World Peace*: forge the 🌍
+  **World** (Earth + Sea) and the 🕊️ **Peace** (Bird + Plant, or Bird +
+  Olive). When you hold both halves of one, your move count is compared with
+  that quest's stored best and kept if lower. You can then keep playing. At
+  most one can land per move, since a move discovers a single element and no
+  element sits in two of these sets. *COWABUNGA!* wants **three**: 🥷 **Ninja**
+  (Human + Black), 🐢 **Turtle** (Lizard + Sea) and 🍕 **Pizza** (Bread +
+  Cheese, or Cheese + Cooking) — the one quest that proves `finishQuest` never
+  assumed a pair. *Full Color Alchemist* is the third, and
+  the one the game is named after: hold all **17 colors**, the spectrum block
+  that opens the element table — the three starters out through Brown, ending
+  where `matter` begins. game.ts takes it as a SLICE of the table rather than a
+  list of ids, so `check.mjs` pins both ends of the block; insert a color in the
+  wrong place and the suite fails instead of the quest quietly resizing. Teal
+  is the deep one at eleven steps, everything else within four.
+  In the director's cut **every quest card raises the fireworks**, not just the
+  completion screen: the three share one `finishQuest`, which ends in the same
+  `if (__DIRECTOR__) fireworks(1.6)` the completion's `3.2` mirrors.
+- **Nothing on the board tells you what to aim for.** The goal line under
+  the grid is status-only — it speaks when a run has been unlocked, or
+  finished — and the Quests screen is where the objectives live.
+- **The endgame — *Gotta catch 'em all!*:** discover all 101 elements. The
+  total move count of a full clear is the *hidden highscore* — it is only ever compared and shown on the
   completion screen, which only a full clear reaches.
 - Your run persists across reloads. Restart (double-press to confirm) wipes
   the run, never the bests.
 - **The save file is one `localStorage` entry** — `colorAlchemy`, holding one
   array, sections by index: tree fingerprint, run, best quest, best full,
-  codex, mute. `src/store.ts` owns it. It replaced five separate keys and
-  measured **&minus;41 B**, but the interesting part is *why*: shortening all
-  five keys to a single character each was measured first as an upper bound
-  and reached only &minus;25, because roadroller charges almost nothing for
-  an exact repeat like `colorAlchemy.`. The bytes are in the code the shape
-  removes — a three-method wrapper, two `JSON.parse`/`stringify` pairs, and
-  the tree fingerprint concatenated onto two of the key names.
+  codex, mute, best World Peace, best Full Color Alchemist, best COWABUNGA!.
+  `src/store.ts` owns it. It replaced five
+  separate keys and measured **&minus;41 B**, but the interesting part is
+  *why*: shortening all five keys to a single character each was measured
+  first as an upper bound and reached only &minus;25, because roadroller
+  charges almost nothing for an exact repeat like `colorAlchemy.`. The bytes
+  are in the code the shape removes — a three-method wrapper, two
+  `JSON.parse`/`stringify` pairs, and the tree fingerprint concatenated onto
+  two of the key names.
 - **It does not migrate the old keys, so it drops existing saves.** A
   migration would read the five old entries once and delete them, and would
   cost more than the 41 bytes the change saves — so the trade was taken

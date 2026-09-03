@@ -49,20 +49,25 @@ const release = () => evalJs(RELEASE);
 const attempt = (a, b) =>
   evalJs(`(() => { ${RELEASE}; ${tileClick(a)}; ${tileClick(b)}; ${RELEASE}; })()`);
 
-// The state the checks assert on, read off the page. questDone and fullDone are
-// not written anywhere visible — but hud() composes the goal line FROM them, so
-// the line is the state. (A run that has been unlocked says neither, which is
-// right: it has not earned either.)
+// The state the checks assert on, read off the page — except the three run
+// flags, which are read out of the SAVE. The goal line used to carry them: it
+// named the objective, so "Endgame" meant the quest was done. It is status-only
+// now (unlocked, or complete), so the run object is the source, and it is a
+// truer one — save() writes it on the same turn the flag is set, and an
+// unlocked run reads false for all three, which is right: it earned none of
+// them.
 const state = () => evalJs(`(() => {
-  const g = document.getElementById('gl').textContent;
+  const run = (JSON.parse(localStorage.getItem("colorAlchemy") || "[]") || [])[1] || {};
   const tiles = [...document.querySelectorAll('.t')];
   const at = (c) => tiles.findIndex((t) => t.classList.contains(c));
-  const full = g.includes('Complete');
   return JSON.stringify({
     found: tiles.map((t) => t.dataset.id),
     moves: +document.getElementById('mv').textContent,
-    questDone: full || g.includes('Endgame'),
-    fullDone: full,
+    questDone: !!run.q,
+    fullDone: !!run.c,
+    peaceDone: !!run.p,
+    colorDone: !!run.o,
+    cowaDone: !!run.n,
     sel: at('e'),
     pick: at('E'),
     cursor: at('u'),
@@ -78,7 +83,7 @@ const enterGame = () =>
     .find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
 // The save file is ONE entry holding one array; these indexes mirror the
 // S_* constants in src/game.ts and src/store.ts.
-const SLOT = { tree: 0, run: 1, bestQuest: 2, bestFull: 3, codex: 4, mute: 5 };
+const SLOT = { tree: 0, run: 1, bestQuest: 2, bestFull: 3, codex: 4, mute: 5, bestPeace: 6, bestColor: 7, bestCowa: 8 };
 const cellGet = (i) => evalJs(`(JSON.parse(localStorage.getItem("colorAlchemy") || "[]") || [])[${i}]`);
 const cellClear = (i) => evalJs(`(() => {
   const c = JSON.parse(localStorage.getItem("colorAlchemy") || "[]") || [];
@@ -112,6 +117,23 @@ for (const chunk of ENTRIES) {
   }
 }
 
+// THE COLOUR BLOCK. game.ts takes the Full Color Alchemist quest to be the
+// first 17 entries of the table — a slice, not a list of ids — so the quest is
+// only as correct as the block is contiguous. Both ends are pinned here: the
+// seventeen are named, in order, and the eighteenth is asserted NOT to be one.
+// Insert a colour at 18, or anything else inside 0..16, and this fails rather
+// than the quest quietly changing size.
+const COLORS = 17;
+const COLOR_IDS = ["red", "green", "blue", "yellow", "magenta", "cyan", "turquoise",
+  "chartreuse", "crimson", "teal", "beige", "white", "orange", "violet", "indigo",
+  "pink", "brown"];
+const TABLE_IDS = ENTRIES.map(c => c.slice(0, c.indexOf('"')));
+check("colors: the quest's slice is exactly the spectrum block, in table order",
+  COLOR_IDS.length === COLORS &&
+  TABLE_IDS.slice(0, COLORS).join() === COLOR_IDS.join());
+check("colors: the block ends where it should — the 18th entry is not a color",
+  TABLE_IDS[COLORS] === "matter");
+
 // bests are scoped by a recipe-tree fingerprint, which now rides in slot 0
 // rather than being suffixed onto two key names
 const best = async (kind) => +((await cellGet(SLOT[kind])) || 0);
@@ -131,8 +153,8 @@ await sleep(700);
 // --- boot -----------------------------------------------------------------
 let s = await state();
 check("boot: 3 starter elements", s.found.length === 3 && s.moves === 0);
-check("boot: goal line names Rainbow and Unicorn",
-  await evalJs(`document.getElementById('gl').textContent.includes('Rainbow')`));
+check("boot: the goal line is status-only, so it says nothing yet",
+  (await evalJs(`document.getElementById('gl').textContent`)) === "");
 
 // The help line is NOT in the template any more — src/css.ts appends it as a
 // text node with gl.after(), so it rides in the roadroller payload instead of
@@ -180,7 +202,7 @@ check("boot: COLOR and AlchemY come out the same width", await evalJs(`(() => {
 // genuinely gone. `npm run build-dev` is the build that has them.
 const DEVBUILD = await evalJs(
   `[...document.querySelectorAll('#mu button')].some(b => b.textContent === 'Unlock all')`);
-const MENU_FRESH = "New game,Highscores,Encyclopedia" +
+const MENU_FRESH = "New game,Quests,Encyclopedia" +
   (DEVBUILD ? ",Unlock all,Reset everything" : "");
 check("boot: a fresh boot offers no Continue, having nothing to continue",
   (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`)) ===
@@ -848,10 +870,20 @@ const PERFECT_EXTRA = order(rest(LEAN_SET), [], LEAN_SET);
    derived from the closure would carry one onto the board. This one names the
    route it is about. */
 const RAINBOW_ONLY = order(new Set(["rainbow", ...union("sun", "rain")]), ["rainbow"]);
-const run = async (pairs) => {
+// `keep` dismisses a quest card the sequence runs into, and records the card it
+// dismissed on window.__seen so the run can be asserted on afterwards. World
+// Peace lands partway through a full clear and its card takes the phase, so
+// without this every click after it would land on nothing. Off by default: the
+// quest run below is asserting on the card itself, and must find it still up.
+const KEEP = `const k = [...document.querySelectorAll('#ob button')]
+    .find(x => x.textContent === 'Keep playing');
+  if (k) { const c = document.getElementById('fw');
+    (window.__seen = window.__seen || []).push({ t: oc.textContent, fw: c ? c.width : -1 });
+    k.click(); }`;
+const run = async (pairs, keep) => {
   for (const [a, b] of pairs) {
     await attempt(a, b);
-    await release();
+    await evalJs(`(() => { ${RELEASE}; ${keep ? KEEP : ""} })()`);
   }
 };
 await run(QUEST);
@@ -870,12 +902,27 @@ check("quest: best stored on first completion", (await best("bestQuest")) === qu
 check("quest: overlay reports the move count",
   await evalJs(`document.getElementById('oc').textContent.includes('QUEST COMPLETE')`) &&
   await evalJs(`document.getElementById('oc').textContent.includes('${questMoves}')`));
+// FIREWORKS FIRE FOR A QUEST, not only for the completion screen: all three
+// named quests go through finishQuest, which ends in the same `if (__DIRECTOR__)
+// fireworks(1.6)` the completion's 3.2 mirrors. Asserted with the same test the
+// full clear uses — a sized canvas, and NOT the 300 an untouched <canvas>
+// reports — and inverted by build, so the shipping cut is checked for its
+// absence rather than skipped. The two quests that land mid-run carry theirs on
+// __seen; this is the one the suite can stop on.
+const FW = await evalJs(`!!document.getElementById('fw')`);
+if (FW) {
+  const w = await evalJs(`document.getElementById('fw').width`);
+  check("quest: the fireworks canvas is live behind the quest card too", w > 0 && w !== 300);
+} else {
+  check("quest: no fireworks canvas on a quest card — director's-cut only",
+    !(await evalJs(`!!document.querySelector('#ov canvas')`)));
+}
 await shot("quest");
 await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
 s = await state();
 check("quest: Keep playing returns to the game", s.phase === "play" && !s.fullDone);
-check("quest: goal line switches to find-all",
-  await evalJs(`document.getElementById('gl').textContent.includes('all ${COUNT}')`));
+check("quest: the goal line still says nothing — a finished quest is not a status",
+  (await evalJs(`document.getElementById('gl').textContent`)) === "");
 check("night: icon is a starry violet-to-black swatch, not an emoji",
   await evalJs(`!!document.querySelector('[data-id=night] .s')
     && document.querySelector('[data-id=night] .s').style.background.includes('gradient')`));
@@ -886,36 +933,73 @@ check("black: the one color no mixing of lights reaches, so it comes from the ma
   RECIPE['charcoal+stone'] === "black" &&
   await evalJs(`!!document.querySelector('[data-id=black] .s')`));
 
-// --- highscore screen: quest best visible, full best still hidden ---------
+// --- quests screen: quest best visible, full best still hidden ---------
 await key("Escape");
-await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Highscores').click()`);
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'Quests').click()`);
 // The head is the button's own label uppercased, not a second string in caps,
 // so the casing is now behaviour rather than a literal and is checked as such.
-check("highscore: the panel head is the menu label in caps",
-  (await evalJs(`document.getElementById('mh').textContent`)) === "HIGHSCORES");
-check("highscore: shows the quest best",
+check("quests: the panel head is the menu label in caps",
+  (await evalJs(`document.getElementById('mh').textContent`)) === "QUESTS");
+check("quests: shows the quest best",
   await evalJs(`document.getElementById('ml').textContent.includes('${questMoves} moves')`));
-check("highscore: the complete-run best stays hidden",
-  await evalJs(`document.getElementById('ml').textContent.includes('???')`));
+// Every unset best reads the same em dash now, the full clear included: the
+// row already names the goal and the count, so there was nothing left for the
+// old "???" to conceal. What still IS hidden is the move count itself, and the
+// check for that is "reset: hidden best appears nowhere outside the completion
+// screen" further down.
+check("quests: an unset best is an em dash, on every row alike",
+  (await evalJs(`[...document.querySelectorAll('#ml .H b')].map(b => b.textContent).join()`))
+    === `${questMoves} moves,${"—,".repeat(3)}—`);
 // Back shares its container with the button column, so it is rebuilt — and
 // re-wired — every time a subscreen opens. Clicking it is the only thing that
 // proves the wiring came back with it.
 await evalJs(`document.getElementById('mb').click()`);
-check("highscore: Back puts the button column back",
+check("quests: Back puts the button column back",
   (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`))
-    .includes("Highscores") &&
+    .includes("Quests") &&
   !(await evalJs(`!!document.getElementById('ml')`)));
 // Back closed the panel, so ONE Escape leaves the menu — a second would reopen it
 await key("Escape");
 s = await state();
-check("highscore: back to the game", s.phase === "play");
+check("quests: back to the game", s.phase === "play");
 
-await run(EXTRA);
+await run(EXTRA, 1);
 await sleep(100);
 s = await state();
 check(`full: completion overlay after all ${COUNT}`, s.fullDone && s.phase === "overlay");
 const fullMoves = s.moves;
 check("full: hidden best stored", (await best("bestFull")) === fullMoves);
+// World Peace is the second named quest, and a full clear necessarily passes
+// through it: the card it raised mid-run is on __seen, and its own best sits in
+// its own slot, below the full-clear count it was scored on the way to.
+const seen = JSON.parse(await evalJs(`JSON.stringify(window.__seen || [])`));
+const peaceCard = seen.find(o => o.t.includes("World Peace"));
+check("peace: World Peace raises its own quest card mid-run",
+  !!peaceCard && peaceCard.t.includes("QUEST COMPLETE") && s.peaceDone);
+check("peace: it scores into its own slot, not the quest's or the full clear's",
+  (await best("bestPeace")) > 0 &&
+  (await best("bestPeace")) !== (await best("bestQuest")) &&
+  (await best("bestPeace")) < fullMoves);
+// Full Color Alchemist is the quest the game is named after, and a full clear
+// passes through it too — every color is an element. Its card rode __seen with
+// the others, and its best is its own.
+const colorCard = seen.find(o => o.t.includes("Full Color Alchemist"));
+check("colors: Full Color Alchemist raises its own quest card mid-run",
+  !!colorCard && colorCard.t.includes("QUEST COMPLETE") && s.colorDone);
+check("colors: it scores into its own slot",
+  (await best("bestColor")) > 0 && (await best("bestColor")) < fullMoves);
+// COWABUNGA! is the one quest that wants THREE elements, so it is the one that
+// proves finishQuest does not assume a pair.
+const cowaCard = seen.find(o => o.t.includes("COWABUNGA!"));
+check("cowabunga: three elements raise one card",
+  !!cowaCard && cowaCard.t.includes("QUEST COMPLETE") && s.cowaDone);
+check("cowabunga: it scores into its own slot",
+  (await best("bestCowa")) > 0 && (await best("bestCowa")) < fullMoves);
+// ...and both mid-run cards were painted over live fireworks in the cut, which
+// is the half of "every quest, not just the completion" that no single stopping
+// point in this file can see. -1 is the shipping cut, where there is no canvas.
+check("quests: every quest card ran the fireworks, not just the completion",
+  [peaceCard, colorCard, cowaCard].every(c => FW ? c.fw > 0 && c.fw !== 300 : c.fw === -1));
 check("indigo: Newton's seventh band, between Blue and Violet",
   RECIPE['blue+violet'] === "indigo" &&
   await evalJs(`!!document.querySelector('[data-id=indigo] .s')`));
@@ -923,7 +1007,7 @@ check("prism: icon is an inline SVG, sized by the same .s rules",
   await evalJs(`!!document.querySelector('[data-id=prism] svg.s')`) &&
   (await evalJs(`getComputedStyle(document.querySelector('[data-id=prism] svg.s')).width`)) === "32px");
 check("full: overlay shows the hidden best",
-  await evalJs(`document.getElementById('oc').textContent.includes('GRAND ALCHEMIST')`) &&
+  await evalJs(`document.getElementById('oc').textContent.includes("GOTTA CATCH 'EM ALL!")`) &&
   await evalJs(`document.getElementById('oc').textContent.includes('complete run')`));
 check("full: the completion screen cancels the discovery card here too",
   !(await evalJs(`document.getElementById('ds').classList.contains('y')`)) &&
@@ -973,7 +1057,7 @@ check("perfect: the leaner run lowers the stored quest best",
 check("perfect: overlay celebrates the new best",
   await evalJs(`document.getElementById('oc').textContent.includes('NEW BEST')`));
 await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
-await run(PERFECT_EXTRA);
+await run(PERFECT_EXTRA, 1);
 s = await state();
 check(`perfect: full clear in ${PERFECT_QUEST.length + PERFECT_EXTRA.length} moves, all ${COUNT} found`,
   s.fullDone && s.moves === PERFECT_QUEST.length + PERFECT_EXTRA.length &&

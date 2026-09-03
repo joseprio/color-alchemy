@@ -67,12 +67,21 @@ var caState = {};
 /** @type {?} */ caState.cursor;
 /** @type {?} */ caState.phase;
 
-// the persisted run (f/m/q/c) and codex (f/k) shapes
+// the persisted run (f/t/m/q/c/x/p/o/n) and codex (f/k) shapes. EVERY run key is
+// pinned, not just the ones a build has been caught renaming: q and c happen to
+// ride in on caElement below, and t/x survived the map by luck. o did not — it
+// compiled to i, which is exactly the failure the note at the top describes,
+// and it cost a test to find. A key added here is a key that keeps its name.
 /** @const */
 var caSave = {};
 /** @type {?} */ caSave.f;
+/** @type {?} */ caSave.t;
 /** @type {?} */ caSave.m;
 /** @type {?} */ caSave.k;
+/** @type {?} */ caSave.x;
+/** @type {?} */ caSave.p;
+/** @type {?} */ caSave.o;
+/** @type {?} */ caSave.n;
 
 // ElementDef: n name, q quote, c color, bg background stack, e emoji, s svg,
 // r recipes (c and q are already pinned by the save shape above)
