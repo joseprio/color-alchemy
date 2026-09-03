@@ -16,6 +16,8 @@
     "music-check": "node tools/music-probe.mjs",
     "audio-bench": "node tools/audio-bench.mjs",
     "mobile-check": "node tools/responsive-probe.mjs",
+    "qr-inline": "node tools/qr-inline.mjs",
+    "qr-check": "node tools/qr-inline.mjs --check",
     "phone": "node tools/phone.mjs",
     "start": "rollup -c -w",
     "test": "node check.mjs",

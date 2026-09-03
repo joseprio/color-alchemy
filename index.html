@@ -51,6 +51,16 @@
     border-color: var(--cyan); transform: translateY(-2px);
     box-shadow: 0 0 30px #3ee2; outline: none;
   }
+  /* The card is a row now: words on the left, the code on the right, and the
+     text column takes the slack so the QR never stretches. It is the LAST
+     child in the markup and pulled up by order, so a screen reader and a
+     no-CSS reader both get the name before the picture of the link. */
+  a.play { display: flex; align-items: center; gap: 18px; }
+  a.play .text { flex: 1; min-width: 0; }
+  a.play .qr {
+    order: 1; flex: none; width: 96px; height: 96px; border-radius: 8px;
+    display: block; background: #eef6ff;
+  }
   a.play .name { font-size: 19px; font-weight: 700; color: #fff; }
   a.play .name .badge {
     font-size: 11px; letter-spacing: .18em; color: var(--gold);
@@ -63,6 +73,11 @@
   code {
     background: #0a1420; border: 1px solid var(--edge); border-radius: 5px;
     padding: 1px 6px; font-size: 13px; color: #adf;
+  }
+  /* A phone is already holding the link it would scan, and the narrow card
+     needs the width more than it needs the code. */
+  @media (max-width: 559px) {
+    a.play .qr { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     a.play { transition: none; }
@@ -93,19 +108,25 @@
   <h2>PLAY IT</h2>
   <div class="plays">
     <a class="play" href="dist/bundle.html">
-      <div class="name">The 13KB build<span class="badge">THE ENTRY</span></div>
-      <p class="what">
-        The size-golfed one, and the point of the exercise. One file, no
-        network, packed to the last byte.
-      </p>
+      <div class="text">
+        <div class="name">The 13KB build<span class="badge">THE ENTRY</span></div>
+        <p class="what">
+          The size-golfed one, and the point of the exercise. One file, no
+          network, packed to the last byte.
+        </p>
+      </div>
+      <img class="qr" data-qr="bundle" alt="" aria-hidden="true" width="96" height="96" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2039%2039%22%20shape-rendering%3D%22crispEdges%22%3E%3Cpath%20fill%3D%22%23eef6ff%22%20d%3D%22M0%200h39v39H0z%22%2F%3E%3Cpath%20stroke%3D%22%23001122%22%20d%3D%22M3%203.5h7m2%200h1m1%200h2m3%200h2m1%200h5m2%200h7M3%204.5h1m5%200h1m3%200h1m4%200h3m3%200h2m1%200h1m1%200h1m5%200h1M3%205.5h1m1%200h3m1%200h1m1%200h3m3%200h1m1%200h1m1%200h1m2%200h1m2%200h1m1%200h1m1%200h3m1%200h1M3%206.5h1m1%200h3m1%200h1m1%200h1m2%200h2m4%200h1m1%200h1m6%200h1m1%200h3m1%200h1M3%207.5h1m1%200h3m1%200h1m1%200h2m3%200h4m1%200h2m1%200h1m1%200h1m2%200h1m1%200h3m1%200h1M3%208.5h1m5%200h1m1%200h1m1%200h2m2%200h1m5%200h1m5%200h1m5%200h1M3%209.5h7m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h7M11%2010.5h2m6%200h1m3%200h2m1%200h2M3%2011.5h1m1%200h5m3%200h1m1%200h3m2%200h1m4%200h1m3%200h5M3%2012.5h2m2%200h2m1%200h2m1%200h1m2%200h1m2%200h5m2%200h1m2%200h2m1%200h2m1%200h1M4%2013.5h2m2%200h2m3%200h2m1%200h4m1%200h1m3%200h1m2%200h2m1%200h1m1%200h2M3%2014.5h1m4%200h1m2%200h4m1%200h1m4%200h1m1%200h3m2%200h1m2%200h4M3%2015.5h1m1%200h7m2%200h2m1%200h4m4%200h1m2%200h1m1%200h3m1%200h2M3%2016.5h2m2%200h1m2%200h1m7%200h1m3%200h2m2%200h1m1%200h2m3%200h3M4%2017.5h1m1%200h4m1%200h1m2%200h1m1%200h6m2%200h1m3%200h2m2%200h3M4%2018.5h5m4%200h4m1%200h1m2%200h1m1%200h3m1%200h3m2%200h2M4%2019.5h1m2%200h3m1%200h2m1%200h5m1%200h4m1%200h4m1%200h2m3%200h1M3%2020.5h1m2%200h1m4%200h1m1%200h1m5%200h1m1%200h4m1%200h1m2%200h2m1%200h2m1%200h1M4%2021.5h1m4%200h3m2%200h1m2%200h3m3%200h1m5%200h3m1%200h1M3%2022.5h4m1%200h1m5%200h3m2%200h1m1%200h1m2%200h1m1%200h3m1%200h4m1%200h1M5%2023.5h1m1%200h3m1%200h1m1%200h1m1%200h2m3%200h1m1%200h1m2%200h1m1%200h1m2%200h3M3%2024.5h3m1%200h1m5%200h1m1%200h2m1%200h6m1%200h2m2%200h1m2%200h1m2%200h1M3%2025.5h1m3%200h1m1%200h2m2%200h3m4%200h1m4%200h1m1%200h1m1%200h2m2%200h2M3%2026.5h1m1%200h1m1%200h2m1%200h2m1%200h3m3%200h1m1%200h1m1%200h3m3%200h6M3%2027.5h1m1%200h5m3%200h2m1%200h1m3%200h1m6%200h5m3%200h1M11%2028.5h3m2%200h2m2%200h5m1%200h2m3%200h1m1%200h3M3%2029.5h7m3%200h1m2%200h4m3%200h5m1%200h1m1%200h1m1%200h2M3%2030.5h1m5%200h1m1%200h3m2%200h1m2%200h1m2%200h6m3%200h5M3%2031.5h1m1%200h3m1%200h1m1%200h1m1%200h1m1%200h1m4%200h1m4%200h1m1%200h6m1%200h2M3%2032.5h1m1%200h3m1%200h1m1%200h1m4%200h1m1%200h1m1%200h4m2%200h1m1%200h1m2%200h1m1%200h3M3%2033.5h1m1%200h3m1%200h1m1%200h3m1%200h2m1%200h1m2%200h1m3%200h2m2%200h2m1%200h1M3%2034.5h1m5%200h1m2%200h2m1%200h1m2%200h2m2%200h3m3%200h2m1%200h3M3%2035.5h7m1%200h1m2%200h2m1%200h1m2%200h1m1%200h1m2%200h6m3%200h1%22%2F%3E%3C%2Fsvg%3E">
     </a>
     <a class="play" href="dist/director.html">
-      <div class="name">The director&rsquo;s cut<span class="badge">NO BUDGET</span></div>
-      <p class="what">
-        The same game with nothing to fit into: a written quote for every
-        element, fireworks over each completed quest, and its own bundled
-        emoji font instead of whatever your device happens to own.
-      </p>
+      <div class="text">
+        <div class="name">The director&rsquo;s cut<span class="badge">NO BUDGET</span></div>
+        <p class="what">
+          The same game with nothing to fit into: a written quote for every
+          element, fireworks over each completed quest, and its own bundled
+          emoji font instead of whatever your device happens to own.
+        </p>
+      </div>
+      <img class="qr" data-qr="director" alt="" aria-hidden="true" width="96" height="96" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2039%2039%22%20shape-rendering%3D%22crispEdges%22%3E%3Cpath%20fill%3D%22%23eef6ff%22%20d%3D%22M0%200h39v39H0z%22%2F%3E%3Cpath%20stroke%3D%22%23001122%22%20d%3D%22M3%203.5h7m9%200h2m1%200h5m2%200h7M3%204.5h1m5%200h1m2%200h1m5%200h3m3%200h2m1%200h1m1%200h1m5%200h1M3%205.5h1m1%200h3m1%200h1m1%200h3m3%200h1m1%200h1m4%200h1m2%200h1m1%200h1m1%200h3m1%200h1M3%206.5h1m1%200h3m1%200h1m1%200h4m5%200h1m1%200h1m6%200h1m1%200h3m1%200h1M3%207.5h1m1%200h3m1%200h1m1%200h1m1%200h7m2%200h3m1%200h1m2%200h1m1%200h3m1%200h1M3%208.5h1m5%200h1m1%200h1m2%200h1m2%200h1m11%200h1m5%200h1M3%209.5h7m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h7M11%2010.5h5m3%200h1m3%200h2m1%200h2M3%2011.5h1m1%200h5m3%200h1m1%200h3m2%200h1m4%200h1m3%200h5M4%2012.5h1m1%200h1m8%200h2m2%200h1m1%200h3m2%200h1m2%200h2m1%200h2m1%200h1M3%2013.5h4m1%200h2m2%200h1m1%200h8m3%200h1m2%200h2m1%200h1m1%200h2M3%2014.5h1m4%200h1m1%200h2m1%200h2m1%200h1m4%200h1m1%200h3m2%200h1m2%200h4M3%2015.5h1m4%200h2m3%200h1m3%200h2m1%200h2m1%200h1m1%200h1m2%200h1m1%200h3m1%200h2M3%2016.5h1m3%200h1m2%200h1m1%200h5m1%200h1m2%200h3m2%200h1m1%200h2m3%200h3M3%2017.5h1m5%200h3m2%200h1m1%200h1m1%200h1m1%200h2m1%200h2m3%200h2m2%200h3M3%2018.5h1m3%200h2m1%200h1m1%200h1m1%200h6m1%200h2m1%200h2m1%200h3m2%200h2M6%2019.5h1m1%200h5m1%200h2m4%200h2m1%200h1m1%200h4m1%200h2m3%200h1M3%2020.5h1m1%200h1m1%200h2m6%200h1m1%200h1m1%200h6m1%200h1m2%200h2m1%200h2m1%200h1M8%2021.5h3m2%200h4m1%200h3m2%200h3m3%200h3m1%200h1M3%2022.5h1m3%200h1m2%200h2m4%200h1m2%200h1m1%200h1m2%200h1m1%200h3m1%200h4m1%200h1M3%2023.5h2m2%200h1m1%200h4m3%200h1m3%200h1m1%200h1m2%200h1m1%200h1m2%200h3M3%2024.5h3m2%200h1m1%200h1m1%200h1m1%200h3m2%200h5m2%200h1m2%200h1m2%200h1m2%200h1M3%2025.5h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m4%200h3m2%200h1m1%200h1m1%200h1m1%200h2m2%200h2M3%2026.5h1m1%200h2m1%200h1m1%200h2m1%200h2m2%200h3m1%200h1m1%200h3m3%200h7M3%2027.5h1m1%200h1m2%200h2m1%200h2m2%200h1m4%200h1m6%200h5m3%200h1M11%2028.5h5m1%200h1m2%200h4m2%200h2m3%200h1m1%200h3M3%2029.5h7m8%200h2m1%200h1m1%200h2m1%200h2m1%200h1m1%200h1m1%200h2M3%2030.5h1m5%200h1m1%200h4m1%200h2m1%200h1m1%200h7m3%200h5M3%2031.5h1m1%200h3m1%200h1m1%200h1m3%200h2m3%200h1m4%200h1m1%200h6m1%200h2M3%2032.5h1m1%200h3m1%200h1m1%200h5m3%200h2m1%200h2m1%200h2m1%200h1m2%200h1m1%200h3M3%2033.5h1m1%200h3m1%200h1m1%200h1m2%200h1m3%200h1m2%200h1m3%200h2m2%200h2m1%200h1M3%2034.5h1m5%200h1m3%200h3m1%200h3m2%200h1m1%200h1m3%200h2m1%200h3M3%2035.5h7m1%200h4m2%200h2m1%200h1m4%200h6m3%200h1%22%2F%3E%3C%2Fsvg%3E">
     </a>
   </div>
 

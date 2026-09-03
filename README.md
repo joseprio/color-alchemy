@@ -36,6 +36,8 @@ npm run fouc-check        # is the sheet in place before the first paint?
 npm run css-diff          # does cssnano change any computed style?
 npm run music-check       # is the shipped page actually producing audio?
 npm run mobile-check      # phone and tablet layout: overflow, tap targets
+npm run qr-inline         # rewrite index.html's QR codes from its URL table
+npm run qr-check          # ...or just fail if they have drifted from it
 npm run audio-bench       # what a sample costs, against the callback budget
 ```
 
