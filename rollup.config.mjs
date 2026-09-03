@@ -166,9 +166,18 @@ const cutDirectorCss = (css) =>
 // NOT in src/style.css, because that file is shared with the cut, and the cut
 // has a real font of its own to name.
 // Only the @font-face: the family is NAMED in style.css's own body shorthand
-// (`font: 14px/1.45 monospace, emoji`), which is 7 characters there against 33
-// for a `body{font-family:monospace,emoji}` rule appended here. The name is
+// (`font: 14px/1.45 emoji, monospace`), which is 7 characters there against 33
+// for a `body{font-family:emoji,monospace}` rule appended here. The name is
 // inert in the builds that do not define it.
+//
+// NO unicode-range, and that is a claim about the FONT: style.css leads with
+// this family so the colour artwork beats whatever emoji coverage the platform
+// monospace has, which is only safe while the face answers for nothing but
+// emoji. It did not, for a while — nanoemoji gives every font it builds a
+// `space` glyph, so U+0020 was in the cmap and every space in the UI came back
+// at the emoji advance, 17px against monospace's 7.69px. The fix is in
+// tools/emoji-font.mjs, which unclaims U+0020 before the font is packed; a
+// range here would have papered over a font that was still lying about itself.
 const GOLF_EMOJI_CSS = golf
   ? `@font-face{font-family:emoji;src:url(//joseprio.github.io/color-alchemy/emoji.woff2)}`
   : "";

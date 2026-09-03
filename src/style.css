@@ -38,10 +38,17 @@ body {
      whole font-family with its own Noto face further down the sheet.
      FIRST, not last: a family the page names is tried before the browser's own
      fallback chain, so trailing it behind monospace lets any emoji coverage
-     monospace happens to have win instead. Leading with it is what actually
-     pins the artwork. Safe because the face is emoji-only — every latin
-     character falls straight through to monospace, which still sets all the
-     text. A face carrying latin glyphs would restyle the whole UI from here. */
+     monospace happens to have win instead — and 26 of the table's codepoints
+     are below U+1F000, where a text font will gladly draw ⭐ or ❄ in
+     monochrome. Leading with it is what actually pins the artwork.
+     Safe only because the face really is emoji-only — every latin character
+     falls straight through to monospace, which still sets all the text. That
+     was not always true and the failure is worth remembering: nanoemoji ships a
+     `space` glyph in every font it builds, so U+0020 sat in the cmap and every
+     space here was set at the emoji advance — 17px against monospace's 7.69px,
+     which made the hosted build read visibly airier than a local one, where the
+     face cannot load at all. tools/emoji-font.mjs unclaims U+0020 now. A face
+     carrying latin glyphs restyles the whole UI from here, and one did. */
   margin: 0; background: #001; color: #cdf; font: 14px/1.45 emoji, monospace;
   display: flex; flex-direction: column; align-items: center;
   touch-action: manipulation; overflow-x: hidden;

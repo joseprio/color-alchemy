@@ -194,17 +194,27 @@ export function toast(msg: string): void {
 }
 
 /* -------------------------------------------------------------------- grid */
+// THE GLOW IS ONE HEX DIGIT, not two, and that is the whole of a bug that hid
+// in plain sight: --g feeds `box-shadow: 0 0 10px 1px var(--g)` in .s, and this
+// used to append "55" for a 33% alpha — which is right for #rrggbb and NOT A
+// COLOUR for #rgb. Every `c` in the table is three digits, so every one of them
+// produced a five-digit "#56755", the shorthand went invalid at computed-value
+// time, and box-shadow fell back to `none`. NOT ONE SWATCH WITH A COLOUR HAD A
+// GLOW; the only tiles that did were the emoji-only ones falling back to the
+// six-digit default here, which is exactly the wrong half to work and is why it
+// went unnoticed. #rgb + one digit is #rgba, and "5" is the same 0x55 alpha the
+// old suffix meant — so the default drops to three digits to match.
 function iconHtml(el: ElementDef): string {
   // an SVG icon rides on .s too, so every size rule the swatches have applies
   if (el.s) {
-    return '<svg class="s" viewBox="0 0 32 32" style="--g:' + (el.c || "#8a5cf0") + '55">' +
+    return '<svg class="s" viewBox="0 0 32 32" style="--g:' + (el.c || "#85f") + '5">' +
            el.s + "</svg>";
   }
   if (el.c || el.bg) {
     // bg (a full CSS background stack) overrides the flat color; the plain
-    // color always supplies the glow, since "gradient…55" is not a color
+    // color always supplies the glow, a gradient being no kind of color
     return '<div class="s" style="background:' + (el.bg || el.c) +
-           ";--g:" + (el.c || "#8a5cf0") + '55"></div>';
+           ";--g:" + (el.c || "#85f") + '5"></div>';
   }
   return el.e || "";
 }
