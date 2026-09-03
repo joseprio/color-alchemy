@@ -30,6 +30,8 @@
 //               moves.
 //   8 bestCowa  fewest moves to hold Ninja, Turtle and Pizza. The one quest
 //               that wants THREE elements rather than two.
+//   9 bestMatter  fewest moves to reach Matter. The one quest that wants a
+//                 SINGLE element, and so the first one any run completes.
 // Five separate keys became this and it measured -41 B: the win is not the
 // repeated `colorAlchemy.` prefix (roadroller charges almost nothing for an
 // exact repeat) but the code the shape removes — a three-method wrapper, two
@@ -56,12 +58,13 @@ for (const ch of JSON.stringify(Object.entries(RECIPE).sort()) + ELEMENTS.length
 }
 const TREE = vh.toString(36);
 // ONE localStorage entry, sections by index: [tree, run, bestQuest, bestFull,
-// codex, mute, bestPeace, bestColor]. The tree hash rides in slot 0 instead
+// codex, mute, bestPeace, bestColor, bestCowa, bestMatter]. The tree hash
+// rides in slot 0 instead
 // of being suffixed onto key names — a mismatch drops the bests and keeps
 // everything else, which is what the suffixed keys did by orphaning them.
 import { cell, put } from "./store";
-const S_RUN = 1, S_QUEST = 2, S_FULL = 3, S_CODEX = 4, S_PEACE = 6, S_COLOR = 7, S_COWA = 8;
-if (cell[0] !== TREE) { cell[0] = TREE; cell[S_QUEST] = cell[S_FULL] = cell[S_PEACE] = cell[S_COLOR] = cell[S_COWA] = 0; }
+const S_RUN = 1, S_QUEST = 2, S_FULL = 3, S_CODEX = 4, S_PEACE = 6, S_COLOR = 7, S_COWA = 8, S_MATTER = 9;
+if (cell[0] !== TREE) { cell[0] = TREE; cell[S_QUEST] = cell[S_FULL] = cell[S_PEACE] = cell[S_COLOR] = cell[S_COWA] = cell[S_MATTER] = 0; }
 
 /* ------------------------------------------------------------------- state */
 // A PLAIN OBJECT RATHER THAN A Set, the same trade `tried` makes below, and
@@ -113,6 +116,7 @@ let questDone = false;              // Rainbow + Unicorn found this run
 let peaceDone = false;              // World + Peace found this run
 let colorDone = false;              // every colour found this run
 let cowaDone = false;               // Ninja + Turtle + Pizza found this run
+let matterDone = false;             // Matter found this run
 let fullDone = false;               // all elements found this run
 // "Unlock all" hands you the whole board, so the run must never score again.
 // Persisted with the run: a reload cannot launder a cheated run into a best.
@@ -144,7 +148,7 @@ function reflow(el: HTMLElement): void {
 
 function save(): void {
   put(S_RUN, { f: order, t: tried, m: moves, q: questDone, c: fullDone, x: cheated,
-    p: peaceDone, o: colorDone, n: cowaDone });
+    p: peaceDone, o: colorDone, n: cowaDone, d: matterDone });
 }
 function saveCodex(): void {
   put(S_CODEX, { f: codexF, k: Object.keys(codexK) });
@@ -160,11 +164,10 @@ function hud(): void {
   // and naming one quest here made the other two look like they did not count.
   // The element stays whatever it says — css.ts anchors the help line on it
   // with gl.after(), so #gl is furniture as well as text.
-  gl.innerHTML = cheated
-    ? "Unlocked &mdash; this run does not score"
-    : fullDone
-    ? "Complete. \u{1F3C6}"
-    : "";
+  // Only the one state left to report: a COMPLETED run never gets back to the
+  // board to read a line off it, so the trophy that used to sit here had no
+  // moment to be seen in once the completion screen became the end of the run.
+  gl.innerHTML = cheated ? "Unlocked &mdash; this run does not score" : "";
 }
 
 let toastTimer = 0;
@@ -786,7 +789,6 @@ function closeOverlay(): void {
 // The only canvas in the game, and it earns that by being the only moment worth
 // it: this runs once or twice in a whole run. It never blocks — every button on
 // the card works on frame one — and it stops itself when the last comet dies.
-// A restored completion screen does NOT raise it: that moment already happened.
 // prefers-reduced-motion gets no still, because a trail system held still is a
 // blank canvas; style.css hides it outright and the card stands on its own.
 let fwRaf = 0;
@@ -870,9 +872,20 @@ function checkMilestones(): void {
   if (cheated) return;   // nothing an unlocked board reaches is earned
   // AT MOST ONE named quest can land per move: a move discovers a single
   // element, and no element belongs to two of these sets — the colour block is
-  // the table's first 17, and none of the other three names one. So these are
-  // plain sequential ifs rather than a collected list, and the ceremony they
-  // share lives in finishQuest below rather than being written out four times.
+  // the table's first 17, Matter is the 18th, and none of the other three
+  // names either. So these are plain sequential ifs rather than a collected
+  // list, and the ceremony they share lives in finishQuest below rather than
+  // being written out five times.
+  //
+  // MATTER IS FIRST because it is first in play: the one gateway the whole
+  // tree hangs off, one recipe deep, and the only quest that wants a SINGLE
+  // element. Every route runs through it, so its card is what teaches a new
+  // player that quests exist at all. Its icon is Matter's OWN — the element
+  // carries an SVG rather than an emoji, and .A .B .s already sizes one at 56px.
+  if (!matterDone && found["matter"]) {
+    matterDone = true;
+    return finishQuest(S_MATTER, iconHtml(BY_ID["matter"]), "Do what matters");
+  }
   if (!questDone && found["rainbow"] && found["unicorn"]) {
     questDone = true;
     return finishQuest(S_QUEST, "\u{1F308}\u{1F984}", "Unicorns and Rainbows");
@@ -905,8 +918,11 @@ function finishQuest(slot: number, icons: string, name: string): void {
     '<div class="T">QUEST COMPLETE</div>' +
     "<h2>" + name + "</h2>" +
     '<div class="L">forged in <b>' + moves + "</b> moves</div>" + q,
-    [["Keep playing", () => { closeOverlay(); hud(); }],
-     ["New game", () => { closeOverlay(); reset(); }]],
+    // ONE WAY OUT, and it is back to the board: an intermediate quest is a
+    // moment in a run, not the end of one, so the card has nothing to offer
+    // but its own dismissal. Leaving for the menu is still one Escape away
+    // once the card is down — it just is not a choice the celebration makes.
+    [["Continue", () => { closeOverlay(); hud(); }]],
   );
   if (__DIRECTOR__) fireworks(1.6);
 }
@@ -923,7 +939,11 @@ function finishFull(questHtml: string): void {
     "<h2>All " + ELEMENTS.length + " elements</h2>" +
     (questHtml ? '<div class="L">quest also completed — in <b>' + moves + "</b> moves</div>" : "") +
     '<div class="L">complete run: <b>' + moves + "</b> moves</div>" + f,
-    [["New game", () => { closeOverlay(); reset(); }]],
+    // AND HERE THE RUN IS OVER, so the one way out is the other one: the board
+    // behind this card holds every element there is, and nothing left to do on
+    // it. inRun() drops Continue from the menu for the same reason, so this is
+    // the last the finished run is seen — New game is what follows it.
+    [["Main menu", () => { closeOverlay(); openMenu(); }]],
   );
   if (__DIRECTOR__) fireworks(3.2);
 }
@@ -943,8 +963,12 @@ let armIdx = -1;           // menu button awaiting its confirming second press
 let armLabel = "";         // ...and the label to put back when it disarms
 let armTimer = 0;
 // "Continue" is only offered when there is something to continue: a fresh
-// boot, and a Reset everything, both leave nothing behind it
-const inRun = (): boolean => moves > 0 || order.length > STARTERS.length;
+// boot, and a Reset everything, both leave nothing behind it — and neither
+// does a COMPLETED run, which is the same answer for the opposite reason. A
+// board holding every element there is has been finished, not paused: the
+// completion screen sends you here, and New game is the only way back onto a
+// board from here.
+const inRun = (): boolean => !fullDone && (moves > 0 || order.length > STARTERS.length);
 
 function menuButtons(): HTMLElement[] {
   return [...mu.querySelectorAll("button")] as HTMLElement[];
@@ -1003,8 +1027,6 @@ function wipeAll(i: number): void {
 }
 function continueGame(): void {
   closeMenu();
-  // a run that completed the game comes back to its completion screen
-  if (fullDone) showRestoredCompletion();
   hud();
 }
 // the index is handed to the handler so the confirm flow never hardcodes a
@@ -1078,10 +1100,13 @@ export function menuGo(): void {
   const b = menuButtons()[mCur];
   if (b) b.click(); // through click, so the New game arming flow is identical
 }
+// Escape out of the menu is Continue by another name, so it answers to the same
+// question: with no run behind the menu — a fresh boot, or one just finished —
+// there is nowhere to back out TO, and the menu stays where it is.
 export function menuBack(): void {
   if (panel) { closePanel(); return; }
   if (armIdx >= 0) { disarm(); return; }
-  continueGame();
+  if (inRun()) continueGame();
 }
 // One row per quest, each its own name and its own best, and every unset one
 // reads "—". The full clear used to read "???" instead, from when its best was
@@ -1094,6 +1119,7 @@ function questsHtml(): string {
     '<div class="H"><span>' + name + "</span><b>" +
     (best ? best + " moves" : "—") + "</b></div>";
   return (
+    row("Do what matters — Matter", cell[S_MATTER]) +
     row("Unicorns and Rainbows — \u{1F308}\u{1F984}", cell[S_QUEST]) +
     row("World Peace — \u{1F30D}\u{1F54A}", cell[S_PEACE]) +
     row("COWABUNGA! — \u{1F977}\u{1F422}\u{1F355}", cell[S_COWA]) +
@@ -1134,7 +1160,7 @@ export function reset(): void {
   gd.innerHTML = "";
   tried = {};
   moves = 0;
-  questDone = fullDone = peaceDone = colorDone = cowaDone = cheated = false;
+  questDone = fullDone = peaceDone = colorDone = cowaDone = matterDone = cheated = false;
   sel = -1;
   held = false;
   cursor = 0;
@@ -1171,7 +1197,7 @@ export function boot(): void {
   STARTERS.map(id => { if (!codexF.includes(id)) codexF.push(id); });
 
   // then the saved run
-  let run: { f?: unknown; t?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean; p?: boolean; o?: boolean; n?: boolean } | null = null;
+  let run: { f?: unknown; t?: unknown; k?: unknown; m?: number; q?: boolean; c?: boolean; x?: boolean; p?: boolean; o?: boolean; n?: boolean; d?: boolean } | null = null;
   run = cell[S_RUN] || null;
   if (run && run.f && (run.f as string[]).map) {
     const ids = (run.f as string[]).filter(id => BY_ID[id]);
@@ -1188,6 +1214,7 @@ export function boot(): void {
     peaceDone = !!run.p;
     colorDone = !!run.o;
     cowaDone = !!run.n;
+    matterDone = !!run.d;
   } else {
     STARTERS.map(id => { found[id] = 1; addTile(id); });
   }
@@ -1195,16 +1222,5 @@ export function boot(): void {
   save();
   saveCodex();
   openMenu(); // every session starts on the title screen
-}
-// A run that completed the game returns to its completion screen on Continue.
-function showRestoredCompletion(): void {
-  openOverlay(
-    '<div class="B">\u{1F3C6}</div>' +
-    '<div class="T">GOTTA CATCH \'EM ALL!</div>' +
-    "<h2>All " + ELEMENTS.length + " elements</h2>" +
-    '<div class="L">complete run: <b>' + moves + "</b> moves</div>" +
-    '<div class="L S">best: ' + (+(cell[S_FULL] || 0) || moves) + "</div>",
-    [["New game", () => { closeOverlay(); reset(); }]],
-  );
 }
 

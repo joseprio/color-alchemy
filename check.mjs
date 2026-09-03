@@ -65,6 +65,7 @@ const state = () => evalJs(`(() => {
     moves: +document.getElementById('mv').textContent,
     questDone: !!run.q,
     fullDone: !!run.c,
+    matterDone: !!run.d,
     peaceDone: !!run.p,
     colorDone: !!run.o,
     cowaDone: !!run.n,
@@ -83,7 +84,8 @@ const enterGame = () =>
     .find(b => /^(Continue|New game)$/.test(b.textContent)).click()`);
 // The save file is ONE entry holding one array; these indexes mirror the
 // S_* constants in src/game.ts and src/store.ts.
-const SLOT = { tree: 0, run: 1, bestQuest: 2, bestFull: 3, codex: 4, mute: 5, bestPeace: 6, bestColor: 7, bestCowa: 8 };
+const SLOT = { tree: 0, run: 1, bestQuest: 2, bestFull: 3, codex: 4, mute: 5, bestPeace: 6,
+  bestColor: 7, bestCowa: 8, bestMatter: 9 };
 const cellGet = (i) => evalJs(`(JSON.parse(localStorage.getItem("colorAlchemy") || "[]") || [])[${i}]`);
 const cellClear = (i) => evalJs(`(() => {
   const c = JSON.parse(localStorage.getItem("colorAlchemy") || "[]") || [];
@@ -879,10 +881,16 @@ const RAINBOW_ONLY = order(new Set(["rainbow", ...union("sun", "rain")]), ["rain
 // `keep` dismisses a quest card the sequence runs into, and records the card it
 // dismissed on window.__seen so the run can be asserted on afterwards. World
 // Peace lands partway through a full clear and its card takes the phase, so
-// without this every click after it would land on nothing. Off by default: the
-// quest run below is asserting on the card itself, and must find it still up.
+// without this every click after it would land on nothing. Off by default: a
+// run asserting on its own last card must find that one still up.
+//
+// EVERY SEQUENCE OF ANY LENGTH NEEDS THIS NOW, because "Do what matters" lands
+// on the first Matter and Matter is the gateway every route runs through: the
+// first quest card of a run arrives within a handful of moves of the starters.
+// So the runs that assert on a final card pass `keep` for all but the last
+// pair, rather than not passing it at all.
 const KEEP = `const k = [...document.querySelectorAll('#ob button')]
-    .find(x => x.textContent === 'Keep playing');
+    .find(x => x.textContent === 'Continue');
   if (k) { const c = document.getElementById('fw');
     (window.__seen = window.__seen || []).push({ t: oc.textContent, fw: c ? c.width : -1 });
     k.click(); }`;
@@ -892,7 +900,38 @@ const run = async (pairs, keep) => {
     await evalJs(`(() => { ${RELEASE}; ${keep ? KEEP : ""} })()`);
   }
 };
-await run(QUEST);
+// THE FIRST CARD OF THE RUN IS MATTER'S, and the coverage run is stopped ON it
+// rather than through it: it is the one quest icon that is an element's own
+// swatch instead of an emoji, so it is worth looking at while it stands. The
+// move it lands on is found from the recipe table rather than counted by hand,
+// so a re-ordered route moves this with it.
+const MATTER_AT = QUEST.findIndex(([a, b]) => RECIPE[[a, b].sort().join("+")] === "matter");
+await run(QUEST.slice(0, MATTER_AT), 1);
+await run(QUEST.slice(MATTER_AT, MATTER_AT + 1));
+await sleep(100);
+s = await state();
+check("matter: the Matter gateway raises the run's first quest card",
+  s.matterDone && s.phase === "overlay" &&
+  await evalJs(`document.getElementById('oc').textContent.includes('Do what matters')`) &&
+  await evalJs(`document.getElementById('oc').textContent.includes('QUEST COMPLETE')`));
+// FIRST, and not by luck: Matter is one recipe past Black and White, so it
+// lands before any of the sets that want two or three elements can be held.
+check("matter: one element is a whole quest, and the first one a run completes",
+  MATTER_AT >= 0 &&
+  !s.questDone && !s.peaceDone && !s.colorDone && !s.cowaDone && !s.fullDone);
+const matterMoves = await best("bestMatter");
+check("matter: it scores into its own slot, on the move that found Matter",
+  matterMoves === s.moves);
+// Matter carries no `e:` field — an SVG icon and no emoji — so this is the one
+// quest card the emoji font never touches, and `.A .B .s` is the rule that
+// sizes it. A 56px box is the assertion that the rule actually landed on it.
+check("matter: the card wears Matter's own swatch, not an emoji",
+  (await evalJs(`getComputedStyle(document.querySelector('#oc .B svg.s')).width`)) === "56px");
+await shot("matter");
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Continue').click()`);
+
+await run(QUEST.slice(MATTER_AT + 1, -1), 1);
+await run(QUEST.slice(-1));
 await sleep(100);
 s = await state();
 check("quest: overlay opens with Rainbow+Unicorn found", s.questDone && s.phase === "overlay");
@@ -924,9 +963,15 @@ if (FW) {
     !(await evalJs(`!!document.querySelector('#ov canvas')`)));
 }
 await shot("quest");
-await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
+// AN INTERMEDIATE QUEST HAS ONE BUTTON, and it is not a way out of the run: a
+// mid-run celebration that offered the main menu was offering to end a run over
+// a moment in it. The menu is still one Escape away once the card is down.
+check("quest: the card offers only Continue — a quest is a moment, not an ending",
+  (await evalJs(`[...document.querySelectorAll('#ob button')].map(b => b.textContent).join()`)) ===
+  "Continue");
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Continue').click()`);
 s = await state();
-check("quest: Keep playing returns to the game", s.phase === "play" && !s.fullDone);
+check("quest: Continue returns to the game", s.phase === "play" && !s.fullDone);
 check("quest: the goal line still says nothing — a finished quest is not a status",
   (await evalJs(`document.getElementById('gl').textContent`)) === "");
 check("night: icon is a starry violet-to-black swatch, not an emoji",
@@ -953,9 +998,11 @@ check("quests: shows the quest best",
 // old "???" to conceal. What still IS hidden is the move count itself, and the
 // check for that is "reset: hidden best appears nowhere outside the completion
 // screen" further down.
+// Two rows are set by now and four are not: Matter leads the list, being the
+// quest any run finishes first, and the full clear closes it.
 check("quests: an unset best is an em dash, on every row alike",
   (await evalJs(`[...document.querySelectorAll('#ml .H b')].map(b => b.textContent).join()`))
-    === `${questMoves} moves,${"—,".repeat(3)}—`);
+    === `${matterMoves} moves,${questMoves} moves,${"—,".repeat(3)}—`);
 // Back shares its container with the button column, so it is rebuilt — and
 // re-wired — every time a subscreen opens. Clicking it is the only thing that
 // proves the wiring came back with it.
@@ -1042,8 +1089,30 @@ if (FIREWORKS) {
 }
 await shot("complete");
 
+// --- the completion screen ENDS the run ----------------------------------
+// A full clear is not a checkpoint: the board behind this card holds every
+// element there is, so the card offers the menu and nothing else, and the menu
+// it sends you to has no Continue to offer back. New game is the only way onto
+// a board from here — including the Escape that would otherwise mean Continue.
+check("full: the completion screen offers only the menu — the run is over",
+  (await evalJs(`[...document.querySelectorAll('#ob button')].map(b => b.textContent).join()`)) ===
+  "Main menu");
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Main menu').click()`);
+s = await state();
+check("full: Main menu leaves the finished run for the title screen",
+  s.phase === "menu" && s.fullDone);
+check("full: a finished game offers no Continue — there is nothing to resume",
+  (await evalJs(`[...document.querySelectorAll('#mu button')].map(b => b.textContent).join()`)) ===
+  MENU_FRESH);
+await key("Escape");
+check("full: Escape cannot back into a finished run either",
+  (await state()).phase === "menu");
+
 // --- new game keeps bests, hides the hidden one ---------------------------
-await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'New game').click()`);
+// Through the menu now, and through its confirm: the completion screen used to
+// carry a New game of its own, and the arming flow is what replaced it.
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent === 'New game').click()`);
+await evalJs(`[...document.querySelectorAll('#mu button')].find(b => b.textContent.includes('Sure?')).click()`);
 s = await state();
 check("reset: back to 3 elements, 0 moves", s.found.length === 3 && s.moves === 0 && !s.questDone);
 check("reset: quest best survives in the HUD",
@@ -1053,7 +1122,8 @@ check("reset: quest best survives in the HUD",
 check("reset: hidden best appears nowhere outside the completion screen",
   !(await evalJs(`document.body.innerText.includes('complete run')`)));
 
-await run(PERFECT_QUEST);
+await run(PERFECT_QUEST.slice(0, -1), 1);
+await run(PERFECT_QUEST.slice(-1));
 await sleep(100);
 s = await state();
 check(`perfect: quest done in ${PERFECT_QUEST.length} moves, against the coverage run's ${QUEST.length}`,
@@ -1062,7 +1132,7 @@ check("perfect: the leaner run lowers the stored quest best",
   (await best("bestQuest")) === PERFECT_QUEST.length);
 check("perfect: overlay celebrates the new best",
   await evalJs(`document.getElementById('oc').textContent.includes('NEW BEST')`));
-await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Continue').click()`);
 await run(PERFECT_EXTRA, 1);
 s = await state();
 check(`perfect: full clear in ${PERFECT_QUEST.length + PERFECT_EXTRA.length} moves, all ${COUNT} found`,
@@ -1074,7 +1144,9 @@ check("perfect: the hidden full-clear best comes down with it",
 // --- a sloppier run must NOT overwrite them -------------------------------
 await reset();
 // a wasted dupe, plus a Magenta the route no longer needs = 35 moves
-await run([["red","green"], ["red","green"], ["blue","yellow"], ["red","blue"], ...QUEST]);
+const SLOPPY = [["red","green"], ["red","green"], ["blue","yellow"], ["red","blue"], ...QUEST];
+await run(SLOPPY.slice(0, -1), 1);
+await run(SLOPPY.slice(-1));
 await sleep(100);
 s = await state();
 check(`sloppy: the same quest, four moves worse (${QUEST.length + 4})`,
@@ -1083,7 +1155,7 @@ check("sloppy: a worse run does NOT overwrite the best",
   (await best("bestQuest")) === PERFECT_QUEST.length);
 
 // --- persistence: reload restores the run ---------------------------------
-await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Keep playing').click()`);
+await evalJs(`[...document.querySelectorAll('#ob button')].find(b => b.textContent === 'Continue').click()`);
 // mute first, so the reload below also proves the button paints its word from
 // the stored preference rather than from whatever the HTML shipped with
 await evalJs(`document.getElementById("sn").click()`);
@@ -1099,7 +1171,7 @@ await evalJs(`document.getElementById("sn").click()`);   // unmute for what foll
 
 // --- alternate recipe: Sun + Rain is also a Rainbow -----------------------
 await reset();
-await run(RAINBOW_ONLY);
+await run(RAINBOW_ONLY, 1);
 s = await state();
 check(`alt: Sun+Rain forges the Rainbow in ${RAINBOW_ONLY.length}, no Prism involved`,
   s.found.includes("rainbow") && !s.found.includes("prism") &&
@@ -1424,7 +1496,7 @@ check(`encyclopedia: a row lists every route performed — White: ${whiteRoutes}
 // only the decidable turns keeps this a test of the PRIORITY rather than of how
 // the quest target happened to land.
 await reset();
-await run(PERFECT_QUEST.slice(0, 22));
+await run(PERFECT_QUEST.slice(0, 22), 1);
 let onPath = 0, offered = 0, offPath = 0, wandered = "", graded = 0, fellBack = 0;
 for (let i = 0; i < 5; i++) {
   s = await state();

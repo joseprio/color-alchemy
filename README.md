@@ -20,7 +20,7 @@ npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
 npm run build-director    # the director's cut: no budget, size-golf tail bar terser
-npm test                  # 163 headless checks against dist/bundle.html
+npm test                  # 171 headless checks against dist/bundle.html
 node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
 npm run emoji-publish     # rebuild the cut, copy its emoji subset to ./emoji.woff2
@@ -89,12 +89,13 @@ falls back to the player's own emoji set.
 
 ### Quests
 
-Five, each scored into a best of its own and each raising its own card. Nothing
+Six, each scored into a best of its own and each raising its own card. Nothing
 on the board says what to aim for — the goal line under the grid is status-only,
 and the **Quests** screen is where the objectives live.
 
 | Quest | Wants |
 |---|---|
+| Do what matters | Matter — and it is the only quest that wants one element |
 | Unicorns and Rainbows | 🌈 Rainbow, 🦄 Unicorn |
 | World Peace | 🌍 World, 🕊 Peace |
 | COWABUNGA! | 🥷 Ninja, 🐢 Turtle, 🍕 Pizza |
@@ -102,10 +103,21 @@ and the **Quests** screen is where the objectives live.
 | Gotta catch 'em all! | all 300 elements |
 
 At most one can land per move, since a move discovers a single element and no
-element sits in two of the sets. The full clear's move count is the hidden one:
-it is only ever shown on the completion screen, which only a full clear reaches.
-In the director's cut every quest card raises the fireworks, not just the
-completion screen.
+element sits in two of the sets. **Do what matters** is the one every run
+finishes first — Matter is the gateway the whole tree hangs off, so every route
+runs through it — and its card is what teaches a new player that quests exist.
+It is also the one card built from an element's own swatch rather than an emoji,
+Matter having an SVG icon and no emoji to wear.
+
+**A quest card is a moment; the completion screen is an ending**, and the buttons
+say so. The five intermediate cards offer **Continue** and nothing else: they
+interrupt a run rather than closing it, and the menu is one Escape away once the
+card is down. The full clear offers **Main menu** and nothing else, because the
+board behind it holds every element there is — and the menu it hands you to has
+no Continue on it, so **New game** is the only way back onto a board. The full
+clear's move count is the hidden one: it is only ever shown on that screen, which
+only a full clear reaches. In the director's cut every quest card raises the
+fireworks, not just the completion screen.
 
 **Black is the throat of the tree.** Three opposite pairs make it — Violet +
 Yellow, Blue + Orange, Crimson + Green — and Black plus White makes **Matter**,
@@ -121,6 +133,11 @@ The title screen offers **Continue**, **New game**, **Quests** and
 **Encyclopedia** — the last being a journal of every element ever discovered
 with the recipes *actually performed*, so alternates you never tried stay
 unspoiled. The journal survives New game; only the board is wiped.
+
+**Continue only appears when there is a run to resume.** A fresh boot and a
+Reset everything have nothing behind them; a *completed* run is the same answer
+for the opposite reason, being finished rather than paused. Escape out of the
+menu is Continue by another name, so it obeys the same rule.
 
 The save is one `localStorage` entry, `colorAlchemy`, holding one array with a
 section per index — tree fingerprint, run, and one slot per best. Bests are
