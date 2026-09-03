@@ -4,14 +4,20 @@ A combination game that starts with red, green and blue and ends with 300
 elements, built to fit in **13312 bytes** — board, recipe tree, artwork, music
 and sound effects, in one HTML file that loads nothing from anywhere.
 
-Open `index.html` for the landing page, or go straight to a build:
+## Play it
 
-- **`dist/bundle.html`** — the size-golfed entry, the whole game in one file.
-- **`dist/director.html`** — the director's cut: the same game with nothing to
-  fit into. A written quote for every element, fireworks over every completed
-  quest, and its own bundled emoji font. Still a *release* build, not a
-  development one — the menu's development tools are as absent from it as they
-  are from a shipping bundle.
+- **[The 13KB build](https://joseprio.github.io/color-alchemy/dist/bundle.html)**
+  — the size-golfed entry, the whole game in one file.
+- **[The director's cut](https://joseprio.github.io/color-alchemy/dist/director.html)**
+  — the same game with nothing to fit into. A written quote for every element,
+  fireworks over every completed quest, and its own bundled emoji font. Still a
+  *release* build, not a development one — the menu's development tools are as
+  absent from it as they are from a shipping bundle.
+
+Both are served from this repo by GitHub Pages, and
+[the landing page](https://joseprio.github.io/color-alchemy/) links to each.
+Locally they are `dist/bundle.html` and `dist/director.html`, opened straight
+off the filesystem — neither loads anything from anywhere.
 
 ## Build & run
 
