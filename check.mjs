@@ -729,29 +729,70 @@ await shot("play");
    not. The absolute move counts are whatever the current tree happens to
    cost, and are reported rather than asserted. */
 const STARTERS = ["red", "green", "blue"];
+const GOALS = ["rainbow", "unicorn"];
 const MAKES = {};   // id -> every pair that makes it
 for (const [k, id] of Object.entries(RECIPE)) (MAKES[id] ||= []).push(k.split("+"));
 
 // The smallest set of elements that has to be made to reach `id`, itself
 // included. Recipes may be cyclic (Fire + Ice remakes the Water Ice needs), so
-// a route that re-enters an element still being solved is simply unusable.
-const solving = new Set(), CLOSURE = {};
-function closure(id) {
-  if (STARTERS.includes(id)) return new Set();
-  if (CLOSURE[id]) return CLOSURE[id];
-  if (solving.has(id)) return null;
-  solving.add(id);
-  let best = null;
-  for (const [a, b] of MAKES[id] || []) {
-    const ca = closure(a), cb = closure(b);
-    if (!ca || !cb) continue;
-    const set = new Set([id, ...ca, ...cb]);
-    if (!best || set.size < best.size) best = set;
+// a route through an element that is not solved yet simply does not count.
+//
+// RELAXATION, NOT RECURSION, and the difference is not style. This was a
+// memoised depth-first walk that cached only the sets it found: an element
+// whose every route was cyclic resolved to null, null is falsy, so the cache
+// missed and the whole subtree below it was re-explored on the next visit. It
+// survived a tree where the cyclic elements were deep and rare. It stopped
+// surviving one where Black sits three steps from the start and carries four
+// routes back through the materials: the walk blew past three MILLION calls in
+// 139ms and never returned. Relaxing to a fixed point is cycle-safe by
+// construction — a cycle is simply a set that never improves anyone — and it
+// finishes in a handful of passes over 300 elements.
+// FIRST SOLUTION WINS, and that is what keeps the answer ORDERABLE. A closure
+// is only ever built out of closures that are already settled, and it is never
+// revised afterwards — so the order elements get settled in IS a legal play
+// order, and no set can quietly come to depend on the element it is for.
+// Revising for a smaller set is what breaks that: Magic can be reached through
+// the Crystal Ball, the Crystal Ball through Magic, and a pass that takes the
+// smaller of the two happily settles on a pair that cannot be played in either
+// direction. It cost a run of `unorderable: magic` to find, which is the good
+// failure — the harness refusing to hand out a move order it cannot walk.
+// What is given up is a little minimality; the file already says the absolute
+// move counts are reported rather than asserted, and every assertion here is
+// about one run being leaner than another, which a superset relation preserves.
+// `banned` ids may still be SOLVED, but may not be used as an ingredient of
+// anything else. That is what the goals need: order() holds them back to the
+// end so the run finishes on the move that completes the quest, so nothing
+// else in the set may depend on one. Without this the solver was free to
+// settle Magic on Crystal Ball + Rainbow, and then Magic could not be played
+// until after the Rainbow that was being saved for last — `unorderable: magic`.
+const closures = (banned = new Set()) => {
+  const C = {};
+  STARTERS.map((id) => (C[id] = new Set()));
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const [id, pairs] of Object.entries(MAKES)) {
+      if (C[id]) continue;
+      let best = null;
+      for (const [a, b] of pairs) {
+        if (!C[a] || !C[b] || banned.has(a) || banned.has(b)) continue;
+        const set = new Set([id, ...C[a], ...C[b]]);
+        if (!best || set.size < best.size) best = set;
+      }
+      if (best) { C[id] = best; changed = true; }
+    }
   }
-  solving.delete(id);
-  return (CLOSURE[id] = best);
-}
-const union = (...ids) => new Set(ids.flatMap((id) => [...closure(id)]));
+  return C;
+};
+const CLOSURE = closures();
+const closure = (id) => CLOSURE[id];
+// The quest sets are built with the goals banned as ingredients; everything
+// else uses the plain map.
+const questClosure = closures(new Set(GOALS));
+const union = (...ids) => new Set(ids.flatMap((id) => {
+  const c = questClosure[id];
+  if (!c) throw new Error("no goal-free route to " + id);
+  return [...c];
+}));
 
 // Turn a set of elements into a legal move order: repeatedly play whatever is
 // makeable from what is already on the board. `last` is held back to the end,
@@ -775,7 +816,6 @@ function order(set, last = [], already = []) {
   }
   return out;
 }
-const GOALS = ["rainbow", "unicorn"];
 const everything = new Set(ENTRIES.map((c) => c.slice(0, c.indexOf('"'))).filter((id) => !STARTERS.includes(id)));
 const rest = (used) => new Set([...everything].filter((id) => !used.has(id)));
 /* The COVERAGE run: everything the quest needs, plus Night and Black, whose
