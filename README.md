@@ -1,9 +1,17 @@
 # Color Alchemy
 
-A standalone combination game, originally built on the galaxy-raid base: the
-dark look, the build shape, and the CDP test harness all came from there.
-Combine two elements to create new ones, starting from the three additive
-primaries.
+A combination game that starts with red, green and blue and ends with 300
+elements, built to fit in **13312 bytes** — board, recipe tree, artwork, music
+and sound effects, in one HTML file that loads nothing from anywhere.
+
+Open `index.html` for the landing page, or go straight to a build:
+
+- **`dist/bundle.html`** — the size-golfed entry, the whole game in one file.
+- **`dist/director.html`** — the director's cut: the same game with nothing to
+  fit into. A written quote for every element, fireworks over every completed
+  quest, and its own bundled emoji font. Still a *release* build, not a
+  development one — the menu's development tools are as absent from it as they
+  are from a shipping bundle.
 
 ## Build & run
 
@@ -12,9 +20,10 @@ npm install
 npm run build             # tsc check -> rollup (+ size-golf tail) -> postbuild
 npm run build-dev         # the same, keeping the development-only menu tools
 npm run build-director    # the director's cut: no budget, size-golf tail bar terser
-npm test                  # 158 headless checks against dist/bundle.html
+npm test                  # 163 headless checks against dist/bundle.html
 node check.mjs dist/director.html   # the same checks against the director's cut
 npm start                 # dev: watch + serve on http://localhost:8080
+npm run emoji-publish     # rebuild the cut, copy its emoji subset to ./emoji.woff2
 npm run roadroller-optimize   # re-fit rr-config.json after a structural change
 npm run fn-order-optimize     # re-fit fn-order.json after a source change
 npm run fouc-check        # is the sheet in place before the first paint?
@@ -24,1068 +33,192 @@ npm run mobile-check      # phone and tablet layout: overflow, tap targets
 npm run audio-bench       # what a sample costs, against the callback budget
 ```
 
-- **Play:** open `dist/bundle.html` — the whole game in one file.
-- **The director’s cut** is `npm run build-director` — `dist/director.html`,
-  the same game with nothing to fit into. It is a *release* build, not a
-  development one: `__DEV__` is false, so Unlock all and Reset everything are
-  as absent from it as they are from a shipping bundle. What it drops is
-  nearly the whole size-golf tail, which is the only reason any of that tail
-  exists — closure ADVANCED, the two respellings, `fn-order.json`, roadroller.
-  **Terser is the exception and runs in both cuts**, gated on `production`
-  rather than on `golf`: not for the bytes, but because `format.ascii_only` is
-  what `postbuild.mjs`'s no-charset guard depends on. Skip terser and the cut
-  carries raw em dashes and emoji, the guard throws, and the page never gets
-  written — which is exactly what had been happening, unnoticed, since the
-  first non-ASCII character landed. The cost is that the cut is a minified
-  ~73 KB page rather than a readable ~100 KB one: `compress` and the default
-  `mangle` come with the shared parameters, so the argument comments are gone
-  from the emitted JS. The quotes still render — they are strings, not
-  comments. To get readability back, give terser a `!golf` branch with
-  `mangle:false`, `compress:false` and `format.comments:"all"`; that keeps
-  every byte of `ascii_only`'s actual work and costs only size, which is the
-  one currency this cut does not spend. Content meant only for
-  it goes behind `__DIRECTOR__`, the `__DEV__` mechanism exactly: a literal by
-  the time closure runs, so a whole scene behind one costs a shipping build
-  nothing. It builds through `dist/director/` and writes `dist/director.html`,
-  both git-ignored, so it can never overwrite the at-budget `dist/bundle.html`
-  and `dist/build.zip` that are committed — and `check.mjs` takes a page as its
-  first argument, so the cut answers the same suite the bundle does:
-  `node check.mjs dist/director.html`.
-- **The 101 quotes are the first thing the cut has that the game does not.**
-  They were a `q` field on every element, and a field on a live object is
-  reachable — closure cannot prove a string dead when something might read it,
-  so all 101 shipped whether or not the budget could afford them. They live in
-  `src/quotes.ts` now, with the three containers they sit in (the discovery
-  card's `<i>`, the cauldron line, the codex row's `.Q`) and the two CSS rules
-  that style those, and every one of the three call sites in `game.ts` is a
-  `__DIRECTOR__ ? … : ""`. ADVANCED folds those to empty strings, finds the
-  four exports unreferenced and deletes the table, the markup and the rules
-  together. Worth **&minus;1841 B**, 13.8% of the budget: 13306 → **11465**.
-  The rules go with the strings for the same reason — a selector in
-  `style.css` ships whether or not anything ever wears the class.
-- The pipeline is galaxy-raid's, size-golf tail included. `prebuild` runs the
-  `tsc` type check, then rollup bundles `src/index.ts` and — in production only
-  — puts it through **closure ADVANCED → eslint `no-var` → `const`→`let` → terser → the
-  roadroller fork**;
-  `postbuild` inlines the packed script into the `src/index.html` template,
-  minifies the page with **html-minifier-next**, zips it with fixed DOS-epoch
-  timestamps, and recompresses that zip with **ECT then advzip**. Dev
-  (`npm start`) skips the whole tail, so a watch build stays readable and fast.
-- **The director's cut builds its own emoji font, and it is 237 KB instead of
-  1317.** `tools/emoji-font.mjs` fetches Noto's source SVGs for exactly the 245
-  sequences the table shows (`tools/emoji-svg.mjs`, keyed off `e:` fields, so
-  adding an element fetches its artwork on the next build) and compiles them
-  with **nanoemoji** into a COLRv1 font. Needs Python with `nanoemoji` and
-  `ninja`; without them the cut still builds, falling back loudly to the nine
-  CDN chunks it used before, which are five and a half times heavier and
-  identical on screen. `npm run emoji-font` builds it alone. The whole font is
-  cached in `.fonts/` under a hash of the sequence set, so it is built once.
-- **The obvious way to do that is wrong, and it fails silently.** harfbuzzjs
-  ships `harfbuzz-subset.wasm` — no Python, no native build — and subsetting
-  `Noto-COLRv1.ttf` with it gives a **216 KB** woff2 whose 245 sequences all
-  shape to one glyph. It renders **nothing**. That build of harfbuzz has no
-  colour-table support: it drops `COLR` and `CPAL`, and `CBDT`/`CBLC` from the
-  bitmap build (10.18 MB &rarr; 5 KB), leaving structurally valid glyphs with no
-  paint. `subset-font` bundles the same harfbuzzjs and fails identically.
-  Passing `COLR` through untouched cannot work either — the layer glyphs it
-  references have no cmap entry, so they go, and the glyph ids are remapped
-  underneath it.
-  **SHAPING IS NOT RENDERING**, which is the finding worth keeping: the broken
-  subset passed a shaping check, loaded in Chrome without complaint, and drew
-  blank tiles. Only a screenshot caught it. `verifyRendering` in
-  `tools/emoji-font.mjs` is what shaping is still good for — it counts VISIBLE
-  glyphs, because a sequence carrying U+FE0F shapes to two (the emoji, and a
-  zero-advance glyph for the selector, since Noto's filenames drop FE0F so
-  nanoemoji builds no ligature for it) and renders perfectly. A strict glyph
-  count calls 30 of 245 broken; the visible count calls none.
-- **The CSS is not in the HTML.** `src/style.css` is the readable source of
-  truth; the rollup config runs it through **cssnano** (`postcss.config.js`,
-  preset `advanced`) at config load and injects the minified text into
-  `src/css.ts`, which assigns it to the empty `<style id=st>` in the template.
-  That puts the stylesheet inside the roadroller-packed payload instead of the
-  page's deflate stream, which is galaxy-raid's OPTIMIZATIONS.md #18 (the move)
-  and #71 (filling a `<style>` that is already in the document, rather than
-  writing or creating one). Measured here, from 10834 bytes:
-  **cssnano alone −564** (CSS still in the HTML), **moving it into the payload a
-  further −545**, **html-minifier −51**, **re-fitting the roadroller params −23**
-  → **9651 bytes, 72.50% of the budget.**
-  `src/style.css` is read ONCE, at config load: after editing it during
-  `npm start`, restart the watcher.
-- **The function order is SEARCHED, not reasoned about** (galaxy-raid
-  OPTIMIZATIONS.md #134, ported here). Worth **−49 bytes** on this project:
-  13347 → 13298, from a permutation of the 54 top-level function declarations
-  in the packed chunk (13308 chars, 30% of it). A permutation cannot change the
-  chunk's length — only how well roadroller's context model predicts it.
-  The finding is that **every rule-based ordering loses.** Measured on
-  galaxy-raid against the compiler's own emission order: similarity-clustered
-  by 6-gram Jaccard **+50**, reverse **+51**, size ascending/descending
-  **+71/+78**, lexical **+81**. "Put similar functions next to each other" is
-  the pass anyone would write first and it is nearly the worst — closure emits
-  in definition order, which already groups mutual callers and shared
-  vocabulary, and a text-similarity metric breaks that up chasing token
-  overlap. Compressor locality is not text similarity.
-  So there is no rule to implement. `tools/fn-order.mjs` applies a stored
-  permutation from `fn-order.json`, the same discipline `rr-config.json` gets;
-  `npm run fn-order-optimize` hill-climbs random swap/move against the packed
-  size, A/Bs the winner on the real zip, and writes only on a strict win. Here
-  that took 2871 proposals over 900s, and the returns fall off a cliff — it was
-  −41 by proposal 362 and −69 by 2771, so **budget the long tail as insurance
-  on the win, not as a hunt for more.** The pass runs between terser and the
-  snapshot, so `dist/pre-roadroller.js` is the reordered chunk.
-  **Keyed by a hash of each function's TEXT**, never by index or name: minified
-  names are one letter and move on any edit, and an index-keyed order would
-  apply a *wrong* permutation to a changed chunk — which still parses and still
-  runs, so nothing would catch it. On a mismatch the pass no-ops and warns; a
-  stale order costs bytes, a misapplied one costs bytes and hides. Absolute
-  order also makes the pass idempotent, which is what lets the search run on an
-  already-reordered chunk.
-  The zip A/B runs the REAL `postbuild.mjs` rather than a copy of its
-  inline/minify/zip chain, so those numbers cannot drift from the build's.
-  Two costs. **The order is fitted to one exact chunk**, so any source edit
-  invalidates it, and unlike `rr-config.json` there is no keep-the-incumbent
-  fallback — a permutation of a changed function set is meaningless. And **the
-  params and the order are co-fitted**: re-search the order after source
-  changes, the params on their own schedule, each a strict-win A/B. Do not
-  chase the loop between them.
-- **The fn-order search space is NOT authorable, and trying costs 7 B.** The
-  pass permutes top-level `FunctionDeclaration` nodes — 54 of them — so the
-  obvious idea is to write more of the program that way and give the search
-  more material. `frame`, the rAF loop in `src/index.ts`, is the one candidate:
-  it is authored `const frame = (t) => …` and ships as `let si=e=>{…}`, outside
-  the reorderable set. Rewritten as `function frame(t) {…}` the chunk gains
-  nothing — `fn-order` still reports **54** and still matches, because terser
-  inlines the function into its single `requestAnimationFrame(frame)` call site
-  as a NAMED FUNCTION EXPRESSION (`requestAnimationFrame(function e(i){…})`)
-  rather than leaving a declaration behind. **13288 → 13295**, and the extra
-  bytes are the name: single-use and self-referential, it recursed through the
-  top-level binding when it was an arrow and has to carry its own name when it
-  is not.
-  So what lands as a top-level declaration is decided by terser's inlining, not
-  by the spelling in the source. The 54 are what they are.
-- **Only UNIQUE PROSE is worth moving into the payload.** The same trade as the
-  stylesheet above, applied to what markup was left, and the rule that came out
-  of measuring it: the zip DEFLATES the markup, roadroller MODELS the payload,
-  so text that repeats is already cheap in the HTML and text that does not is
-  cheap in the payload. The help line under the board — the biggest block of
-  unique prose in the template — moved into `src/css.ts`, appended with
-  `gl.after()` as a text node in exactly the place the template had one, for
-  **−17 B**. The wordmark's seven `<span>`s were tried the same way
-  (`"AlchemY".replace(/./g, ...)`) and cost **+5 B**: seven identical tags are a
-  handful of deflate backreferences, and the code to generate them is not.
-  Nothing but a check would notice the help line vanishing, since it has no
-  element of its own — `boot: the help line is appended into <f>` is that check.
-- **Three smaller ones, measured together (−34 B).** `decodeEntities` in the
-  html-minifier options ships `·` and `Ⓐ` as UTF-8 rather than `&middot;` and
-  `&#9398;`, 2–3 bytes where the entity was 7–8 (**−5 B**, and it takes the
-  `<f>` block from 250 bytes to 198). The two `@media (pointer: coarse)` blocks
-  became one: cssnano does not merge same-condition queries across the rules
-  that sit between them, so the query string was paid for twice (**−6 B**;
-  `npm run mobile-check` confirms the 44px tap targets survived). And `<title>`
-  is gone (**−18 B**) — the tab falls back to the filename, which is the price.
-- **The element table omits the names it can derive.** For 98 of the 101, `n`
-  is just the id with a capital, so the table leaves it out and
-  `src/elements.ts` fills it in; only Polar Bear, Crystal Ball and Light Bulb
-  are written out. Worth **-162 B** end to end, and it is the
-  one field that pays: a NEAR-miss repeat ("sunflower" then "Sunflower") costs
-  roadroller real bits, where an exact repeat costs it almost none.
-  That is also why the obvious bigger idea does NOT work. Re-encoding the
-  whole table as a delimited string with recipes as base-36 indexes saves
-  **3714 B of raw source** and only **241 B packed** — worse than deriving
-  the names alone, because the parser costs more than the structure it
-  removes and the id strings inside recipes were nearly free already.
-  Measured, not reasoned about: pack the real chunk both ways before
-  trading readability for bytes.
-- **The bundle ships no test hooks at all.** `window.CA` cost **105 B** —
-  closure cannot rename anything reachable from it, and `closure-externs.js`
-  pinned every name. It is gone, and `check.mjs` drives the page the way a
-  player does: `attempt(a, b)` releases the altar, clicks tile a, clicks
-  tile b and releases again, all in ONE round trip, because `selectAt` is
-  synchronous — so the suite is no slower than the hooks were. State is read
-  off the page, except the run flags — `questDone`, `peaceDone` and
-  `fullDone` — which are read out of the SAVE, since the goal line that used
-  to carry them is status-only now.
-  One thing has no DOM form: the recipe tree. Those 25 assertions now parse
-  `src/elements.ts` in node, which checks the tree as WRITTEN rather than as
-  SHIPPED — the one place in the file where a mangled build could still pass.
-  Taken knowingly, in exchange for the bytes.
-  Driving the board rather than the hooks caught two things the hooks had
-  been hiding: a run script that made a Chick from a Bird it had not
-  discovered yet (`CA.attempt` never checked you held the ingredients), and
-  a mobile-probe false positive where the discovery rays, clipped by an
-  `overflow: hidden` parent, were counted as page overflow.
-- **The elements are read as globals, and the ids are two letters.** An element
-  with `id=gl` is already `window.gl`, so `getElementById` — and the `$` helper
-  that wrapped 50 calls to it — buys nothing: **-100 B** for deleting both.
-  The names have to survive the whole tail, so they are pinned in
-  `closure-externs.js` (without an entry, closure ADVANCED fails the build on
-  the undeclared variable — the loud failure) and declared in `src/dom.d.ts`
-  for `tsc`. TWO letters, never one: roadroller's decoder leaks a handful of
-  single-letter globals of its own — the build logs them — and a one-letter id
-  would be shadowed by one silently, in the packed build only. Terser's mangler
-  reserves every free name it sees, so its own two-letter locals (`ae`, `ce`, …)
-  steer clear.
-- **Every CSS class is one letter.** Case matters, so there are 52 and 47 are
-  used: **-127 B**. The names carried the meaning, so `src/style.css` opens with
-  the legend that replaces them, and it is the one place to look when a selector
-  stops making sense.
-- **A class that lands on one tag only does not name the tag: -3 B.** `M` is set
-  on `<body>` and nowhere else, so `body.M h` was five selectors carrying a
-  qualifier that could never change what matched. `.M h` still outranks the
-  `#hd`/`#gd` display rules it has to beat, at (1,1,0) against (1,0,0).
-- **`html, body { height: 100% }` is NOT redundant on body.** Measured and
-  rejected twice over: dropping `body` costs **+2 B** packed even though it is
-  five characters shorter, and it grows the full board by 18px of dead scroll.
-  That 18px is `f`'s trailing margin, which is clipped from the scrollable
-  overflow only while body is `height:100%` with content overflowing it — the
-  same mechanism the padding note on `f` describes.
-- **`.map` is the loop, not `.forEach`: -10 B.** Twenty-one sites across
-  `elements.ts`, `game.ts` and `sfx.ts`, four characters each. Every receiver
-  in `src/` is a real array — `tiles`, `menuButtons()` and the chained
-  `.filter()` results all return `T[]` — so the swap is legal everywhere it
-  is made. It is NOT legal on a Set or a NodeList, which have `forEach` and
-  no `map`; that is why `tools/css-diff.mjs` still calls `forEach` on a
-  `querySelectorAll` result, and why `found` (a Set) never took part.
-  The risk worth measuring is closure deciding `map` is side-effect-free and
-  deleting calls whose result is unused. It does not: the compiled chunk
-  carries 25 `.map(` against 25 in the source and zero `.forEach(`, counted
-  rather than assumed. The cost is a throwaway array per call, and the only
-  one on a warm path is `renderFocus` — driven by input events, never by the
-  rAF loop, which reaches `moveCursor` only on a d-pad edge.
-- **`Array.isArray(x)` is `x && x.map`: -7 B.** Four sites in `loadState`, all
-  duck-typing JSON that came back out of localStorage. The left half is not
-  optional: `run.f.map` on its own throws on a save with no `f`, and that one
-  is outside the try/catch, so it would take the whole boot with it.
-  `x?.map` would say it in fewer bytes and CANNOT be used — the closure
-  plugin re-parses closure's output with an acorn-walk too old to visit a
-  ChainExpression, and the build dies in that parse. The README already said
-  that about `?.()`; it is true of `?.` property access too, confirmed by
-  building it.
-  The trade is one case where the two tests disagree: a `run.f` that is an
-  OBJECT carrying a `map` property passes the duck test, `Array.isArray` fails
-  it, and the branch then throws on `.filter` and boots to an empty board.
-  Only hand-edited localStorage produces it, and New game clears it, so it is
-  taken knowingly. Checking `.filter` instead — the method every one of the
-  four sites actually calls FIRST — closes that case for **+2 B**, and is the
-  swap to make if a save-corruption bug ever shows up here.
-- **The audio gesture-unlock hook is gone: -8 B.** `wakeAudio` sat on
-  `document.onkeydown` and `document["onpointerdown"]` to open the
-  AudioContext inside a user gesture, from back when the music started on
-  load. It starts with the BOARD now, and the board is only reachable through
-  the menu, so the page always has sticky activation by the time anything
-  asks for audio. Verified rather than assumed, and the project harness cannot
-  verify it — `cdp.mjs` launches Chrome with
-  `--autoplay-policy=no-user-gesture-required`, so the 114 checks are blind to
-  autoplay by construction. Tested on a scratch copy with that flag stripped
-  and `AudioContext` instrumented: entering the game by mouse AND by keyboard
-  both leave the context `running`.
-  Two things made it safe to drop. `pump()` calls `ac()` every 200ms while the
-  music flows and `ac()` resumes a suspended context, so the engine already
-  retries — an externally suspended context came back on its own, with no
-  input. And every sound effect calls `ac()` from inside a click handler.
-  The exposure is Safari, which wants TRANSIENT activation — a resume inside
-  the handler's own call stack — where sticky is not enough. Nothing on the
-  entry path plays a sound (`menuGo` just forwards `b.click()`), so the first
-  `ac()` there lands in the frame loop, outside any gesture, and the music
-  would stay silent until the first tile tap unlocks it through `SFX.select`.
-  Taken knowingly, and untestable from this machine: `npm run phone` serves
-  the page to a real device if it ever needs checking.
-- **innerHTML instead of textContent is NOT worth it: 3 B.** Nine writes, two
-  characters each, and roadroller predicts the longer word almost for free.
-  It would also make the first element named "Salt & Pepper" render wrong,
-  silently. Measured and rejected.
-- **Event handlers are properties, not listeners: -6 B.** Every listener in the
-  game is the only one on its target for that event, so `addEventListener("click",
-  fn)` is `onclick = fn`. The trap is closure: the pinned 2021 compiler knows
-  `onclick` and `onkeydown` but not `onpointer*` or `onanimationend`, and it
-  silently RENAMES an unquoted assignment to those — a bundle that boots and
-  quietly cannot drag. Written quoted (`d["onpointerdown"] = …`) they survive,
-  and terser folds them to dot form downstream. Straight from galaxy-raid's
-  OPTIMIZATIONS.md #53, which found the same trap.
-- **The gamepad lookup lost its try/catch and its loop: -19 B.** One
-  `.find(g => g && g.connected)` over `getGamepads()` replaces a try, a
-  feature-tested temporary and a for-with-break. The feature test itself stays:
-  `getGamepads` is `[SecureContext]`, so it is undefined when `npm run phone`
-  serves the page over plain http to a device, and calling it would throw out of
-  the rAF loop — killing the loop, not just the pad. `?.()` says that in fewer
-  bytes and cannot be used: the closure plugin re-parses closure's output with an
-  acorn-walk too old to visit a ChainExpression, and the build dies in that parse.
-- **Measured and rejected in the input path.** `e.keyCode` numbers instead of
-  `e.key` strings is **-12 B** and was not taken: it trades a live API for a
-  deprecated one and adds a second key/number contract, since check.mjs's
-  synthetic events would have to carry `keyCode` too — a sync hazard for 0.1% of
-  the budget, with 800 B of headroom in hand. Deleting the `initKeyboard()`
-  wrapper now that it holds one assignment is **+2 B**: closure already inlined
-  it, and the import-for-side-effect shape costs more than the call did.
-  **And three ports from galaxy-raid's gamepad helpers, all three rejected**,
-  which is the sharpest reminder yet that a finding does not travel between
-  chunks. Measured one at a time against 13286, with the fn-order fit still
-  valid (it keys on top-level `function` declarations and `pollPad` is not one
-  after closure, so these are like-for-like):
-  `(p0.buttons[i] || 0).pressed` for `p0.buttons[i] && p0.buttons[i].pressed`
-  **+8 B**; dropping the `p0.axes &&` guard **+7 B**; `for (const d of
-  Object.keys(dirs))` to `.map` **+4 B**; all three together **+9 B**.
-  Their OPTIMIZATIONS.md #15 measured the same `.map` conversion at **&minus;18.3**
-  over six sites, gamepad helpers included, on the finding that loop scaffolding
-  plus repeated `X[i]` subscripts costs more than a callback's bound parameter.
-  The opposite holds here, and the reason is the one this file keeps arriving
-  at from other directions: **a repeat is nearly free and a novel shape is
-  not.** `p0.buttons[i]` said twice is a token run roadroller has already
-  modelled — the same argument as `Math.` thirty-seven times beating a
-  destructure, and as the four near-identical shine gradients beating the
-  template that removes them. Removing a repeat is only a win when what
-  replaces it is cheaper than free, and `|| 0).pressed` is not.
-  Note also that our own `.map` win is `.forEach` &rarr; `.map`, one shorter word
-  in an identical shape; `for`-of &rarr; `.map` is a different shape and loses.
-- **No `const { sin, cos, ... } = Math`.** Destructuring Math into short
-  locals is the classic size-golf move and it is **38 B WORSE** here.
-  `Math.` is a five-character string repeated 37 times, which roadroller
-  predicts almost for free, where the destructuring pattern is a one-off
-  it has to spell out in full. Same lesson as the element table: repetition
-  is cheap, novelty is not.
-- Two risks come with that, and both have a probe rather than an assumption
-  behind them. `npm run fouc-check` times the moment the sheet lands against the
-  browser's own first-paint entry (the sheet is applied by a script at the end of
-  `<body>`, after a decode that takes a few hundred ms — currently applied at
-  ~1203ms, first paint ~1236ms, so no unstyled frame). `npm run css-diff` swaps
-  the raw stylesheet back into the packed page and compares every computed
-  property of every element: the only differences cssnano `advanced` produces
-  are its rebased z-indexes (5/6/8/9 → 1/2/3/4, order intact) and its renamed
-  `@keyframes`. Both are safe **only** because nothing in `src/*.ts` reads an
-  animation name or a z-index back out of the CSS; if that ever changes, drop the
-  preset to `default`.
-- The `no-var` stage exists to unify declaration spelling: closure emits `var`,
-  everything else is `let`, and one spelling both suits roadroller's context
-  model and lets terser's `join_vars` merge the now same-kind adjacent
-  declarations. It converts 11 of 15; the 4 survivors are global-scope, where the
-  fixer correctly refuses (a top-level `var` makes a global-object property and
-  `let` does not). Worth 12 bytes here.
-- **`const` → `let` runs for the same reason, and pays 9 bytes.** Seven `const`s
-  survive terser; respelling them leaves one declaration keyword in the whole
-  chunk. Byte-neutral before compression, like the `var` swap — the win is
-  roadroller's context model, plus `join_vars` merges that only fire between
-  adjacent declarations *of the same kind*. It is a text pass, which is safe
-  here because all seven are real declarations (none inside a string literal)
-  and dropping immutability cannot change behaviour in code that never
-  reassigns — which is exactly what the `const` was asserting.
-- **Two more galaxy-raid passes were ported, measured, and rejected.** Both
-  numbers are exact rather than averaged: this build is byte-deterministic, so
-  one build per configuration settles it.
-  - **oxc compress-only after terser: +22 bytes.** It is a −7.7 win in
-    galaxy-raid (its OPTIMIZATIONS.md #44), where it feeds `paver`; there is no
-    `paver` here, so the chain is just terser → oxc → roadroller and oxc's
-    house style — backtick delimiters, `0===t` flips, literal unicode — costs
-    more than it saves against this chunk. Not a stale-parameter artifact: a
-    fresh `roadroller-optimize` search afterwards kept the incumbent params
-    (27 B better than anything it found), so the pinned config genuinely fits.
-  - **`globalVarToLet` (their #12): a no-op, and for a structural reason.** It
-    recovers the vars eslint refuses at global scope by running the same fixer
-    on function-wrapped code, so the `isGlobal` bail cannot fire. Run here,
-    wrapped and unwrapped give *identical* results — 12 reports, zero fixes.
-    The 27 `var`s left in this chunk are already function-scoped (`for(var r=0`
-    …) and unconvertible for real reasons: closure's name coalescing declares
-    in a block and uses outside, plus loop-with-closure capture. galaxy-raid's
-    precondition — top-level `var`s in bare script code — does not hold here.
-- Still *not* carried over from galaxy-raid, being fitted to that game's chunk:
-  the swc re-minify, `paver`, `fn-order.json`. Its `web-resource-inliner`
-  step is not needed either — there is one script to inline, and one string
-  replace does it.
-- **Unlock all and Reset everything are development tools, and a plain build
-  does not contain them.** They sit behind a `__DEV__` literal that the
-  `defines` plugin substitutes before closure runs, so ADVANCED deletes the
-  branch, then finds `unlockAll` and `wipeAll` unreferenced and deletes those
-  too — the confirm strings go with them. Worth **&minus;93 B**, which is what
-  took the bundle back under budget. `npm run build-dev` is the build that
-  keeps them; it reads `npm_lifecycle_event` rather than an env var, because
-  `DEV=1 rollup -c` is not portable to the cmd.exe npm runs scripts in.
-- **One test suite covers both builds.** `check.mjs` asks the menu which build
-  it is looking at, then either exercises the two tools or asserts they are
-  genuinely absent — checking *both* labels, so a half-applied gate cannot pass.
-  Against a shipping bundle it reports `skip 10 development-tool checks`; run
-  `npm run build-dev` first to cover them, and `npm run build` again before
-  committing `dist/`.
-- **A bare `void el.offsetWidth` does not survive closure ADVANCED**, and its
-  removal is silent. Restarting a CSS animation is remove-class &rarr; *flush*
-  &rarr; add-class; the flush is a layout read whose value is discarded, which
-  is exactly the shape ADVANCED deletes as dead code. All three of ours went,
-  and every repeat animation quietly stopped replaying: a second dead end in a
-  row did not shake, a repeated dupe did not pulse, back-to-back first
-  discoveries did not re-fade. `reflow()` in `game.ts` feeds the read into a
-  branch instead, which closure cannot fold away, and `check.mjs` counts
-  `animationstart` events rather than looking for the class — the class is
-  present either way, so only the event proves the animation ran.
-- **The build is byte-deterministic.** Two things buy that: the pinned DOS-epoch
-  zip timestamp, and `rr-config.json` — roadroller's parameter search is
-  stochastic, so the params are fitted once and pinned, and the build skips
-  `optimize()` entirely. It prints `fitted to this exact chunk` when they match
-  the code being packed and `STALE` when they don't; stale params cost bytes but
-  never break the build. Re-fit with `npm run roadroller-optimize` (~150s), which
-  keeps the incumbent unless the new search actually packs smaller.
-- **`closure-externs.js` is load-bearing.** ADVANCED renames every property it
-  has not been told about, so the file pins the three boundaries that leave the
-  bundle: the `window.CA` test hooks, the localStorage save shapes, and the
-  `ElementDef` fields. It also pins DOM names the pinned 2021-era compiler is too
-  old to know — `gridTemplateColumns` broke every cursor move until it was added,
-  and `block`/`passive` would have failed *silently*. Add to that list, never
-  trim it.
-- Tests need Node 22+ (built-in WebSocket) and a local Chrome/Edge, and drop
-  `.shot-*.png` screenshots next to `check.mjs`. They run against the fully
-  packed production bundle, which is what makes them a real check on the tail.
+`prebuild` runs `tsc`, then rollup bundles `src/index.ts` and — in production
+only — puts it through closure ADVANCED → eslint `no-var` → `const`→`let` →
+terser → a roadroller fork. `postbuild` inlines the packed script into the
+`src/index.html` template, minifies with html-minifier-next, zips with fixed
+timestamps and recompresses with ECT then advzip. `npm start` skips the whole
+tail, so a watch build stays readable and fast.
 
-## Source layout
+**The build is byte-deterministic**, which is what makes every measurement in
+`OPTIMIZATIONS.md` reproducible: the zip timestamp is pinned to the DOS epoch,
+and roadroller's stochastic parameter search is fitted once into
+`rr-config.json` rather than run per build. Both `rr-config.json` and
+`fn-order.json` print `STALE` when they no longer match the chunk; stale costs
+bytes and never breaks the build.
 
-```
-src/index.html    template: markup only — no CSS, no JS (the two-letter ids
-                  are the contract with the game code and check.mjs)
-src/dom.d.ts      those ids, declared as the globals the game reads them as
-src/style.css     the page stylesheet, minified into the payload at build time
-src/css.ts        fills <style id=st> with it, imported first from index.ts
-src/music.ts      the background track: the floatbeat engine, and the node
-                  that plays it
-src/sfx.ts        WebAudio synth for the interface sounds, and the shared
-                  AudioContext the music borrows
-src/elements.ts   the element tree: names, icons, recipes
-src/quotes.ts     the 101 quotes, their containers and their two CSS rules —
-                  the director's cut only; a shipping build has none of it
-src/game.ts       state, grid, the cauldron, combining, goal overlays,
-                  scoring and persistence
-src/input.ts      keyboard listener + gamepad polling
-src/index.ts      entry: boot, gamepad frame loop
+**The emoji font is two different arrangements.** The cut generates its own
+subset from the element table at build time, so it is always in step. The
+shipping build cannot afford 250 KB in a 13 KB budget, so it names a hosted file
+at a URL fixed in `rollup.config.mjs`; nothing in the build writes that file, so
+after adding an element with a new emoji, run `npm run emoji-publish` and
+republish the `emoji.woff2` it drops in the repo root. Until then the new glyph
+falls back to the player's own emoji set.
 
-experiments/astralblur.js   the original floatbeat, kept as the reference the
-                            port is checked against
+## How it plays
 
-rollup.config.mjs      bundling + the production closure/terser/roadroller chain
-postcss.config.js      cssnano (preset advanced), shared by rollup and postbuild
-closure-externs.js     names ADVANCED must not rename (see above)
-rr-config.json         pinned roadroller params — deterministic builds
-postbuild.mjs          inline -> minify -> single file -> zip -> ECT -> advzip
-tools/find-rr-config.mjs   re-fits rr-config.json against dist/pre-roadroller.js
-tools/fouc-probe.mjs       first-paint timing vs. the moment the sheet lands
-tools/css-diff.mjs         computed styles, minified stylesheet vs. raw
-tools/music-probe.mjs      captures the shipped page's own audio callback
-tools/responsive-probe.mjs the page at seven viewports, phone to laptop
-tools/audio-bench.mjs      ns per sample vs. the render-ahead budget
-tools/build-visualizer.mjs splices src/music.ts into both visualizer experiments
-
-experiments/menu-typography.html       the seven title settings the current one
-                                       was chosen from
-experiments/visualizer.html            six spectrum-analyser options in canvas
-                                       2D, on the game's own music, all six on
-                                       the border — not wired in yet
-experiments/visualizer-gl.html         the same six slots as GL fragment
-                                       shaders, and the question the canvas page
-                                       does not ask: whether a FULL-FIELD
-                                       background can live behind a game about
-                                       colour. CLEAR MIDDLE is the switch, G the
-                                       mock board. Also not wired in
-experiments/fireworks.html             six ways for the two completion screens
-                                       to celebrate, mostly CSS — and the
-                                       argument that an ending plays ONCE a run,
-                                       so bytes there buy one viewing
-experiments/fireworks-gl.html          the expensive half of that: three in
-                                       canvas 2D, three as GL shaders, and the
-                                       question underneath both — does this game
-                                       want a drawing context at all
-experiments/discovery-animation.html   the six first-discovery sequences the
-                                       shipped one (FRACTURE) was chosen from
-experiments/discovery-approach.html    nine ways for the pair to reach the
-                                       middle, on one duration slider that
-                                       re-times all nine at once — card 5,
-                                       FROM THE ALTAR, is the one that ships
-```
-
-## Title screen
-
-The game boots to a title screen — *COLOR* in an animated rainbow over
-*AlchemY* in small caps, the two locked to the same width — with four options:
-
-- **Continue** — resume the current run (a completed run returns to its
-  completion screen).
-- **New game** — restart; asks for confirmation when a run is in progress.
-- **Quests** — one row per quest, each `NAME — TARGET`: the *Unicorns and
-  Rainbows*, *World Peace* and *COWABUNGA!* rows name their target elements as
-  emoji, the other two as a count. Every best not yet set reads `—`, the full
-  clear included — its move count stays hidden until the completion screen, but
-  the row itself no longer pretends the board cannot be finished.
-- **Encyclopedia** — the player's journal: every discovered element with the
-  combinations *actually performed* (alternate recipes never tried stay
-  unspoiled; the three starters have no recipe line at all), and, in the
-  director's cut, the element's quote. The journal persists across runs - New
-  game wipes the board, never the knowledge.
-
-Reopen it any time with the HUD **Menu** button — which names its shortcuts,
-**Esc** and Ⓑ — with either of those (when nothing is selected), or with
-**Start** on a gamepad; Escape/Ⓑ/Start close it again.
-
-## Rules
-
-- You start with **Red**, **Green** and **Blue**.
-- Pick any two elements to attempt a combination. Every attempt costs a move —
-  successes, failures and rediscoveries alike.
-- **A dead end is remembered.** Pick an element and every tile you have already
-  tried it against, for nothing, goes grey. In a tree of 101 elements the thing
-  that actually costs you moves is re-deriving the same failures, and the game
-  already knew them — it just was not saying. The mark is on the tile's
-  *chrome* only, never on the swatch: this game asks you to judge a colour, and
-  dimming the square that carries it would be a lie about the element rather
-  than a note about the pair. It appears only while something is picked, since
-  with nothing in hand there is no pair to be dead. It rides with the codex
-  rather than the run — the tree does not change between games — and it is
-  filtered on load the mirror image of the way performed recipes are: a pair
-  that has *gained* a recipe in a balance patch is no longer a dead end, so the
-  memory of it being one is dropped.
-- **Hint** — the HUD button, **H**, or Ⓨ on a gamepad — names two elements you
-  already hold that make something you do not, and costs a move for it, exactly
-  like an attempt. It reveals the *pair* and never the result, so the discovery
-  card keeps its surprise. The price is the point: a hinted run can never
-  quietly out-rank an unhinted one.
-- **While the quest stands, the hint answers the quest.** It walks back from the
-  Rainbow and the Unicorn through every recipe that makes them, keeps what you
-  do not own yet, and names a pair from that set. **34 of the 101 elements are
-  off that path entirely** — the animals, the drinks, the ornaments — so an
-  unbiased hint was sending you shopping for a Penguin while the Rainbow stood
-  unforged, and it got worse the deeper the run went: at a nine-element board 2
-  of 5 reachable elements are a detour, and by the time you hold 59 it is 16 of
-  18. It NARROWS rather than replaces, so if nothing within reach is on the
-  path the full list stands and a hint is never refused for being off-plan;
-  once the quest is done the filter switches off and the endgame gets every
-  reachable pair again. Deliberately generous, too — an element on *any* route
-  to a goal counts, not only the cheapest, because a hint that named the
-  shortest path would be telling you which route to take, and its contract is
-  that it reveals the pair and never the plan. Worth **+64 B**.
-- **One hint at a time.** Until you have actually made it, pressing hint again
-  just shows the same pair and highlights it once more, free — you paid for
-  that answer, so re-reading it is not a second purchase. Only moving on to a
-  *new* answer costs another move, which is also what stops you re-rolling
-  cheaply for an easier pair. A hint retires the moment its result exists, so
-  reaching it some other way (an alternate recipe, or stumbling onto it)
-  releases the next one. It is not saved with the run: a reload forgets the
-  standing hint, which can only ever cost you, never the reverse.
-- Each element has a name and an icon (a plain square for the colors, an emoji
-  or a gradient swatch for the rest, and inline SVG for the Prism). It also has
-  a **quote**, and that is the director's cut only — see below.
-- **The endings have fireworks**, chosen in `experiments/fireworks-gl.html` as
-  COMETS: shells go up across the width, and each spark keeps its last six
-  positions and is stroked as a path through them, so it reads as a comet
-  rather than a dot with a smear behind it. The trails come from *fading* the
-  canvas each frame instead of clearing it. The quest gets a 1.6s window and
-  the full clear 3.2s, because a milestone and the end of the game are not the
-  same size; a restored completion screen gets none, since that moment already
-  happened. It never blocks — every button works on frame one — and it stops
-  itself when the last comet dies. Shell colours use the discovery rays' own
-  `hsl(… 95% 62%)` formula, so a shell is never a colour the game does not
-  already use. `prefers-reduced-motion` hides it outright rather than freezing
-  it: a trail system held still is a blank canvas.
-  **The one canvas in the game**, and worth **+452 B** — 11494 → 11946. That is
-  the whole admission price for a drawing context, most of it spent once: a
-  *second* canvas effect would now be nearly free. `#fw` sits inside the
-  overlay at `z-index: -1`, which puts it above the veil's own background and
-  below the card in one property rather than a rule for each, because `.v` is
-  itself a stacking context.
-- **A completion screen cancels the discovery card.** The element that finishes
-  the quest or the board is a first-ever discovery like any other, so the
-  full-screen card has already been raised by the time the milestone is
-  checked — and it would then play for its 3.25s in front of the screen that
-  actually matters. It is cancelled in the same synchronous turn it was opened
-  in, so nothing of it is ever painted. Every overlay this game raises *is* a
-  completion screen, which is why the rule lives in `openOverlay` rather than
-  at the two places that call it.
+- You start with **Red**, **Green** and **Blue**, and combine two elements to
+  discover a third. Every attempt costs a move — successes, failures and
+  rediscoveries alike — and so does a hint. Low scores are the game.
+- **One element, three states, on the tile you keep tapping.** First tap picks
+  it (cyan, into the left slot); a second **locks** it (gold, with a 🔒 badge on
+  both the tile and the slot); a third lets it go. Tapping a different element
+  mixes the two. The lock is the whole difference in what happens next: a loose
+  pick is spent by the mix, a locked one survives every mix — which is what
+  makes trying Fire against ten things ten taps instead of twenty.
+- **Dead ends are remembered.** Pick an element and every tile you have already
+  tried it against, for nothing, goes grey. The mark is on the tile's chrome
+  only, never on the swatch — this game asks you to judge a colour, and dimming
+  the square that carries it would be a lie about the element rather than a note
+  about the pair.
+- **Hint** names two elements you already hold that make something you do not,
+  and costs a move for it. It reveals the *pair* and never the result, so the
+  discovery card keeps its surprise, and while a quest stands it answers the
+  quest — narrowing rather than replacing, so a hint is never refused for being
+  off-plan. Re-reading a standing hint is free; only moving to a new answer
+  charges again.
 - **The cauldron** is docked to the bottom of the viewport — two slots and a
-  result well, in sight however far the board has scrolled. The room for the
-  last row of tiles to scroll clear of it is `--dock` of **footer padding** —
-  not padding on `body` and not a trailing margin, both of which get clipped
-  from the scrollable overflow when the scroll container is `height: 100%`
-  with content overflowing it. Padding inside the last element in the flow is
-  real box height, so it survives. The toast and the keyboard cursor
-  (`scroll-margin-bottom`) both step over the dock too.
-- **One element, three states, on the tile you keep tapping.** The first tap
-  picks it — cyan, and it lands in the left slot. A second tap on the same
-  tile **locks** it, gold, and a 🔒 badge appears on the tile and on the slot
-  together, the slot also growing the ring and the X. A third lets it go.
-  Tapping a DIFFERENT element mixes the two, and the lock is the whole
-  difference in what happens next: a loose pick is spent by the mix it makes,
-  so the board comes back empty and the next pair starts from nothing, while a
-  locked one survives every mix — which is what makes trying Fire against ten
-  things ten taps rather than twenty. Nothing else on the board is ever
-  marked: the pair you just tried sits in the altar, not on the tiles.
-  The badge is there so the state does not rest on gold-versus-cyan alone —
-  a distinction a player has to be told, and one a colour-blind player may
-  never see. It is one rule for both places, `#ca.y::before, .t.e::after`,
-  so the two can never disagree about what is locked.
-- Letting go empties the whole altar, not just the pick. Escape / ⓑ does it
-  from anywhere, and so does clicking the locked slot itself. That slot used
-  to carry a corner **✕** advertising it; the padlock badge is the only mark
-  now, and the click still works.
-- After each attempt the second slot and the well empty themselves — after
-  about a second for a dead end, two for a discovery — and a locked element
-  is left facing an empty slot, ready for the next try. Nothing to dismiss:
-  there is no discovery card any more, which is why `phase()` has only three
-  states.
-- A pair that combines into nothing shakes the **cauldron** red rather than the
-  two tiles — the pair you tried is sitting in the slots, so that is where the
-  answer belongs. A pair you have already combined still pulses the element it
-  makes, out on the board.
-- **The named quests**, each scored into a best of its own and each raising
-  its own card. *Unicorns and Rainbows*: forge the 🌈 **Rainbow** (White +
-  Prism, or Sun + Rain) and the 🦄 **Unicorn**. *World Peace*: forge the 🌍
-  **World** (Earth + Sea) and the 🕊️ **Peace** (Bird + Plant, or Bird +
-  Olive). When you hold both halves of one, your move count is compared with
-  that quest's stored best and kept if lower. You can then keep playing. At
-  most one can land per move, since a move discovers a single element and no
-  element sits in two of these sets. *COWABUNGA!* wants **three**: 🥷 **Ninja**
-  (Human + Black), 🐢 **Turtle** (Lizard + Sea) and 🍕 **Pizza** (Bread +
-  Cheese, or Cheese + Cooking) — the one quest that proves `finishQuest` never
-  assumed a pair. *Full Color Alchemist* is the third, and
-  the one the game is named after: hold all **17 colors**, the spectrum block
-  that opens the element table — the three starters out through Brown, ending
-  where `matter` begins. game.ts takes it as a SLICE of the table rather than a
-  list of ids, so `check.mjs` pins both ends of the block; insert a color in the
-  wrong place and the suite fails instead of the quest quietly resizing. Teal
-  is the deep one at eleven steps, everything else within four.
-  In the director's cut **every quest card raises the fireworks**, not just the
-  completion screen: the three share one `finishQuest`, which ends in the same
-  `if (__DIRECTOR__) fireworks(1.6)` the completion's `3.2` mirrors.
-- **Nothing on the board tells you what to aim for.** The goal line under
-  the grid is status-only — it speaks when a run has been unlocked, or
-  finished — and the Quests screen is where the objectives live.
-- **The endgame — *Gotta catch 'em all!*:** discover all 101 elements. The
-  total move count of a full clear is the *hidden highscore* — it is only ever compared and shown on the
-  completion screen, which only a full clear reaches.
-- Your run persists across reloads. Restart (double-press to confirm) wipes
-  the run, never the bests.
-- **The save file is one `localStorage` entry** — `colorAlchemy`, holding one
-  array, sections by index: tree fingerprint, run, best quest, best full,
-  codex, mute, best World Peace, best Full Color Alchemist, best COWABUNGA!.
-  `src/store.ts` owns it. It replaced five
-  separate keys and measured **&minus;41 B**, but the interesting part is
-  *why*: shortening all five keys to a single character each was measured
-  first as an upper bound and reached only &minus;25, because roadroller
-  charges almost nothing for an exact repeat like `colorAlchemy.`. The bytes
-  are in the code the shape removes — a three-method wrapper, two
-  `JSON.parse`/`stringify` pairs, and the tree fingerprint concatenated onto
-  two of the key names.
-- **It does not migrate the old keys, so it drops existing saves.** A
-  migration would read the five old entries once and delete them, and would
-  cost more than the 41 bytes the change saves — so the trade was taken
-  deliberately rather than overlooked. Revisit it if the game ever ships to
-  people who already have a codex.
+  result well — in sight however far the board has scrolled. After each attempt
+  the second slot and the well empty themselves, leaving a locked element facing
+  an empty slot. A pair that makes nothing shakes the cauldron rather than the
+  tiles: the pair you tried is sitting in the slots, so that is where the answer
+  belongs.
+- **A first-ever discovery takes the whole screen** — the two ingredients spiral
+  in, the result lands on a burst of rays, and the card names it. Tap, Enter or
+  Ⓐ cuts it short, and it ends by itself after 3.25s.
 
-## On a phone
+### Quests
 
-The layout is fluid rather than broken into breakpoints: the grid is
-`repeat(auto-fill, 92px)` inside `width: min(96vw, 640px)`, so it lands on 3
-columns at 320-414px and 6 from a tablet up, and the title scales on `vw` with a
-cap (`min(17vw, 100px)`), the two words staying locked to each other at every
-size. `npm run mobile-check` walks the packed page through seven viewports —
-320x568 up to 1280x800 — in each of the states that lay out differently: title
-screen, board, a result in the cauldron, a toast, the encyclopedia. It reports
-horizontal overflow, any element wider than the screen, the column count and
-every tap target under 44px, and drops `.shot-mob-*.png` for a visual pass.
+Five, each scored into a best of its own and each raising its own card. Nothing
+on the board says what to aim for — the goal line under the grid is status-only,
+and the **Quests** screen is where the objectives live.
 
-It found two things worth fixing, both now fixed:
+| Quest | Wants |
+|---|---|
+| Unicorns and Rainbows | 🌈 Rainbow, 🦄 Unicorn |
+| World Peace | 🌍 World, 🕊 Peace |
+| COWABUNGA! | 🥷 Ninja, 🐢 Turtle, 🍕 Pizza |
+| Full Color Alchemist | all 17 colors — the block that opens the element table |
+| Gotta catch 'em all! | all 300 elements |
 
-- **The toast was clipped on a phone.** It was `white-space: nowrap`, and the
-  longest hint the game can produce — *Hint: try Cloud + Electricity —
-  already paid for* — is 377px wide. On a 320px screen it hangs 29px off each
-  edge,
-  where `overflow-x: hidden` on the body silently cut both ends off. It is now
-  bounded by `max-width: calc(100vw - 24px)` and wraps, staying one line
-  wherever one line fits.
-- **The HUD buttons were 23px tall**, which a mouse hits and a thumb does not.
-  Under `@media (pointer: coarse)` they take `min-height: 44px` — a pinned
-  target rather than padding arithmetic — and nothing changes for a mouse, which
-  the probe checks both ways (coarse 101x44, fine 93x23).
+At most one can land per move, since a move discovers a single element and no
+element sits in two of the sets. The full clear's move count is the hidden one:
+it is only ever shown on the completion screen, which only a full clear reaches.
+In the director's cut every quest card raises the fireworks, not just the
+completion screen.
 
-Still worth knowing: there is no `env(safe-area-inset-*)` padding, so on a
-notched phone in landscape the footer can sit under the home indicator.
+**Black is the throat of the tree.** Three opposite pairs make it — Violet +
+Yellow, Blue + Orange, Crimson + Green — and Black plus White makes **Matter**,
+which is the sole route to Earth, Air and Water and so to nearly everything.
+The split a player can infer is that a primary against its own exact secondary
+makes White (light adding up), and any other opposite pair makes Black (pigment
+cancelling out). Black keeps its material routes as alternates. Know this before
+rewiring around it.
+
+### Menu, saves and scoring
+
+The title screen offers **Continue**, **New game**, **Quests** and
+**Encyclopedia** — the last being a journal of every element ever discovered
+with the recipes *actually performed*, so alternates you never tried stay
+unspoiled. The journal survives New game; only the board is wiped.
+
+The save is one `localStorage` entry, `colorAlchemy`, holding one array with a
+section per index — tree fingerprint, run, and one slot per best. Bests are
+scoped by a fingerprint of the recipe tree, so a balance change quietly starts
+fresh records rather than leaving an unbeatable one behind. `src/store.ts` owns
+it, and **every key is pinned in `closure-externs.js`**: ADVANCED renames any
+property it has not been told about, and a renamed key is a save no later build
+can read.
 
 ## Controls
 
 | Input    | Combine | Hint | Let go of the pick | Mute |
 |----------|---------|------|----------------------------|------|
-| Mouse    | click one element to pick it, then another to mix — or drag one onto another; dropping it back where it started acts as a click | the HUD **Hint** button | click it twice more (lock, then let go), or the locked slot itself | the HUD **Mute** button |
-| Touch    | tap one element to pick it, then another to mix — or long-press (~¼s) to lift, then drag onto another; dropping it back where it started acts as a tap | the HUD **Hint** button | tap it twice more (lock, then let go), or the locked slot itself | the HUD **Mute** button |
+| Mouse    | click one element to pick it, then another to mix — or drag one onto another | the HUD **Hint** button | click it twice more, or the locked slot | the HUD **Mute** button |
+| Touch    | tap one element to pick it, then another to mix — or long-press (~¼s) to lift, then drag | the HUD **Hint** button | tap it twice more, or the locked slot | the HUD **Mute** button |
 | Keyboard | arrows / WASD move, Enter or Space holds / mixes | **H** | Escape (lets go, else opens the menu) | **M** |
-| Gamepad  | d-pad or left stick move, Ⓐ holds / mixes | Ⓨ | Ⓑ (lets go, else opens the menu); Start opens/closes the menu; overlays: ←/→ + Ⓐ | Ⓧ |
+| Gamepad  | d-pad or left stick move, Ⓐ holds / mixes | Ⓨ | Ⓑ (lets go, else opens the menu); Start toggles the menu | Ⓧ |
 
-Ⓨ is the hint because the top face button is the info slot by convention, and
-it sits diagonally opposite Ⓐ — so a thumb roll off confirm cannot spend a move
-on a hint. Ⓧ is what was left, and mute is the right thing to put on it: the one
-action that costs nothing and is wanted in any phase. Indices 0-3 are also the
-ones every Standard Gamepad agrees on, unlike the triggers, which some drivers
-report as axes instead.
+Ⓨ is the hint because the top face button is the info slot by convention and it
+sits diagonally opposite Ⓐ, so a thumb roll off confirm cannot spend a move.
+Indices 0-3 are the ones every Standard Gamepad agrees on, unlike the triggers.
+Mute works in every phase, including the title screen, and the button names the
+*action* rather than the state — **Mute** while there is something to mute,
+**Unmute** once there is not.
 
-**M**, Ⓧ and the HUD mute button all mute *everything* — music and interface
-sounds — and the key and pad button work from any phase, including the title
-screen. The choice is remembered across runs and reloads.
+## On a phone
 
-**The button's label names the action, not the state.** It reads **Mute** while
-there is something to mute and **Unmute** once there is not, so the word is
-always what pressing it will do. It wears one *look* either way — no dim class,
-no second border — so it still sits with **Hint** and **Menu** beside it; only
-the word changes. That is the middle of two earlier tries: naming the state
-(**Sound** / **Muted**, dimmed to match) made the button argue with itself about
-whether it was a readout or a control, and naming neither left nothing on screen
-saying the sound was off once the toast had faded.
-
-All three routes land on one `paintMute` in `game.ts`, called from `muteToggle`
-and again at boot — the preference outlives the run, so a reload has to paint the
-word from storage rather than trust whatever the HTML shipped with. A test asserts
-exactly that, because it is the case a second mute path would silently break.
-
-Muting disconnects the music node rather than turning its volume down, so it
-also stops the ~8% of a core the engine costs, and unmuting resumes the song
-where it stopped instead of restarting it.
-
-On touch the long-press is what keeps page scrolling working: a swipe scrolls,
-a hold lifts the tile for dragging.
-
-**A drag that comes back to where it started is a tap.** Lifting a tile clears
-the current pick, because leaving a gold ring on the board while a ghost is out
-reads as two things being picked at once — but that pick is remembered, and a
-drop back on the source puts it back and runs the same three states a tap does:
-pick it, lock it, let it go, or mix it with whatever was already picked. So a
-player who lifts a tile and changes their mind loses nothing, and a drag that
-never found a target costs no move. **A drag that lands on empty space changes
-nothing at all** — the pick comes back exactly as the lift found it, lock
-included, whether the lock was on the dragged tile or on another one. It used
-to spend the pick, on the theory that the gesture reads as a cancel; it does
-not, and destroying a lock the player set deliberately because a drag missed
-the board was the wrong end of that argument.
-
-**A lock survives a dragged mix, the same as a tapped one.** That is the whole
-thing a lock buys — trying Fire against ten things is ten gestures, not twenty —
-and it would be a strange rule if it held for taps and quietly broke the moment
-you dragged. It holds from either end: drag the locked tile onto another, or
-another onto it. The locked element keeps the altar's **A** slot in both cases,
-so a drag *onto* it feeds the pair in the other order rather than showing the
-same element in both slots. One case is deliberately left out: dragging two
-other tiles together while something else is locked drops the lock, because the
-altar would otherwise show a locked element that had nothing to do with the
-pair just combined.
+The layout is fluid rather than broken into breakpoints: the grid is
+`repeat(auto-fill, 92px)` inside `width: min(96vw, 640px)`, so it lands on 3
+columns at 320-414px and 6 from a tablet up. `npm run mobile-check` walks the
+packed page through seven viewports in each state that lays out differently and
+reports overflow, oversized elements, column count and tap targets under 44px.
+Known gap: no `env(safe-area-inset-*)` padding, so on a notched phone in
+landscape the footer can sit under the home indicator.
 
 ## Music
 
 The background track is **astral blur**, the 24 kHz floatbeat in
-`experiments/astralblur.js`, ported to run in the page. galaxy-raid plays its
-bytebeats from a `ScriptProcessorNode`, and so did this at first — see
-**Rendering ahead** below for why it does not any more.
-
-The original is a general synth framework — ADSR envelopes, 2- and 4-operator FM
-voices, wave-shapers, filters, delays, a Householder/Hadamard reverb, a mixer and
-a sequencer, about a thousand lines — and the tune reaches maybe a third of it.
-`src/music.ts` is what this song touches: three waveforms, one envelope shape,
-one random LFO, one voice (a plain oscillator is that same voice with the
-modulator switched off), gain, the low-pass, the multi-tap delay, the diffuser.
-Dropped: the tri/square/shaped waves, the 4-operator voice, the wave-shaping
-synths, the periodic LFO, the constant envelope, mono/softclip/DC-removal, the
-single-tap delay, and the high-pass and mono branches of the filter. Everything
-that was an object with named fields — envelopes, LFOs, notes, effects, mixer
-channels — is an array indexed by position instead. The song itself is six
-pattern strings and an arrangement, one character per tick and two per note.
+`experiments/astralblur.js`, ported to run in the page. The original is a
+general synth framework of about a thousand lines and the tune reaches maybe a
+third of it; `src/music.ts` is only what this song touches, with every named
+object flattened to a position-indexed array and the song itself six pattern
+strings and an arrangement.
 
 Two of the original's quirks are reproduced rather than fixed, because they are
-what it sounds like: `filter` allocates its history as
-`Array(2).fill(Array(3).fill(...))`, so all three history rows *and* both
-channels are one shared array — the biquad it looks like collapses to a one-pole
-per section fed by each channel in turn — and `diff` builds an array of random
-signs that it then multiplies by 1 (dead, so it is gone here). Its two real bugs
-are dropped: `m.target in ["freq", ...]` is always false, since `in` tests an
-array's keys, so every modulator is additive — which is what this tune wants
-anyway — and `notefreq()` ignores the second argument it is passed.
+what it sounds like — the details, and the render-ahead scheduling that replaced
+a `ScriptProcessorNode`, are commented in `src/music.ts`. `npm run music-check`
+captures the shipped page's own audio callback, and `npm run audio-bench`
+measures a sample against the callback budget.
 
-**The port is checked, not eyeballed.** The original is run in a `vm` sandbox
-exactly as a floatbeat player evaluates it — the whole file re-evaluated per
-sample, with `t` the sample index and Math's members as bare globals — and its
-output is compared with the port's, sample for sample. `random()` is pinned to a
-constant in both so the reverb's random tap lengths and the LFOs line up;
-otherwise the two are only comparable statistically. The result is bit-identical
-across **250 seconds — 12 million samples**, every voice in the arrangement
-(max absolute difference **0**), which is the only reason the aggressive cuts
-above are safe to make. That render also settles the output level: the tune's own
-peak reaches **1.22** where the arrangement is densest, so the 0.4 the player
-applies is what keeps it clear of clipping, not just quiet.
+## Source layout
 
-The engine runs at the 24 kHz the song was written for, and the buffers are
-created at that rate so the browser resamples them on the way out.
+```
+src/index.html    template: markup only — the two-letter ids are the contract
+                  with the game code and check.mjs
+src/dom.d.ts      those ids, declared as the globals the game reads them as
+src/style.css     the stylesheet, minified into the payload at build time
+src/css.ts        fills <style id=st> with it, imported first from index.ts
+src/elements.ts   the element tree: names, icons, recipes
+src/quotes.ts     the quotes and their containers — director's cut only
+src/game.ts       state, grid, cauldron, combining, quests, persistence
+src/store.ts      the one localStorage entry
+src/music.ts      the floatbeat engine and the node that plays it
+src/sfx.ts        WebAudio synth for the interface sounds
+src/input.ts      keyboard listener + gamepad polling
+src/index.ts      entry: boot, gamepad frame loop
 
-**It is 3.7x cheaper than the first version**, which is a phone story rather than
-a desktop one: a ScriptProcessorNode calls back on the *main thread*, so its cost
-is time the page is not drawing, and a callback that misses its deadline is an
-audible glitch. `npm run audio-bench` measures it — **3191 ns a sample became
-1107**, 7.7% of a core to 2.7%, which on a phone 6x slower than this machine is
-46% of the callback budget down to 16%. Two changes did it, and the profiler
-picked both:
+rollup.config.mjs   bundling + the production closure/terser/roadroller chain
+postbuild.mjs       inline -> minify -> single file -> zip -> ECT -> advzip
+closure-externs.js  names ADVANCED must not rename
+rr-config.json      pinned roadroller params — deterministic builds
+fn-order.json       the searched function order
+tools/              the probes and the two optimizer searches
+experiments/        the prototypes each shipped effect was chosen from
+```
 
-- **The delay modulation was 23% of the whole engine.** Its read position wobbles
-  as `cos(k·idx)` per tap, which is 16 `Math.cos` calls a sample. It is the same
-  value stepped forward instead — rotating a (cos, sin) pair by a fixed angle is
-  four multiplies — re-anchored on a real `Math.cos` every 1024 samples so drift
-  cannot accumulate.
-- **Every stage returned fresh arrays**, about 30 allocations a sample, which is
-  ~700k a second for the garbage collector to deal with; a GC pause inside an
-  audio callback is a click. The effects now run in place over two scratch
-  buffers, and the mixer keeps its channel signals in one flat `Float64Array`.
-- **48 remainders a sample** across the reverb, one per buffer access. Each buffer
-  carries its own write pointer now, incremented and compared instead of divided.
-- Assorted: the Hadamard's `1/sqrt(8)` was recomputed 32 times a sample, phase
-  wrapping used `% 1` where the increment is always under 1, and the three
-  waveforms were an array of closures — so the call site could not inline — now
-  one function with a switch.
+## Tests
 
-None of it changes the sound: against the same 250-second reference the output is
-identical to **6e-8**, the modulation recurrence's drift, about 1000x below what
-float32 storage can even represent, where the original was bit-identical.
+`check.mjs` drives the fully packed production bundle through CDP — no test
+hooks ship, so it clicks tiles the way a player does and reads state off the
+page. One suite covers both builds: it asks the menu which build it is looking
+at, then either exercises the development tools or asserts they are genuinely
+absent. Needs Node 22+ and a local Chrome or Edge, and drops `.shot-*.png`
+screenshots next to itself.
 
-Two further ideas were **measured and rejected**, which is the useful part:
-halving the reverb to 4 channels buys only **1.16x** and the tail becomes a
-different tail (the difference is 0.5 dB relative to the signal — audibly not the
-same reverb), and a 2048-entry sine table buys **1.02x**, because V8's `Math.sin`
-is already fast. The engine is at its practical floor for this structure.
+The recipe tree is the one thing with no DOM form, so those assertions parse
+`src/elements.ts` in node — checking the tree as written rather than as shipped.
+The move orders the suite drives are derived from that same table, so adding an
+element needs no edit to the runs.
 
-### Rendering ahead
+## Where the rest of it is
 
-A `ScriptProcessorNode` calls back on the **main thread** and must fill every
-buffer before its deadline, which made the music glitch on a phone — worst when
-the screen went off, because that is exactly when the browser throttles that
-thread. Speed alone cannot fix it.
+**`OPTIMIZATIONS.md`** is every measured finding from fitting this into 13312
+bytes — what was taken, what was tried and rejected, and why. It is worth
+reading before changing anything in the build.
 
-So the engine no longer runs on demand. A 200ms timer renders quarter-second
-chunks into `AudioBuffer`s and schedules them end to end, keeping **2.5 seconds
-queued**. Nothing has a deadline: a tick can be late, throttled or skipped and
-the audio continues until the queue drains, and if it ever does drain the pump
-resynchronises from the clock instead of scheduling into the past. It also
-retires the manual resampler, and with it the `ScriptProcessorNode` — including
-the Safari input-channel trap that made the music silent on iOS.
-
-`npm run music-check` demonstrates the property rather than describing it: it
-blocks the page's main thread for 1.5 seconds and checks the queue is still ahead
-of the clock afterwards (2.24s ahead before, 2.45s after). Under the old node
-that same block was 1.5 seconds of silence.
-
-Muting stops the pump as well as silencing the bus, so the engine costs nothing
-at all while the sound is off, and what is already queued plays out silently —
-the probe checks that too, by watching the scheduled-buffer count freeze.
-
-The track costs **1511 bytes** zipped — 9651 to 11246, of which the song data is
-six strings totalling 571 characters; the mute control and its HUD button added
-another **170**, the title typography **44**, and the audio work since (a faster engine,
-rendering ahead, and playing only during the game) **289**, for **11749 bytes,
-88.26% of the 13KB budget**.
-
-It plays **during the game only** — over the board and its cards and overlays,
-never over the title screen or the pause menu. The frame loop passes the phase
-to `musicPlaying` rather than every transition remembering to, so Escape, the
-gamepad Start button, the menu buttons and the overlays all behave the same, and
-leaving the game stops the pump as well as silencing the bus. The AudioContext
-still has to be woken inside a gesture, which is what the pointer and key
-listeners are for; it shares the context `src/sfx.ts` creates. **M** or Ⓧ
-mutes it along with the interface sounds — see [Controls](#controls); the flag
-lives in `src/sfx.ts` because both halves of the audio read it.
-
-`npm run music-check` is the end-to-end check the node comparison cannot make:
-it wraps `createScriptProcessor` before the bundle parses, dispatches a gesture,
-and captures what the game's own callback writes into the output buffer, then
-reports level and rejects silence or NaN. (Its injected script is wrapped in an
-arrow function for a reason — a bare `const` there is a global lexical binding,
-and colliding with one of the bundle's own short names is a SyntaxError that
-stops the whole game from loading.)
-
-## Recipe tree — SPOILERS
-
-A perfect quest is **31 moves**, through the Sun + Rain rainbow; the cheapest
-Prism route costs **34**, and a Light Bulb through a Prism costs **35**. The Prism
-detour is **three moves**, and what sets that number is not the Prism at all —
-it is which way Magic goes. Sun + Earth put Plant within reach at depth 7 instead
-of 12, which made **Pumpkin + Night** cheaper than Wood + Star, so the perfect
-quest now carries **no Wood and no Tool**. A Prism therefore has to buy the whole
-Tool → Sand → Glass chain itself. It used to be one move behind, back when the
-quest made a Tool on its way to the Wood. On its own a Prism is 15 moves through
-the Tool where the Diamond route needs 24 — still the one route on the Tool that
-is a genuine shortcut rather than a tie.
-A Light Bulb through a Prism is a third Prism route and never a cheaper one: the
-Prism already needed the Glass and the Unicorn's life branch already needed the
-Electricity, so the bulb itself is the only move it adds — flavour for a player
-holding both, never a cheaper way in.
-A perfect full clear is **98** - one move per element, since nothing can be
-made twice. Best scores are scoped to the current recipe tree, so all of this
-started fresh records automatically.
-
-The Rainbow half of the quest is cheap. The Unicorn is not: it needs an
-**Animal**, which pulls the whole life branch onto the critical path (mineral
-chain -> Acid + Metal battery -> Electricity -> Lightning -> Life -> Animal),
-and that spine of Earth/Lava/Stone/Metal is what the run is really paying for.
-
-The Magic half used to be the other expensive one, and **it is not any more**.
-It went **Wood + Star**, which dragged in the wood chain twice over - the Wood
-itself, and the Charcoal -> Black past it that the Night and so the Star were
-built from. Two later edits killed that route between them: **Pumpkin + Night**
-gave Magic a second way in, and **Sun + Earth** put Plant at depth 7 instead of
-12, which made that way the cheap one. The perfect quest now reaches Magic
-through Plant -> Tree -> Fruit -> Pumpkin and takes its Night from **Violet +
-Sky**, so it touches **no Wood, no Tool, no Charcoal and no Black at all**. That
-is also why the Prism detour tripled: a Prism has to buy the entire Tool -> Sand
--> Glass chain itself now, where it used to borrow a Tool the quest was making
-anyway. The Cloud still earns its keep twice: once for the Rain, once for the
-Lightning.
-
-Additive color mixing does the early work: primaries pair into secondaries,
-and any **complementary pair** (Blue+Yellow, Red+Cyan, Green+Magenta) makes
-White. **Black** is the deliberate exception - no two lights mix to
-darkness, so the one color the light half of the tree cannot reach has to
-arrive through the material half instead, as Charcoal + Stone. Only the color
-itself, though: the Night it used to gate is reachable from a Violet sky now,
-so a player can own the whole light half and still never make a Black.
-
-Several elements have more than one route, so an intuitive guess tends to land
-somewhere. Six of them are deliberately cyclic - Fire + Ice remakes Water,
-which Ice itself needs; Penguin + Air hands back the Bird the Penguin came from;
-Wolf + Dog is just another Dog; Fire + Air is a fanned fire and nothing more;
-Lizard + Egg hatches another Lizard; and Lava + Stone melts the Stone straight
-back into Lava - flavor for a pair players try, never a cheaper path.
-
-**Black and then Matter are the throat of the tree.** Earth, Air and Water
-each run through Matter, and Matter is White + Black, so nearly everything is
-out of reach until Black is found. What is reachable without it is the pure
-colours and Gold.
-
-It used to be Matter that took the opposite pairs directly, with Black
-reachable only through the materials. That asked the player to believe two
-opposite colours leave *substance* — an idea that reads backwards, after you
-know the answer, and forwards not at all. Mixing opposite **paints** to a muddy
-black is something everyone has actually done, so the pairs make Black now and
-Black plus White makes Matter, which is the one recipe in the game that needs
-no explaining. The old split survives in a form a player can infer: a primary
-against its own exact secondary makes **White** (light adding up), any other
-opposite pair makes **Black** (pigment cancelling out). Black keeps its
-material routes as alternates, and three independent ways in against the two
-Matter used to have.
-
-**Grey was deleted for it.** Black + White is the only honest way to make a
-grey, and the pair is spent on Matter, so there was no honest grey left to
-make. Silver moved to Metal + Mirror, Donkey went with it, and the five other
-recipes that used Grey kept the routes they already had.
-
-| Element | Recipe |
-|---|---|
-| Yellow | Red + Green |
-| Magenta | Red + Blue |
-| Cyan | Green + Blue |
-| White | Blue + Yellow · Red + Cyan · Green + Magenta |
-| Orange | Red + Yellow |
-| Violet | Blue + Magenta |
-| Indigo | Blue + Violet |
-| Pink | Red + White |
-| Brown | Green + Orange |
-| Black | Violet + Yellow · Blue + Orange · Crimson + Green · *(and the material routes)* |
-| Matter | White + Black |
-| Air | White + Matter |
-| Sky | Air + Blue · Air + Cyan |
-| Gold | Yellow + Orange |
-| Water | Blue + Matter · Fire + Ice |
-| Fire | Red + Matter · Orange + Matter · Red + Air · Orange + Air · Fire + Air |
-| Earth | Brown + Matter |
-| Clay | Earth + Water |
-| Pottery | Clay + Fire |
-| Hospital | Doctor + House |
-| Beer | Gold + Water |
-| Wine | Red + Water |
-| Lava | Earth + Fire · Lava + Stone |
-| Volcano | Lava + Earth |
-| Stone | Lava + Water · Lava + Rain · Lava + Air |
-| Metal | Fire + Stone · Rust + Acid |
-| Rust | Metal + Air · Metal + Water · Metal + Salt · Red + Metal · Orange + Metal |
-| Tool | Fire + Metal |
-| Sand | Earth + Air · Stone + Air · Stone + Tool |
-| Glass | Sand + Fire · Sand + Electricity · Sand + Lightning |
-| Mirror | Glass + Metal |
-| Hourglass | Glass + Sand |
-| Sun | Fire + Sky |
-| Night | Black + Sky · Violet + Sky |
-| Star | Night + White |
-| Moon | Night + Sun |
-| Cloud | Sky + Water · Water + Air · Grey + Sky · Fire + Water · Sun + Water |
-| Rain | Cloud + Water |
-| Lightning | Cloud + Electricity |
-| Storm | Lightning + Rain · Electricity + Rain |
-| Umbrella | Rain + Tool · Storm + Tool · Human + Rain · Human + Storm |
-| Tornado | Air + Storm |
-| Life | Lightning + Water |
-| Jellyfish | Water + Life |
-| Coral | Sea + Life |
-| Egg | Stone + Life |
-| Animal | Earth + Life |
-| Lizard | Stone + Animal · Egg + Lizard |
-| Horse | Animal + Field |
-| Hippo | Horse + Water |
-| Wolf | Animal + Moon |
-| Fox | Orange + Wolf |
-| Bone | Animal + Fire · Wolf + Fire · Horse + Fire · Unicorn + Fire · Bear + Fire · Polar Bear + Fire · Dog + Fire · Cow + Fire · Bear + Horse · Wolf + Horse · Bear + Dog |
-| Dog | Wolf + Bone · Dog + Wolf |
-| Cow | Animal + Plant |
-| Milk | Cow + Water |
-| Cat | Animal + Yarn · Animal + Milk |
-| Black Cat | Cat + Black · Cat + Night · Cat + Wizard |
-| Cheese | Acid + Milk |
-| Squirrel | Animal + Tree |
-| Fireworks | Party + Sky · Party + Night |
-| School | Teacher + House |
-| Doctor | Medicine + Human |
-| Bird | Air + Animal · Air + Penguin |
-| Chick | Egg + Bird · Duck + Egg · Egg + Flamingo · Egg + Swan |
-| Penguin | Bird + Ice |
-| Duck | Bird + Water |
-| Fish | Animal + Water |
-| Sea | Island + Water · Fish + Water · Mermaid + House |
-| Octopus | Animal + Sea · Animal + Coral |
-| Salt | Sea + Fire · Sea + Sun · White + Stone |
-| Shark | Grey + Fish · White + Fish |
-| Owl | Bird + Night |
-| Flamingo | Bird + Pink |
-| Swan | White + Duck · White + Bird |
-| Peacock | Bird + Rainbow |
-| Phoenix | Bird + Fire · Ash + Fire |
-| Bee | Animal + Blossom |
-| Honey | Bee + Blossom |
-| Bear | Animal + Honey |
-| Polar Bear | Bear + Ice · Bear + Snow · Bear + White |
-| Acid | Green + Water |
-| Electricity | Acid + Metal |
-| Light Bulb | Electricity + Glass |
-| Ice | Cyan + Water · White + Water · Water + Night |
-| Snow | Cloud + Ice |
-| Prism | Diamond + Glass · Glass + Tool |
-| Rainbow | White + Prism · Sun + Rain · Prism + Sun · Light Bulb + Prism |
-| Magic | Wood + Star · Pumpkin + Night |
-| Crystal Ball | Magic + Glass |
-| Unicorn | Horse + Magic · Animal + Magic |
-| Plant | Earth + Sun · Life + Sun · Green + Life |
-| Medicine | Plant + Acid |
-| Cactus | Plant + Sand |
-| Field | Earth + Plant |
-| Park | Field + Water |
-| Tree | Water + Plant · Nut + Water · Nut + Rain |
-| Palm | Sand + Tree |
-| Island | Sand + Palm |
-| Fruit | Tree + Sun |
-| Banana | Fruit + Yellow |
-| Coconut | Palm + Fruit |
-| Pumpkin | Fruit + Orange |
-| Wood | Tree + Tool |
-| Charcoal | Wood + Fire · Tree + Fire |
-| Ash | Charcoal + Fire · Bone + Fire · Fire + Paper · Book + Fire |
-| Mushroom | Rain + Wood |
-| Pencil | Wood + Charcoal |
-| Paper | Stone + Tree |
-| Book | Paper + Pencil |
-| Palette | Paper + Rainbow |
-| Kite | Air + Paper |
-| Black | Charcoal + Stone · Charcoal + Tool |
-| Grey | Black + White |
-| Diamond | Charcoal + Lava · Volcano + Charcoal |
-| Ring | Metal + Diamond |
-| Wedding | Human + Ring |
-| Baby | Human + Life · Wedding + Life |
-| Blossom | Plant + Pink |
-| Sunflower | Sun + Blossom · Blossom + Yellow |
-| Rose | Blossom + Red |
+Everything else lives in comments next to the code it explains. `src/style.css`
+opens with the legend for its one-letter class names; `src/elements.ts` carries
+the rules the tree has to keep; `check.mjs` explains what each assertion is
+actually guarding. The in-game **Encyclopedia** is the recipe reference, which
+is why there is no table of 300 recipes here.
