@@ -194,6 +194,16 @@ body {
    PAIR; the name that stays green says AND NEVER ANY PAIR, which is the
    reason the tile is dim in the first place. */
 .t.S .n { color: #7f9; }
+/* ...but a spent tile that is ALSO greyed has to look greyed, and this is the
+   one label that did not. #7f9 at full strength on dimmed chrome over a .35
+   icon made the out-of-play tiles the brightest thing on the board — brighter
+   than the #bce names of the tiles still worth mixing, so a full row of them
+   read as the answer rather than as the wreckage. The hue is what carries the
+   meaning, not the luminance: this keeps the green saying AND NEVER ANY PAIR
+   while sitting at the same recessed level as the #456 the grey name uses, so
+   the tile reads dim first and green second. Only under .x, so a spent element
+   on a board with nothing picked still wears the bright standing label. */
+.t.x.S .n { color: #375; }
 /* A hint bought and not yet spent: BOTH named tiles hold a steady violet glow
    until the pair's result exists — no pulse, so it can sit there for as long
    as the answer goes unused. Placed ABOVE the pick and pulse rules on purpose:
