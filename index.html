@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Alchemy</title>
+<meta name="description" content="A combination game that starts with red, green and blue and ends with 300 elements — built to fit in 13KB.">
+<style>
+  :root {
+    --bg: #001; --ink: #cdf; --dim: #7a9; --edge: #235; --card: #112c;
+    --cyan: #3ee; --gold: #fd6;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+  body {
+    margin: 0; min-height: 100vh; padding: 0 20px 64px;
+    background: var(--bg); color: var(--ink);
+    font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background-attachment: fixed;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #213 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, #032 0%, transparent 60%);
+    display: flex; flex-direction: column; align-items: center;
+  }
+  main { width: 100%; max-width: 640px; }
+  header { text-align: center; padding: 64px 0 8px; }
+  h1 {
+    margin: 0; font-size: clamp(38px, 12vw, 64px); font-weight: 800;
+    letter-spacing: .02em;
+    background: linear-gradient(90deg, #f43, #fa3, #fd3, #4d6, #3ce, #46f, #a5f);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub {
+    margin: 2px 0 0; color: #8ac; font-size: clamp(13px, 4.2vw, 19px);
+    letter-spacing: .42em; text-indent: .42em; font-weight: 700;
+  }
+  .lede { margin: 28px 0 0; font-size: 16px; }
+  .lede b { color: #fff; font-weight: 700; }
+  h2 {
+    margin: 44px 0 12px; font-size: 12px; letter-spacing: .3em;
+    color: var(--cyan); font-weight: 700;
+  }
+  p { margin: 0 0 14px; }
+  .plays { display: grid; gap: 14px; margin: 8px 0 0; }
+  a.play {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--card); border: 1px solid var(--edge); border-radius: 14px;
+    padding: 18px 20px; transition: border-color .15s, transform .15s, box-shadow .15s;
+  }
+  a.play:hover, a.play:focus-visible {
+    border-color: var(--cyan); transform: translateY(-2px);
+    box-shadow: 0 0 30px #3ee2; outline: none;
+  }
+  a.play .name { font-size: 19px; font-weight: 700; color: #fff; }
+  a.play .name .badge {
+    font-size: 11px; letter-spacing: .18em; color: var(--gold);
+    border: 1px solid #543; border-radius: 999px; padding: 2px 9px;
+    margin-left: 10px; vertical-align: 2px; white-space: nowrap;
+  }
+  a.play .what { margin: 6px 0 0; color: var(--dim); font-size: 13.5px; }
+  ul { margin: 0 0 14px; padding-left: 1.1em; }
+  li { margin: 0 0 6px; }
+  code {
+    background: #0a1420; border: 1px solid var(--edge); border-radius: 5px;
+    padding: 1px 6px; font-size: 13px; color: #adf;
+  }
+  footer {
+    margin: 52px 0 0; padding-top: 20px; border-top: 1px solid #123;
+    color: #567; font-size: 12.5px; text-align: center;
+  }
+  footer a { color: #7a9; }
+  @media (prefers-reduced-motion: reduce) {
+    a.play { transition: none; }
+    a.play:hover, a.play:focus-visible { transform: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>COLOR</h1>
+    <p class="sub">ALCHEMY</p>
+  </header>
+
+  <p class="lede">
+    You start with three squares of light — <b>red</b>, <b>green</b> and
+    <b>blue</b>. Put two together and see what they make. Three hundred
+    elements later you will have mixed a rainbow, forged a unicorn, boiled
+    ratatouille out of a rat and a chef, and worked out how to turn opposite
+    colours into a lump of matter.
+  </p>
+  <p>
+    The whole game is one HTML file that fits in <b>13&nbsp;kilobytes</b> — the
+    board, the recipe tree, the artwork, the music and the sound effects, with
+    nothing loaded from anywhere.
+  </p>
+
+  <h2>PLAY IT</h2>
+  <div class="plays">
+    <a class="play" href="dist/bundle.html">
+      <div class="name">The 13KB build<span class="badge">THE ENTRY</span></div>
+      <p class="what">
+        The size-golfed one, and the point of the exercise. One file, no
+        network, packed to the last byte.
+      </p>
+    </a>
+    <a class="play" href="dist/director.html">
+      <div class="name">The director&rsquo;s cut<span class="badge">NO BUDGET</span></div>
+      <p class="what">
+        The same game with nothing to fit into: a written quote for every
+        element, fireworks over each completed quest, and its own bundled
+        emoji font instead of whatever your device happens to own.
+      </p>
+    </a>
+  </div>
+
+  <h2>HOW IT WORKS</h2>
+  <ul>
+    <li>Tap one element to pick it, another to mix the two. Tap the pick a
+      second time to <b>lock</b> it, and it survives the mix — which is what
+      makes trying Fire against ten things ten taps instead of twenty.</li>
+    <li>Every attempt is a move, successes and failures alike, and so is a
+      hint. Low scores are the game.</li>
+    <li>Pairs you have already tried grey out, so you never spend a move
+      repeating yourself.</li>
+    <li>Five quests keep score separately, from <b>Unicorns and Rainbows</b> to
+      finding all three hundred elements.</li>
+    <li>The encyclopedia is a journal of every element you have ever found and
+      every recipe you actually performed. Starting a new game wipes the board,
+      never the knowledge.</li>
+  </ul>
+
+  <h2>BUILDING IT</h2>
+  <p>
+    <code>npm install</code> then <code>npm run build</code> writes the 13KB
+    entry; <code>npm run build-director</code> writes the cut. Both are checked
+    by the same headless suite — <code>npm test</code> for the entry,
+    <code>node check.mjs dist/director.html</code> for the cut. The
+    <code>README.md</code> is the long version: what every byte went on, and
+    what was tried and rejected.
+  </p>
+
+  <footer>
+    Built on the galaxy-raid base — the dark look, the build shape and the
+    CDP test harness all came from there.
+  </footer>
+</main>
+</body>
+</html>

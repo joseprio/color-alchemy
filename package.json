@@ -19,7 +19,8 @@
     "phone": "node tools/phone.mjs",
     "start": "rollup -c -w",
     "test": "node check.mjs",
-    "emoji-font": "node tools/emoji-font.mjs"
+    "emoji-font": "node tools/emoji-font.mjs",
+    "emoji-publish": "npm run build-director && node tools/emoji-publish.mjs"
   },
   "devDependencies": {
     "@ampproject/rollup-plugin-closure-compiler": "^0.27.0",

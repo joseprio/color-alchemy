@@ -4,7 +4,8 @@ node_modules/
 .fn-order-candidate.json
 .fn-order-bundle-backup.js
 dist/director/
-dist/director.html
-dist/fonts/
 dist/director.zip
+# dist/director.html and dist/fonts/ ARE tracked: index.html links to the
+# cut, and GitHub Pages serves this repo, so an ignored page is a dead link.
+# The intermediate build dir above and the zip stay out — neither is served.
 .fonts/
