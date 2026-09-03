@@ -1387,9 +1387,15 @@ export const ELEMENTS = ([
   //
   // A plain black square would vanish into the tile, so the swatch keeps a
   // soft top-left sheen and lends a grey — not black — glow.
+  // NO INNER HIGHLIGHT. Every other swatch carrying a radial puts a FEATURE
+  // inside itself — Night's stars, Charcoal's embers, Ash's specks — but Black
+  // had a plain 18% blob of #233 in the corner, which reads as a light source
+  // inside the one square whose whole job is to be the absence of one. The glow
+  // belongs on the outside, and it already is there: .s carries a box-shadow in
+  // --g, which `c` supplies, so this slate halo is the same one Red and Green
+  // wear. The linear gradient stays — that is shading, not light.
   { id:"black", c:"#567",
-    bg:"radial-gradient(circle at 30% 26%, #233 0 18%, transparent 42%)," +
-       "linear-gradient(155deg, #112 0%, #111 55%, #000 100%)",
+    bg:"linear-gradient(155deg, #112 0%, #111 55%, #000 100%)",
     r:[["violet","yellow"],["blue","orange"],["crimson","green"],
        ["charcoal","stone"],["charcoal","tool"],["charcoal","earth"],
        ["ash","charcoal"]] },
