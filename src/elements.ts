@@ -25,9 +25,11 @@
 // of a pair an id is, and flattened every separator is the same comma. Cheap
 // punctuation that buys context is not the same as waste.
 //
-// MATTER IS THE THROAT OF THE TREE: it is the sole route to Earth, Air and
-// Water, so nearly everything is unreachable until it is found. Deliberate —
-// know it before rewiring around it.
+// BLACK AND THEN MATTER ARE THE THROAT OF THE TREE: Matter is still the sole
+// route to Earth, Air and Water, and Matter is now White + Black, so nearly
+// everything is unreachable until Black is found. Deliberate — know it before
+// rewiring around it. Black keeps three independent ways in (the opposite
+// pairs) so the gate is wider than the two Matter used to have.
 //
 // MAGIC AND THE CRYSTAL BALL ARE MUTUALLY CYCLIC: Magic + Glass makes the Ball,
 // the Ball + a Rainbow makes Magic. It resolves only because BOTH ends keep a
@@ -135,19 +137,23 @@ export const ELEMENTS = ([
   // are downstream of Earth.
   { id:"brown", c:"#853",
     r:[["green","orange"]] },
-  // Both routes are a COMPLEMENTARY PAIR — violet against yellow, orange
-  // against blue — which is the whole idea: the two halves of the colour wheel
-  // cancelling out and leaving something with weight instead of light. Placed
-  // here rather than by depth because every string it uses (the two hexes, the
-  // four ingredient ids) is already in this stretch of the table, and an exact
-  // repeat costs roadroller almost nothing.
+  // ALL THE LIGHT THERE IS PLUS NONE AT ALL, and what is left is substance.
+  // The one recipe in the game that needs no explaining, and the reason the
+  // three opposite pairs were moved down to Black: they had to free this pair
+  // up. Grey held it before and was deleted for it — black and white is the
+  // only honest way to make a grey, so with the pair spent there was no honest
+  // grey left to make.
+  //
+  // ONE recipe, where every other gateway has several. That is deliberate: a
+  // single obvious pair beats three obscure ones, and Black in front of it
+  // carries the redundancy for both.
   { id:"matter", c:"#7cf",
     s:"<g transform='translate(16 16)' fill='none' stroke='#7cf' stroke-width='2'>" +
       "<ellipse rx='13' ry='5'/>" +
       "<ellipse rx='13' ry='5' transform='rotate(60)'/>" +
       "<ellipse rx='13' ry='5' transform='rotate(-60)'/>" +
       "<circle r='4' fill='#eff' stroke='none'/></g>",
-    r:[["violet","yellow"],["blue","orange"]] },
+    r:[["black","white"]] },
   { id:"air", e:"\u{1F4A8}",
     r:[["white","matter"]] },
   { id:"sky", c:"#7cf",
@@ -179,7 +185,7 @@ export const ELEMENTS = ([
     bg:"linear-gradient(120deg, transparent 0 30%, #fffc 30% 38%, transparent 38% 62%," +
        "#fff7 62% 68%, transparent 68%)," +
        "linear-gradient(180deg, #fff 0%, #dee 38%, #9aa 62%, #eef 100%)",
-    r:[["grey","white"]] },
+    r:[["metal","mirror"]] },
   { id:"water", e:"\u{1F4A7}",
     r:[["blue","matter"],["fire","ice"],["ice","sun"],["snowman","sun"],["fire","snowman"]] },
   { id:"fire", e:"\u{1F525}",
@@ -229,7 +235,7 @@ export const ELEMENTS = ([
   // the swap safe — Pink, Magenta and Violet all sit above Water in the
   // tree, so every route to a Wine is open the moment the Water is.
   { id:"wine", e:"\u{1F377}",
-    r:[["pink","water"],["magenta","water"],["violet","water"]] },
+    r:[["pink","water"],["magenta","water"],["violet","water"],["grapes","water"]] },
   // The Crimson is the second way in, and the pair with it is CYCLIC — Red +
   // Blood is a Crimson, Crimson + Water is a Blood. Safe for the reason the
   // Magic and the Crystal Ball are: both ends keep a way in that misses the
@@ -257,7 +263,7 @@ export const ELEMENTS = ([
   { id:"goat", e:"\u{1F410}",
     r:[["animal","mountain"]] },
   { id:"stone", e:"\u{1FAA8}",
-    r:[["lava","water"],["lava","rain"],["lava","air"],["grey","matter"],
+    r:[["lava","water"],["lava","rain"],["lava","air"],
        ["sun","troll"]] },
   // THE SEVENTH CYCLIC PAIR, and the only one the folklore wrote first: the
   // Night makes a Troll out of the Stone and the Sun turns him straight back
@@ -317,7 +323,7 @@ export const ELEMENTS = ([
        "linear-gradient(180deg, #def 0%, #ade 60%, #8cd 100%)",
     r:[["sand","fire"],["sand","electricity"],["sand","lightning"]] },
   { id:"mirror", e:"\u{1FA9E}",
-    r:[["glass","metal"],["glass","grey"]] },
+    r:[["glass","metal"]] },
   { id:"hourglass", e:"⌛",
     r:[["glass","sand"]] },
   { id:"sun", e:"☀️",
@@ -352,7 +358,7 @@ export const ELEMENTS = ([
   { id:"ghost", e:"\u{1F47B}",
     r:[["night","air"],["ash","night"]] },
   { id:"cloud", e:"☁️",
-    r:[["sky","water"],["water","air"],["grey","sky"],["white","sky"],["fire","water"]] },
+    r:[["sky","water"],["water","air"],["white","sky"],["fire","water"]] },
   { id:"rain", e:"\u{1F327}️",
     r:[["cloud","water"]] },
   { id:"lightning", e:"\u{1F329}️",
@@ -376,7 +382,8 @@ export const ELEMENTS = ([
   { id:"fog", e:"\u{1F32B}\u{FE0F}",
     r:[["cloud","earth"]] },
   { id:"life", e:"\u{1F9EC}",
-    r:[["lightning","water"],["sun","water"]] },
+    r:[["lightning","water"],["electricity","water"],["electricity","sea"],
+       ["lightning","sea"]] },
   { id:"alien", e:"\u{1F47D}",
     r:[["life","star"]] },
   // The first of the two acronyms, and the id spells it: the derivation only
@@ -467,8 +474,6 @@ export const ELEMENTS = ([
     r:[["animal","sand"],["bug","sand"]] },
   { id:"horse", e:"\u{1F434}",
     r:[["animal","field"]] },
-  { id:"donkey", e:"\u{1FACF}",
-    r:[["grey","horse"]] },
   { id:"sheep", e:"\u{1F411}",
     r:[["animal","cloud"]] },
   { id:"yarn", e:"\u{1F9F6}",
@@ -824,7 +829,7 @@ export const ELEMENTS = ([
   { id:"salt", e:"\u{1F9C2}",
     r:[["sea","fire"],["sea","sun"],["white","stone"]] },
   { id:"shark", e:"\u{1F988}",
-    r:[["grey","fish"],["white","fish"]] },
+    r:[["white","fish"]] },
   { id:"owl", e:"\u{1F989}",
     r:[["bird","night"]] },
   { id:"bat", e:"\u{1F987}",
@@ -978,10 +983,10 @@ export const ELEMENTS = ([
     r:[["diamond","glass"],["glass","tool"],["glass","scientist"],
        ["glass","white"]] },
   { id:"rainbow", e:"\u{1F308}",
-    r:[["white","prism"],["sun","rain"],["prism","sun"],
+    r:[["white","prism"],["sun","rain"],["sun","water"],["prism","sun"],
        ["light bulb","prism"]] },
   { id:"magic", e:"\u{1FA84}",
-    r:[["wood","star"],["pumpkin","night"],["rainbow","crystal ball"],["crystal ball","wizard"]] },
+    r:[["wood","star"],["pumpkin","night"],["life","rainbow"],["tool","wizard"],["rainbow","crystal ball"],["crystal ball","wizard"]] },
   { id:"crystal ball", e:"\u{1F52E}",
     r:[["magic","glass"],["violet","glass"],["magic","mirror"]] },
   { id:"unicorn", e:"\u{1F984}",
@@ -1267,7 +1272,7 @@ export const ELEMENTS = ([
   // Orangutan two entries up — the diet and the colour, coming at it from
   // different directions rather than saying one thing twice.
   { id:"gorilla", e:"\u{1F98D}",
-    r:[["monkey","banana"],["grey","monkey"]] },
+    r:[["monkey","banana"],["monkey","silver"]] },
   // Fruit + colour once more — the Banana is yellow, the Pumpkin orange, the
   // Lime chartreuse, and a brown one is this. "fruit" trails both pairs here
   // because the Palm route already put it there.
@@ -1365,16 +1370,29 @@ export const ELEMENTS = ([
   // "human" in twenty-odd, so the rare string is the one to hug.
   { id:"iD", e:"\u{1FAAA}",
     r:[["human","paper"]] },
-  // The one color no amount of mixing light can reach, so it arrives through
-  // the materials instead. A plain black square would vanish into the tile, so
-  // the swatch keeps a soft top-left sheen and lends a grey — not black — glow.
+  // THE OPPOSITE PAIRS LAND HERE, and Matter is what Black and White then make
+  // between them. It used to be the other way round — these three pairs made
+  // Matter directly, and Black could only be reached through the materials —
+  // which asked the player to believe that two opposite colours leave
+  // "substance". Mixing opposite PAINTS to a muddy black is something everyone
+  // has actually done, so the guess is now one a player can make forwards
+  // rather than reconstruct backwards. What survives of the old rule is the
+  // split: a primary against its own exact secondary makes White (light adding
+  // up), any other opposite pair makes Black (pigment cancelling out).
+  //
+  // The material routes below are kept as ALTERNATES, so "black comes out of
+  // burnt things" is still true, just no longer the only way in. Black is the
+  // throat of the tree now — everything physical is behind it and then Matter
+  // — so it keeps three independent ways in where Matter had two.
+  //
+  // A plain black square would vanish into the tile, so the swatch keeps a
+  // soft top-left sheen and lends a grey — not black — glow.
   { id:"black", c:"#567",
     bg:"radial-gradient(circle at 30% 26%, #233 0 18%, transparent 42%)," +
        "linear-gradient(155deg, #112 0%, #111 55%, #000 100%)",
-    r:[["charcoal","stone"],["charcoal","tool"],["charcoal","earth"],
+    r:[["violet","yellow"],["blue","orange"],["crimson","green"],
+       ["charcoal","stone"],["charcoal","tool"],["charcoal","earth"],
        ["ash","charcoal"]] },
-  { id:"grey", c:"#789",
-    r:[["black","white"]] },
   { id:"diamond", e:"\u{1F48E}",
     r:[["charcoal","lava"],["volcano","charcoal"]] },
   { id:"ring", e:"\u{1F48D}",

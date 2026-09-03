@@ -944,11 +944,27 @@ Wolf + Dog is just another Dog; Fire + Air is a fanned fire and nothing more;
 Lizard + Egg hatches another Lizard; and Lava + Stone melts the Stone straight
 back into Lava - flavor for a pair players try, never a cheaper path.
 
-**Matter is the throat of the tree.** Earth, Air and Water each have exactly
-one route and all three run through it, so 88 of the 101 elements are out of
-reach until it is found. What is reachable without it is the pure colours and
-Gold, thirteen in all. Matter itself comes from either of two complementary
-pairs - Violet + Yellow, Orange + Blue.
+**Black and then Matter are the throat of the tree.** Earth, Air and Water
+each run through Matter, and Matter is White + Black, so nearly everything is
+out of reach until Black is found. What is reachable without it is the pure
+colours and Gold.
+
+It used to be Matter that took the opposite pairs directly, with Black
+reachable only through the materials. That asked the player to believe two
+opposite colours leave *substance* — an idea that reads backwards, after you
+know the answer, and forwards not at all. Mixing opposite **paints** to a muddy
+black is something everyone has actually done, so the pairs make Black now and
+Black plus White makes Matter, which is the one recipe in the game that needs
+no explaining. The old split survives in a form a player can infer: a primary
+against its own exact secondary makes **White** (light adding up), any other
+opposite pair makes **Black** (pigment cancelling out). Black keeps its
+material routes as alternates, and three independent ways in against the two
+Matter used to have.
+
+**Grey was deleted for it.** Black + White is the only honest way to make a
+grey, and the pair is spent on Matter, so there was no honest grey left to
+make. Silver moved to Metal + Mirror, Donkey went with it, and the five other
+recipes that used Grey kept the routes they already had.
 
 | Element | Recipe |
 |---|---|
@@ -961,7 +977,8 @@ pairs - Violet + Yellow, Orange + Blue.
 | Indigo | Blue + Violet |
 | Pink | Red + White |
 | Brown | Green + Orange |
-| Matter | Violet + Yellow · Blue + Orange |
+| Black | Violet + Yellow · Blue + Orange · Crimson + Green · *(and the material routes)* |
+| Matter | White + Black |
 | Air | White + Matter |
 | Sky | Air + Blue · Air + Cyan |
 | Gold | Yellow + Orange |

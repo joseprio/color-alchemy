@@ -852,11 +852,17 @@ function order(set, last = [], already = []) {
 }
 const everything = new Set(ENTRIES.map((c) => c.slice(0, c.indexOf('"'))).filter((id) => !STARTERS.includes(id)));
 const rest = (used) => new Set([...everything].filter((id) => !used.has(id)));
-/* The COVERAGE run: everything the quest needs, plus Night and Black, whose
+/* The COVERAGE run: everything the quest needs, plus the elements whose
    swatches are inspected between the two runs and so have to be on the board
-   by then. That makes it a strict superset of the lean run below, which is
-   the property the best-score checks depend on. */
-const COVER_SET = union(...GOALS, "night", "black");
+   by then, plus enough of a detour to keep it a STRICT superset of the lean
+   run — which is the property the best-score checks depend on.
+   Night and Black are named for the swatch checks but no longer widen anything:
+   Black sits three steps from the start now (the opposite pairs make it), so
+   both ride in on the quest path for free. Silver and Teal are what the detour
+   is made of instead. If a future rewiring pulls those onto the path too, the
+   "leaner run" check below fails loudly rather than quietly comparing a run
+   with itself, which is exactly how this was caught. */
+const COVER_SET = union(...GOALS, "night", "black", "silver", "teal");
 const QUEST = order(COVER_SET, GOALS);
 // EXTRA plays on the board QUEST left behind, not on a fresh one
 const EXTRA = order(rest(COVER_SET), [], COVER_SET);
@@ -1100,8 +1106,8 @@ check(`alt: Sun+Rain forges the Rainbow in ${RAINBOW_ONLY.length}, no Prism invo
   s.moves === RAINBOW_ONLY.length);
 check("alt: the intuitive pairs resolve too",
   JSON.stringify(['air+water', 'air+stone', 'fire+ice',
-    'dog+wolf', 'charcoal+fire', 'air+fire', 'grey+sky'].map((k) => RECIPE[k])) ===
-  '["cloud","sand","water","dog","ash","fire","cloud"]');
+    'dog+wolf', 'charcoal+fire', 'air+fire'].map((k) => RECIPE[k])) ===
+  '["cloud","sand","water","dog","ash","fire"]');
 check("alt: a Volcano has the same Diamond in it as the Lava it pours",
   RECIPE['charcoal+lava'] === "diamond" &&
   RECIPE['charcoal+volcano'] === "diamond");
@@ -1167,14 +1173,20 @@ check("alt: a plain colour is the short way in, on Earth, Cloud, Animal and Glas
   RECIPE['animal+white'] === "polar bear" &&
   RECIPE['animal+green'] === "lizard" &&
   RECIPE['animal+yellow'] === "bee" &&
-  RECIPE['animal+orange'] === "fox" &&
-  RECIPE['grey+matter'] === "stone");
-// Sun + Water was one of the Cloud's five; it is Life's second route now, and
-// the Cloud keeps the other four, every one of them still water meeting
-// warmth or height.
-check("alt: Sun on Water is Life, and the Cloud still has four ways without it",
-  RECIPE['sun+water'] === "life" &&
-  RECIPE['lightning+water'] === "life" &&
+  RECIPE['animal+orange'] === "fox");
+// Sun + Water has moved twice: it was one of the Cloud's five, then Life's
+// second route, and it is the Rainbow's now — sun on water is what a rainbow
+// actually IS, which no other owner of the pair could say. Life did not lose
+// by it: the spark in the puddle became four ways of saying itself, either
+// charge against either body of water. The Cloud is untouched by any of it and
+// still keeps four ways, every one of them water meeting warmth or height.
+// KEYS ARE SORTED, which is why it is rain+sun and not sun+rain — writing the
+// pair the way the table reads it silently returns undefined and fails.
+check("alt: Sun on Water is the Rainbow, and the spark is Life four ways over",
+  RECIPE['sun+water'] === "rainbow" &&
+  RECIPE['rain+sun'] === "rainbow" &&
+  ['lightning+water', 'electricity+water', 'electricity+sea', 'lightning+sea']
+    .every((k) => RECIPE[k] === "life") &&
   RECIPE['fire+water'] === "cloud" &&
   RECIPE['sky+water'] === "cloud");
 // Wood burns as a Charcoal against Fire, but a warm COLOUR lights it instead —
@@ -1189,10 +1201,12 @@ check("alt: Red or Orange sets standing Wood alight",
 // the Sky. Neither twin is a shortcut — Orange + Stone is 9 against Earth +
 // Fire's 7, White + Sky ties Water + Air at 7 — they are there so the pair a
 // player reaches for resolves.
-check("alt: the warm pair both melt Stone, the pale pair both cloud the Sky",
+// Grey used to be the second pale way into the Cloud. It was deleted when Black
+// + White became Matter — black and white is the only honest grey, and the pair
+// is spent — so White is the pale route now, and the Cloud keeps four others.
+check("alt: the warm pair both melt Stone, and White still clouds the Sky",
   RECIPE['red+stone'] === "lava" &&
   RECIPE['orange+stone'] === "lava" &&
-  RECIPE['grey+sky'] === "cloud" &&
   RECIPE['sky+white'] === "cloud");
 // Sun melts Ice back into Water exactly as Fire does — the seventh cyclic
 // pair, and the second one on Water.
