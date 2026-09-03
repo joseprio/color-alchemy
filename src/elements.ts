@@ -512,6 +512,9 @@ export const ELEMENTS = ([
     r:[["cat","black"],["cat","night"],["cat","wizard"]] },
   { id:"cheese", e:"\u{1F9C0}",
     r:[["acid","milk"],["milk","yellow"]] },
+  // Milk and Egg, which is what custard is and very nearly all it is.
+  { id:"custard", e:"\u{1F36E}",
+    r:[["egg","milk"]] },
   { id:"squirrel", e:"\u{1F43F}\u{FE0F}",
     r:[["animal","nut"]] },
   { id:"monkey", e:"\u{1F412}",
@@ -957,6 +960,8 @@ export const ELEMENTS = ([
     r:[["electricity","glass"]] },
   { id:"plug", e:"\u{1F50C}",
     r:[["copper","electricity"]] },
+  { id:"magnet", e:"\u{1F9F2}",
+    r:[["electricity","metal"]] },
   { id:"ice", e:"\u{1F9CA}",
     r:[["cyan","water"],["water","night"]] },
   { id:"snow", e:"\u{1F328}️",
@@ -1108,6 +1113,11 @@ export const ELEMENTS = ([
     r:[["chef","wheat"]] },
   { id:"waffle", e:"\u{1F9C7}",
     r:[["egg","wheat"]] },
+  // The grain family again, and the one member that takes the Fruit rather
+  // than the Egg or the Chef alone: the wheat route is the crust, the chef
+  // route is the baker. "fruit" leads both pairs, so they read as a repeat.
+  { id:"pie", e:"\u{1F967}",
+    r:[["fruit","wheat"],["chef","fruit"]] },
   // THE GRAIN FAMILY'S FIFTH AND THE SALT'S SECOND JOB. The run reads as one
   // base plus the thing that distinguishes each product — Cooking the process,
   // the Chef the skill, the Egg the batter, the Salt the crust — and Salt is
@@ -1194,6 +1204,8 @@ export const ELEMENTS = ([
     r:[["earth","sea"]] },
   { id:"map", e:"\u{1F5FA}\u{FE0F}",
     r:[["paper","world"]] },
+  { id:"compass", e:"\u{1F9ED}",
+    r:[["magnet","map"],["magnet","world"]] },
   { id:"fruit", e:"\u{1F34E}",
     r:[["tree","sun"]] },
   { id:"juice", e:"\u{1F9C3}",
@@ -1206,6 +1218,13 @@ export const ELEMENTS = ([
   // an exact repeat as far as the second id.
   { id:"blueberries", e:"\u{1FAD0}",
     r:[["fruit","blue"]] },
+  // The fourth in the fruit-and-a-colour run, and the one where the colour is
+  // the grape's own: Violet is named for a flower, but a bunch of grapes is
+  // what most people picture when they hear the word. "fruit" leads here too,
+  // so this reads as an exact repeat of the Banana and the Blueberries as far
+  // as the second id.
+  { id:"grapes", e:"\u{1F347}",
+    r:[["fruit","violet"]] },
   // Fruit + colour, the sentence the two above and the Pumpkin below all
   // say, and this one spends the Chartreuse — the colour a lime actually is.
   // "fruit" leads the pair so all three read `["fruit", …]` exactly.
