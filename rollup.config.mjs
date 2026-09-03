@@ -56,7 +56,7 @@ const emojiFont = {
     resetFontDir(FONT_DIR);
     const shared = { outDir: FONT_DIR, publicPath: FONT_HREF, log };
     fontCss =
-      (await emojiFontCss({ elementsTs: "src/elements.ts", ...shared })) +
+      (await emojiFontCss({ elementsTs: "src/elements.ts", uiTs: "src/game.ts", ...shared })) +
       (await titleFontCss({ family: "IM Fell English", indexHtml: "src/index.html", ...shared })) +
       // ALCHEMY only. #tl above it keeps the rainbow-gradient sans, so the
       // two halves of the title read as two things rather than one word set

@@ -75,8 +75,8 @@ export function findNanoemoji() {
 // with the same table and nanoemoji is never invoked.
 const keyOf = (stems) => createHash("sha256").update(stems.sort().join(",")).digest("hex").slice(0, 12);
 
-export async function buildEmojiFont({ elementsTs, log = () => {} }) {
-  const { seqs } = await fetchEmojiSvgs({ elementsTs, log });
+export async function buildEmojiFont({ elementsTs, uiTs, log = () => {} }) {
+  const { seqs } = await fetchEmojiSvgs({ elementsTs, uiTs, log });
   const stems = [...seqs.keys()];
   const key = keyOf(stems);
   const woff2Path = join(CACHE, `emoji-${key}.woff2`);
@@ -145,7 +145,7 @@ export async function verifyRendering(ttf, seqs, log = () => {}) {
 
 if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, "/")}`) {
   const log = (m) => console.log(m);
-  const r = await buildEmojiFont({ elementsTs: "src/elements.ts", log });
+  const r = await buildEmojiFont({ elementsTs: "src/elements.ts", uiTs: "src/game.ts", log });
   if (!r) {
     console.error(
       "emoji-font: nanoemoji not found. Install it with:\n" +

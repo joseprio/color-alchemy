@@ -79,6 +79,28 @@ export function codepointsOf(elementsTs) {
   return cps;
 }
 
+// THE CARDS PUT EMOJI ON SCREEN THAT NO ELEMENT DOES, and the trophy on the
+// completion screen is the one that proves it: it shipped for months outside
+// every subset, falling back to whatever the viewer's OS draws, because the
+// scanner above only ever read the element table. src/game.ts is the other
+// source of truth, and every \u{...} escape in it is a card icon — the four
+// quest strings, the trophy, and the Quests-screen rows that repeat them — so
+// the file needs no marker and a new card icon is covered by the build that
+// adds it.
+//
+// SPLIT, NEVER JOINED. A table entry is one string per picture, ZWJ included;
+// a card's string is pictures side by side — "\u{1F308}\u{1F984}" is two, and
+// asking Noto for a 1f308_1f984 file gets a 404. Each codepoint is its own
+// glyph here, which is also what unicode-range wants.
+export function uiCodepointsOf(uiTs) {
+  const cps = new Set();
+  for (const m of readFileSync(uiTs, "utf8").matchAll(/\\u\{([0-9a-fA-F]+)\}/g)) {
+    const cp = parseInt(m[1], 16);
+    if (cp !== 0xfe0f) cps.add(cp);   // presentation, not identity
+  }
+  return cps;
+}
+
 // TWO WAYS TO GET THE EMOJI, and the first one is tried first.
 //
 // BUILT (tools/emoji-font.mjs): nanoemoji compiles Noto's own source SVGs into
@@ -94,9 +116,9 @@ export function codepointsOf(elementsTs) {
 // The `text=` trick the title font uses below is no help to either: it is
 // capped well under 245 emoji, and a ZWJ sequence is not a character it can
 // subset by.
-export async function emojiFontCss({ elementsTs, outDir, publicPath, log = () => {} }) {
+export async function emojiFontCss({ elementsTs, uiTs, outDir, publicPath, log = () => {} }) {
   const { buildEmojiFont } = await import("./emoji-font.mjs");
-  const built = await buildEmojiFont({ elementsTs, log });
+  const built = await buildEmojiFont({ elementsTs, uiTs, log });
   if (built) {
     writeFileSync(join(outDir, built.name), built.woff2);
     return (
@@ -114,7 +136,7 @@ export async function emojiFontCss({ elementsTs, outDir, publicPath, log = () =>
   const faces = parseFaces(css);
   if (!faces.length) throw new Error("fonts: no @font-face rules for Noto Color Emoji — the API shape changed");
 
-  const want = codepointsOf(elementsTs);
+  const want = new Set([...codepointsOf(elementsTs), ...(uiTs ? uiCodepointsOf(uiTs) : [])]);
   const covers = (f, cp) => f.ranges.some(([a, b]) => cp >= a && cp <= b);
   const used = new Set();
   const orphans = [];

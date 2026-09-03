@@ -39,7 +39,7 @@ const CACHE = join(".fonts", "svg");
 // emoji is one picture with one filename, and codepointsOf() in tools/fonts.mjs
 // deliberately flattens (it is feeding unicode-range, which only knows single
 // codepoints). This is the other reading of the same field.
-export function sequencesOf(elementsTs) {
+export function sequencesOf(elementsTs, uiTs) {
   const src = readFileSync(elementsTs, "utf8");
   const seqs = new Map(); // filename stem -> { text, cps }
   for (const m of src.matchAll(/\be:\s*"((?:[^"\\]|\\.)*)"/g)) {
@@ -51,6 +51,17 @@ export function sequencesOf(elementsTs) {
     const named = cps.filter((c) => c !== 0xfe0f);
     if (!named.length) continue;
     seqs.set(named.map((c) => c.toString(16)).join("_"), { text, cps });
+  }
+  // THE CARD ICONS TOO, one stem per codepoint rather than one per string:
+  // see uiCodepointsOf() in tools/fonts.mjs for why the two files are read by
+  // opposite rules. Added after the table so an icon an element already owns
+  // is a no-op rather than a second entry for the same picture.
+  if (uiTs) {
+    for (const m of readFileSync(uiTs, "utf8").matchAll(/\\u\{([0-9a-fA-F]+)\}/g)) {
+      const cp = parseInt(m[1], 16);
+      if (cp === 0xfe0f) continue;
+      seqs.set(cp.toString(16), { text: String.fromCodePoint(cp), cps: [cp] });
+    }
   }
   return seqs;
 }
@@ -68,9 +79,9 @@ async function grab(stem) {
   return "fetched";
 }
 
-export async function fetchEmojiSvgs({ elementsTs, log = () => {} }) {
+export async function fetchEmojiSvgs({ elementsTs, uiTs, log = () => {} }) {
   mkdirSync(CACHE, { recursive: true });
-  const seqs = sequencesOf(elementsTs);
+  const seqs = sequencesOf(elementsTs, uiTs);
   const stems = [...seqs.keys()];
   const missing = [];
   let fetched = 0, cached = 0;
@@ -110,5 +121,5 @@ export async function fetchEmojiSvgs({ elementsTs, log = () => {} }) {
 
 // `node tools/emoji-svg.mjs` fetches and reports; nothing else runs it yet.
 if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, "/")}`) {
-  await fetchEmojiSvgs({ elementsTs: "src/elements.ts", log: (m) => console.log(m) });
+  await fetchEmojiSvgs({ elementsTs: "src/elements.ts", uiTs: "src/game.ts", log: (m) => console.log(m) });
 }
