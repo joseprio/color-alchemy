@@ -510,7 +510,14 @@ function openDisc(id: string, aId: string, bId: string): void {
     '<span class="m"><span class="g a">' + iconHtml(BY_ID[aId]) + "</span></span>" +
     '<span class="m"><span class="g b">' + iconHtml(BY_ID[bId]) + "</span></span>" +
     '<span class="m"><span class="g r">' + iconHtml(el) + "</span></span>" +
-    '<span class="c"><b>' + el.n + "</b>" + (__DIRECTOR__ ? cardQuote(id) : "");
+    // The tag and the skip line borrow .T and .O off the menu screens rather
+    // than bringing rules of their own: both are already the muted 11px the
+    // card wants, and .T's letter-spacing is what makes a caps label read as a
+    // label. The tip is the only place the game says the card can be cut
+    // short, so it names all three inputs padSelect() now answers.
+    '<span class="c"><div class="T">NEW ELEMENT</div><b>' + el.n + "</b>" +
+    (__DIRECTOR__ ? cardQuote(id) : "") +
+    '<div class="O">tap / Enter / Ⓐ to skip</div>';
   reflow(ds);            // re-arm the fade when one discovery follows another
   ds.classList.add("y");
   discTimer = setTimeout(closeDisc, 3250);
@@ -550,6 +557,12 @@ export function selectAt(i: number): void {
 }
 // keyboard/gamepad select: mark pad mode so the focus ring shows
 export function padSelect(): void {
+  // Enter, Space and Ⓐ all arrive here, so one guard is every keyboard and pad
+  // route to skipping a discovery card — the pointer route is ds's own
+  // handler. The className read IS the open test: #ds carries "y" and nothing
+  // else. Skipping beats selecting behind a veil, and the card is over the
+  // board anyway, so nothing is lost by spending the press on it.
+  if (ds.className) { closeDisc(); return; }
   padMode = true;
   selectAt(cursor);
 }
@@ -1044,7 +1057,7 @@ function encycloHtml(): string {
     const known = (el.r || []).filter(p => codexK[rkey(p[0], p[1])]);
     const rec = known.length
       ? known.map(p => N(p[0]) + " + " + N(p[1])).join(" &nbsp;&middot;&nbsp; ")
-      : el.r ? "?" : "primordial";
+      : el.r ? "?" : "";
     return (
       '<div class="J"><span class="I">' + iconHtml(el) + "</span><span>" +
       "<b>" + el.n + '</b><i class="X">' + rec + "</i>" +

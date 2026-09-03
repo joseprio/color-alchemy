@@ -505,9 +505,9 @@ The game boots to a title screen — *COLOR* in an animated rainbow over
   `???` until the game has actually been completed.
 - **Encyclopedia** — the player's journal: every discovered element with the
   combinations *actually performed* (alternate recipes never tried stay
-  unspoiled; starters are listed as "primordial"), and, in the director's cut,
-  the element's quote. The journal persists across runs - New game wipes the
-  board, never the knowledge.
+  unspoiled; the three starters have no recipe line at all), and, in the
+  director's cut, the element's quote. The journal persists across runs - New
+  game wipes the board, never the knowledge.
 
 Reopen it any time with the HUD **Menu** button — which names its shortcuts,
 **Esc** and Ⓑ — with either of those (when nothing is selected), or with

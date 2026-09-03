@@ -241,6 +241,18 @@ check("discovery: a first-EVER element takes the whole screen",
 check("discovery: the rays step round the spectrum",
   (await evalJs(`document.querySelector('#ds .k').style.getPropertyValue('--c')`)) === "hsl(0 95% 62%)" &&
   (await evalJs(`[...document.querySelectorAll('#ds .k')][7].style.getPropertyValue('--c')`)) === "hsl(180 95% 62%)");
+// The tag and the tip, borrowed off the menu screens. Both are divs on purpose:
+// the QUOTED probe above reads the card's <i>, so a caption that reached for one
+// would report every shipping build as the director's cut.
+check("discovery: the card is tagged, and says how to cut it short",
+  (await evalJs(`document.querySelector('#ds .T').textContent`)) === "NEW ELEMENT" &&
+  await evalJs(`document.querySelector('#ds .O').textContent.includes('to skip')`));
+// The tip names three inputs and this is the keyboard one — pressed here rather
+// than waiting the card out, so the block below starts from a known screen.
+await key("Enter");
+check("discovery: Enter cuts the card short",
+  !(await evalJs(`document.getElementById('ds').classList.contains('y')`)) &&
+  (await evalJs(`document.getElementById('ds').innerHTML`)) === "");
 check("lock: Red is still held after the combine", s.sel === 0 &&
   await evalJs(`document.getElementById('ca').textContent.includes('Red')`));
 check("cauldron: the pair sits in the altar and nothing else is marked",

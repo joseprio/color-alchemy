@@ -391,7 +391,7 @@ f {
 }
 .A .B { font-size: 56px; line-height: 1; margin-bottom: 10px; display: flex; justify-content: center; }
 .A .B .s { width: 56px; height: 56px; border-radius: 10px; }
-.A .T { font-size: 11px; letter-spacing: .3em; color: #3ee; }
+.T { font-size: 11px; letter-spacing: .3em; color: #3ee; }
 .A h2 { margin: 6px 0 2px; color: #fff; font-size: 22px; }
 #ov .A { border-color: #fd6; box-shadow: 0 0 50px #fd62; }
 #ov .T { color: #fd6; }
